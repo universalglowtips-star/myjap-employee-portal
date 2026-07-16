@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Employee extends Model
+class Employee extends Authenticatable
 {
+    use HasApiTokens, Notifiable;
+
     protected $fillable = [
 
         'employee_code',
@@ -17,6 +21,8 @@ class Employee extends Model
         'email',
 
         'phone',
+
+        'password',
 
         'gender',
 
@@ -32,16 +38,19 @@ class Employee extends Model
 
         'work_shift_id',
 
-        'hire_date',
+        'join_date',
 
-        'salary',
+        'basic_salary',
 
         'photo',
 
         'is_active'
 
     ];
-
+    protected $hidden = [
+    'password',
+    'remember_token',
+    ];
     /*
     |--------------------------------------------------------------------------
     | Relationship

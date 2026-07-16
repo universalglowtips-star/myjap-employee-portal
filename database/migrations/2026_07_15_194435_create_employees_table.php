@@ -34,6 +34,8 @@ Schema::create('employees', function (Blueprint $table) {
 
     $table->string('password');
 
+    $table->rememberToken();
+
     $table->date('birth_date')->nullable();
 
     $table->enum('gender',['L','P']);
