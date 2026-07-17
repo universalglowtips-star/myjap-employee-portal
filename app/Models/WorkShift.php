@@ -17,9 +17,11 @@ class WorkShift extends Model
 
         'check_out_time',
 
-        'late_tolerance',
+        'break_start',
 
-        'description',
+        'break_end',
+
+        'late_tolerance',
 
         'is_active'
 
