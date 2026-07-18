@@ -33,9 +33,15 @@ class OfficeLocation extends Model
 
     ];
 
-    public function attendances(): HasMany
+    /*
+    |--------------------------------------------------------------------------
+    | Relationship
+    |--------------------------------------------------------------------------
+    */
+
+    public function employees(): HasMany
     {
-        return $this->hasMany(Attendance::class);
+        return $this->hasMany(Employee::class);
     }
 
 }

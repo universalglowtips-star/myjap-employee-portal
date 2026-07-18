@@ -51,6 +51,17 @@ class Employee extends Authenticatable
     'password',
     'remember_token',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+            'birth_date' => 'date',
+            'join_date' => 'date',
+            'is_active' => 'boolean',
+            'basic_salary' => 'decimal:2',
+        ];
+    }
     /*
     |--------------------------------------------------------------------------
     | Relationship
@@ -75,6 +86,11 @@ class Employee extends Authenticatable
     public function workShift(): BelongsTo
     {
         return $this->belongsTo(WorkShift::class);
+    }
+
+    public function officeLocation(): BelongsTo
+    {
+        return $this->belongsTo(OfficeLocation::class);
     }
 
     public function attendances(): HasMany
