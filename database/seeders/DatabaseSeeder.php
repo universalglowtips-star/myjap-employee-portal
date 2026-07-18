@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             PositionSeeder::class,
             RoleSeeder::class,
             WorkShiftSeeder::class,
+            OfficeLocationSeeder::class,
         ]);
     }
 }
