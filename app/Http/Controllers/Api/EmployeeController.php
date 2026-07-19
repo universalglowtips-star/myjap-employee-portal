@@ -126,8 +126,23 @@ class EmployeeController extends Controller
     /**
      * Hapus data karyawan
      */
-    public function destroy(string $id)
-    {
-        // Akan kita kerjakan nanti
+public function destroy(string $id): JsonResponse
+{
+    $employee = Employee::find($id);
+
+    if (!$employee) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data karyawan tidak ditemukan.'
+        ], 404);
     }
+
+    $employee->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data karyawan berhasil dihapus.'
+    ], 200);
+}
+
 }
