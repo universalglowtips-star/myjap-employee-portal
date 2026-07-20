@@ -38,6 +38,8 @@ class Employee extends Authenticatable
 
         'work_shift_id',
 
+        'office_location_id',
+
         'join_date',
 
         'basic_salary',

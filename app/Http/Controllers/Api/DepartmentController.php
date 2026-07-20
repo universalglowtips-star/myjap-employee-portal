@@ -77,6 +77,7 @@ public function show(string $id): JsonResponse
  * Update the specified resource in storage.
  */
 public function update(Request $request, string $id): JsonResponse
+
 {
     // Cari data department
     $department = Department::find($id);

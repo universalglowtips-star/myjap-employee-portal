@@ -3,16 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreEmployeeRequest;
 use App\Models\Employee;
-use Illuminate\Http\Request;
+use App\Services\EmployeeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    protected EmployeeService $employeeService;
+
+    public function __construct(EmployeeService $employeeService)
+    {
+        $this->employeeService = $employeeService;
+    }
+
     /**
-     * Display a listing of the resource.
+     * Menampilkan seluruh data karyawan
      */
     public function index(): JsonResponse
     {
@@ -20,89 +28,121 @@ class EmployeeController extends Controller
             'department',
             'position',
             'role',
-            'workShift'
-        ])->orderBy('full_name', 'asc')->get();
+            'workShift',
+            'officeLocation'
+        ])
+        ->orderBy('full_name', 'asc')
+        ->get();
 
         return response()->json([
             'success' => true,
             'message' => 'Data karyawan berhasil diambil.',
-            'total' => $employees->count(),
-            'data' => $employees
+            'total'   => $employees->count(),
+            'data'    => $employees
         ], 200);
     }
 
     /**
- * Store a newly created employee.
- */
-public function store(Request $request): JsonResponse
-{
-    $validated = $request->validate([
-        'full_name'      => 'required|string|max:100',
-        'email'          => 'required|email|unique:employees,email',
-        'phone'          => 'nullable|string|max:20',
-        'password'       => 'required|min:6',
-
-        'gender'         => 'required|in:L,P',
-        'birth_date'     => 'required|date',
-        'address'        => 'nullable|string',
-
-        'department_id'  => 'required|exists:departments,id',
-        'position_id'    => 'required|exists:positions,id',
-        'role_id'        => 'required|exists:roles,id',
-        'work_shift_id'  => 'required|exists:work_shifts,id',
-
-        'join_date'      => 'required|date',
-        'basic_salary'   => 'required|numeric|min:0',
-
-        'photo'          => 'nullable|string',
-        'is_active'      => 'boolean'
-    ]);
-
-    // Generate kode karyawan
-    $lastEmployee = Employee::latest('id')->first();
-
-    if ($lastEmployee) {
-        $number = (int) substr($lastEmployee->employee_code, 3) + 1;
-    } else {
-        $number = 1;
+     * Menyimpan data karyawan baru
+     */
+    public function store(StoreEmployeeRequest $request): JsonResponse
+    {
+        return $this->employeeService->store($request);
     }
 
-    $validated['employee_code'] = 'EMP' . str_pad($number, 4, '0', STR_PAD_LEFT);
+    /**
+     * Menampilkan detail karyawan
+     */
+    public function show(string $id): JsonResponse
+    {
+        $employee = Employee::with([
+            'department',
+            'position',
+            'role',
+            'workShift',
+            'officeLocation'
+        ])->findOrFail($id);
 
-    // Hash password
-    $validated['password'] = Hash::make($validated['password']);
+        return response()->json([
+            'success' => true,
+            'data'    => $employee
+        ]);
+    }
 
-    // Simpan data
-    $employee = Employee::create($validated);
+    /**
+     * Update data karyawan
+     */
+    public function update(Request $request, string $id)
+{
+
+    $employee = Employee::find($id);
+
+    if (!$employee) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data karyawan tidak ditemukan.'
+        ], 404);
+    }
+
+    $validated = $request->validate([
+        'department_id'      => 'required|exists:departments,id',
+        'position_id'        => 'required|exists:positions,id',
+        'work_shift_id'      => 'required|exists:work_shifts,id',
+        'office_location_id' => 'required|exists:office_locations,id',
+        'role_id'            => 'required|exists:roles,id',
+        'full_name'          => 'required|string|max:100',
+        'email'              => 'required|email|unique:employees,email,' . $employee->id,
+        'phone'              => 'required|string|max:20',
+        'password'           => 'nullable|min:8',
+        'birth_date'         => 'required|date',
+        'gender'             => 'required|in:L,P',
+        'address'            => 'required|string',
+        'join_date'          => 'required|date',
+        'basic_salary'       => 'required|numeric',
+        'is_active'          => 'required|boolean',
+    ]);
+
+    if (!empty($validated['password'])) {
+        $validated['password'] = Hash::make($validated['password']);
+    } else {
+        unset($validated['password']);
+    }
+
+    $employee->update($validated);
 
     return response()->json([
         'success' => true,
-        'message' => 'Data karyawan berhasil ditambahkan.',
-        'data'    => $employee
-    ], 201);
+        'message' => 'Data karyawan berhasil diperbarui.',
+        'data'    => $employee->load([
+            'department',
+            'position',
+            'role',
+            'workShift',
+            'officeLocation'
+        ])
+    ], 200);
 }
 
     /**
-     * Display the specified resource.
+     * Hapus data karyawan
      */
-    public function show(string $id)
-    {
-        //
+public function destroy(string $id): JsonResponse
+{
+    $employee = Employee::find($id);
+
+    if (!$employee) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data karyawan tidak ditemukan.'
+        ], 404);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+    $employee->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Data karyawan berhasil dihapus.'
+    ], 200);
+}
+
 }
