@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\WorkShiftController;
+use App\Http\Controllers\Api\OfficeLocationController;
 
 // =========================
 // PUBLIC ROUTES
@@ -35,5 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('roles', RoleController::class);
 
     Route::apiResource('work-shifts', WorkShiftController::class);
+
+    Route::apiResource('office-locations', OfficeLocationController::class);
 
 });
