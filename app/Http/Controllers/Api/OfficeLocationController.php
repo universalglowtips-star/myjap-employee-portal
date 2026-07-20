@@ -97,4 +97,5 @@ public function destroy(string $id): JsonResponse
         'message' => 'Data lokasi kantor berhasil dihapus.'
     ], 200);
 }
+
 }

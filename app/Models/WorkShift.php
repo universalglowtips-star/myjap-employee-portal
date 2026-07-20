@@ -9,6 +9,8 @@ class WorkShift extends Model
 {
     protected $fillable = [
 
+        'work_shift_id',
+
         'shift_code',
 
         'shift_name',
@@ -30,5 +32,10 @@ class WorkShift extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
     }
 }

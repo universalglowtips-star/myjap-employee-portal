@@ -31,6 +31,12 @@ public function up(): void
               ->cascadeOnUpdate()
               ->restrictOnDelete();
 
+        $table->foreignId('work_shift_id')
+              ->nullable()
+              ->constrained()
+              ->cascadeOnUpdate()
+              ->restrictOnDelete();
+
         /*
         |--------------------------------------------------------------------------
         | Tanggal Absensi

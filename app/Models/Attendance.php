@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\WorkShift; 
 
 class Attendance extends Model
 {
@@ -52,6 +53,8 @@ class Attendance extends Model
 
         'is_approved',
 
+        'work_shift_id',
+
         'notes'
 
     ];
@@ -65,5 +68,12 @@ class Attendance extends Model
     {
         return $this->belongsTo(OfficeLocation::class);
     }
+
+    public function workShift(): BelongsTo
+    {
+        return $this->belongsTo(WorkShift::class);
+    }
+
+
 
 }
