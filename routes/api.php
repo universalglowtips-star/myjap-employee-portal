@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\PositionController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\WorkShiftController;
 
 // =========================
 // PUBLIC ROUTES
@@ -29,5 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('departments', DepartmentController::class);
 
     Route::apiResource('positions', PositionController::class);
+
+    Route::apiResource('roles', RoleController::class);
+
+    Route::apiResource('work-shifts', WorkShiftController::class);
 
 });
