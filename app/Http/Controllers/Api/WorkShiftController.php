@@ -37,7 +37,7 @@ class WorkShiftController extends Controller
             'break_start'     => 'nullable',
             'break_end'       => 'nullable',
             'late_tolerance'  => 'required|integer|min:0',
-            'is_active'       => 'boolean'
+            'is_active'       => 'required|boolean',
         ]);
 
         $workShift = WorkShift::create($validated);
@@ -52,10 +52,8 @@ class WorkShiftController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id): JsonResponse
+    public function show(WorkShift $workShift): JsonResponse
     {
-        $workShift = WorkShift::findOrFail($id);
-
         return response()->json([
             'success' => true,
             'message' => 'Detail shift kerja berhasil diambil.',
@@ -66,19 +64,17 @@ class WorkShiftController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, WorkShift $workShift): JsonResponse
     {
-        $workShift = WorkShift::findOrFail($id);
-
         $validated = $request->validate([
-            'shift_code'      => 'required|string|max:20|unique:work_shifts,shift_code,' . $id,
+            'shift_code'      => 'required|string|max:20|unique:work_shifts,shift_code,' . $workShift->id,
             'shift_name'      => 'required|string|max:100',
             'check_in_time'   => 'required',
             'check_out_time'  => 'required',
             'break_start'     => 'nullable',
             'break_end'       => 'nullable',
             'late_tolerance'  => 'required|integer|min:0',
-            'is_active'       => 'boolean'
+            'is_active'       => 'required|boolean',
         ]);
 
         $workShift->update($validated);
@@ -93,10 +89,8 @@ class WorkShiftController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(WorkShift $workShift): JsonResponse
     {
-        $workShift = WorkShift::findOrFail($id);
-
         $workShift->delete();
 
         return response()->json([
