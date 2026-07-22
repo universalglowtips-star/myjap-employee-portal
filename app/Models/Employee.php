@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Leave;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
@@ -98,6 +99,16 @@ class Employee extends Authenticatable
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function leaves(): HasMany
+    {
+        return $this->hasMany(Leave::class);
+    }
+
+    public function approvedLeaves(): HasMany
+    {
+        return $this->hasMany(Leave::class, 'approved_by');
     }
 
 }

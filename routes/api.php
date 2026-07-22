@@ -11,24 +11,43 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\WorkShiftController;
 use App\Http\Controllers\Api\OfficeLocationController;
 use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\LeaveController;
 
-// =========================
-// PUBLIC ROUTES
-// =========================
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Public Route
+|
+*/
+
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::apiResource('employees', EmployeeController::class);
+/*
+|--------------------------------------------------------------------------
+| Protected Route
+|--------------------------------------------------------------------------
+|
+| Semua endpoint di bawah harus login menggunakan Sanctum
+|
+*/
 
-// =========================
-// PROTECTED ROUTES
-// =========================
 Route::middleware('auth:sanctum')->group(function () {
+
+    // =========================
+    // AUTH
+    // =========================
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/me', function (Request $request) {
         return $request->user();
     });
+
+    // =========================
+    // MASTER DATA
+    // =========================
 
     Route::apiResource('departments', DepartmentController::class);
 
@@ -40,6 +59,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('office-locations', OfficeLocationController::class);
 
+    Route::apiResource('employees', EmployeeController::class);
+
+    // =========================
+    // TRANSACTION
+    // =========================
+
     Route::apiResource('attendances', AttendanceController::class);
+
+    Route::apiResource('leaves', LeaveController::class);
 
 });
