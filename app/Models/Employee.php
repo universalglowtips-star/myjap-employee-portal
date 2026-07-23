@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Payslip;
 use App\Models\Leave;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -109,6 +110,11 @@ class Employee extends Authenticatable
     public function approvedLeaves(): HasMany
     {
         return $this->hasMany(Leave::class, 'approved_by');
+    }
+
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
     }
 
 }

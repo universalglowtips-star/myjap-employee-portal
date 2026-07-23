@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\WorkShiftController;
 use App\Http\Controllers\Api\OfficeLocationController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\LeaveController;
+use App\Http\Controllers\Api\PayslipController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,5 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('attendances', AttendanceController::class);
 
     Route::apiResource('leaves', LeaveController::class);
+
+    Route::apiResource('payslips', PayslipController::class);
 
 });
