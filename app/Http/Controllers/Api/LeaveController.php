@@ -250,17 +250,53 @@ public function reject(Request $request, string $id): JsonResponse
 }
 
     /**
+     * Batalkan cuti yang sudah Approved secara resmi.
+     * Berbeda dari update(): ini bukan mengubah data cuti, tapi mencatat
+     * pembatalan sebagai riwayat baru (siapa, kapan, alasannya).
+     */
+public function cancel(Request $request, string $id): JsonResponse
+{
+    $leave = Leave::findOrFail($id);
+
+    if ($leave->status !== 'Approved') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Hanya cuti dengan status Approved yang bisa dibatalkan.'
+        ], 422);
+    }
+
+    $validated = $request->validate([
+        'cancel_reason' => 'required|string|max:1000',
+    ], [
+        'cancel_reason.required' => 'Alasan pembatalan wajib diisi.',
+    ]);
+
+    $leave->update([
+        'status' => 'Cancelled',
+        'cancelled_by' => $request->user()->id,
+        'cancelled_at' => now(),
+        'cancel_reason' => $validated['cancel_reason'],
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Cuti berhasil dibatalkan.',
+        'data' => $leave->refresh()->load(['employee', 'approver', 'canceller'])
+    ]);
+}
+
+    /**
      * Remove the specified resource from storage.
-     * Cuti yang sudah Approved tidak boleh dihapus (jaga integritas riwayat).
+     * Cuti yang sudah Approved atau Cancelled tidak boleh dihapus (jaga integritas riwayat).
      */
 public function destroy(string $id): JsonResponse
 {
     $leave = Leave::findOrFail($id);
 
-    if ($leave->status === 'Approved') {
+    if (in_array($leave->status, ['Approved', 'Cancelled'])) {
         return response()->json([
             'success' => false,
-            'message' => 'Pengajuan cuti yang sudah disetujui tidak bisa dihapus.'
+            'message' => 'Pengajuan cuti yang sudah disetujui atau dibatalkan tidak bisa dihapus.'
         ], 422);
     }
 

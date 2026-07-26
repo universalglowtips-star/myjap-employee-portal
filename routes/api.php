@@ -74,6 +74,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('leaves/{leave}/reject', [LeaveController::class, 'reject']);
 
+    Route::post('leaves/{leave}/cancel', [LeaveController::class, 'cancel']);
+
     Route::apiResource('payslips', PayslipController::class);
 
 });

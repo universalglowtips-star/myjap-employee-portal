@@ -34,6 +34,12 @@ class Leave extends Model
 
         'approval_notes',
 
+        'cancelled_by',
+
+        'cancelled_at',
+
+        'cancel_reason',
+
     ];
 
     protected function casts(): array
@@ -45,6 +51,8 @@ class Leave extends Model
             'end_date' => 'date:Y-m-d',
 
             'approved_at' => 'datetime:Y-m-d H:i:s',
+
+            'cancelled_at' => 'datetime:Y-m-d H:i:s',
 
             'created_at' => 'datetime:Y-m-d H:i:s',
 
@@ -69,6 +77,11 @@ class Leave extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'cancelled_by');
     }
 
     protected function serializeDate(\DateTimeInterface $date): string
