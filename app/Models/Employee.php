@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Payslip;
-use App\Models\Leave;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
@@ -57,15 +55,25 @@ class Employee extends Authenticatable
     ];
 
     protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-            'birth_date' => 'date',
-            'join_date' => 'date',
-            'is_active' => 'boolean',
-            'basic_salary' => 'decimal:2',
-        ];
-    }
+{
+    return [
+
+        'password' => 'hashed',
+
+        'birth_date' => 'date:Y-m-d',
+
+        'join_date' => 'date:Y-m-d',
+
+        'is_active' => 'boolean',
+
+        'basic_salary' => 'decimal:2',
+
+        'created_at' => 'datetime:Y-m-d H:i:s',
+
+        'updated_at' => 'datetime:Y-m-d H:i:s',
+
+    ];
+}
     /*
     |--------------------------------------------------------------------------
     | Relationship

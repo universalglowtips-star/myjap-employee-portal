@@ -32,20 +32,38 @@ public function index(): JsonResponse
     ]);
 }
 
-public function store(StoreLeaveRequest $request)
+public function store(StoreLeaveRequest $request): JsonResponse
 {
     $validated = $request->validated();
 
-    // Hitung total hari cuti otomatis
-    $validated['total_days'] = Carbon::parse($validated['start_date'])
+    $totalDays = Carbon::parse($validated['start_date'])
         ->diffInDays(Carbon::parse($validated['end_date'])) + 1;
 
-    $leave = Leave::create($validated);
+    $leave = Leave::create([
+
+        'employee_id'    => $validated['employee_id'],
+        'leave_type'     => $validated['leave_type'],
+        'start_date'     => $validated['start_date'],
+        'end_date'       => $validated['end_date'],
+        'total_days'     => $totalDays,
+        'reason'         => $validated['reason'],
+        'attachment'     => $validated['attachment'] ?? null,
+
+        // Default system
+        'status'         => 'Pending',
+        'approved_by'    => null,
+        'approved_at'    => null,
+        'approval_notes' => null,
+
+    ]);
 
     return response()->json([
         'success' => true,
-        'message' => 'Data cuti berhasil ditambahkan.',
-        'data' => $leave->load(['employee', 'approver'])
+        'message' => 'Pengajuan cuti berhasil dibuat.',
+        'data'    => $leave->load([
+            'employee',
+            'approver'
+        ])
     ], 201);
 }
 

@@ -42,7 +42,7 @@ return new class extends Migration
                 'Annual Leave',
                 'Sick',
                 'Permission',
-                'Maternity',
+                'Maternity Leave',
                 'Unpaid Leave',
                 'Business Trip'
             ]);
