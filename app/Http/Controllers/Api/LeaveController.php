@@ -8,27 +8,69 @@ use App\Http\Requests\StoreLeaveRequest;
 use App\Http\Requests\UpdateLeaveRequest;
 use App\Models\Leave;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
 /**
  * Display a listing of the resource.
+ *
+ * Query params yang didukung:
+ * - employee_id : filter berdasarkan karyawan
+ * - status      : Pending | Approved | Rejected
+ * - leave_type  : Annual Leave, Sick Leave, dll
+ * - start_date  : filter cuti yang mulai dari tanggal ini
+ * - end_date    : filter cuti yang berakhir sampai tanggal ini
+ * - search      : cari di nama karyawan / alasan cuti
+ * - per_page    : jumlah data per halaman (default 10)
  */
-public function index(): JsonResponse
+public function index(Request $request): JsonResponse
 {
-    $leaves = Leave::with([
+    $query = Leave::with([
         'employee',
         'approver'
     ])
-    ->latest()
-    ->get();
+    ->when($request->filled('employee_id'), function ($q) use ($request) {
+        $q->where('employee_id', $request->employee_id);
+    })
+    ->when($request->filled('status'), function ($q) use ($request) {
+        $q->where('status', $request->status);
+    })
+    ->when($request->filled('leave_type'), function ($q) use ($request) {
+        $q->where('leave_type', $request->leave_type);
+    })
+    ->when($request->filled('start_date'), function ($q) use ($request) {
+        $q->whereDate('start_date', '>=', $request->start_date);
+    })
+    ->when($request->filled('end_date'), function ($q) use ($request) {
+        $q->whereDate('end_date', '<=', $request->end_date);
+    })
+    ->when($request->filled('search'), function ($q) use ($request) {
+        $search = $request->search;
+
+        $q->where(function ($sub) use ($search) {
+            $sub->where('reason', 'like', "%{$search}%")
+                ->orWhereHas('employee', function ($emp) use ($search) {
+                    $emp->where('full_name', 'like', "%{$search}%");
+                });
+        });
+    })
+    ->latest();
+
+    $leaves = $query->paginate($request->integer('per_page', 10));
 
     return response()->json([
         'success' => true,
         'message' => 'Data pengajuan cuti berhasil diambil.',
-        'total' => $leaves->count(),
-        'data' => $leaves
+        'total' => $leaves->total(),
+        'data' => $leaves->items(),
+        'pagination' => [
+            'current_page' => $leaves->currentPage(),
+            'per_page' => $leaves->perPage(),
+            'last_page' => $leaves->lastPage(),
+        ]
     ]);
 }
 
@@ -39,6 +81,13 @@ public function store(StoreLeaveRequest $request): JsonResponse
     $totalDays = Carbon::parse($validated['start_date'])
         ->diffInDays(Carbon::parse($validated['end_date'])) + 1;
 
+    // Upload lampiran (kalau ada)
+    $attachment = null;
+
+    if ($request->hasFile('attachment')) {
+        $attachment = $request->file('attachment')->store('leaves', 'public');
+    }
+
     $leave = Leave::create([
 
         'employee_id'    => $validated['employee_id'],
@@ -47,9 +96,9 @@ public function store(StoreLeaveRequest $request): JsonResponse
         'end_date'       => $validated['end_date'],
         'total_days'     => $totalDays,
         'reason'         => $validated['reason'],
-        'attachment'     => $validated['attachment'] ?? null,
+        'attachment'     => $attachment,
 
-        // Default system
+        // Default system - pengajuan baru selalu mulai dari Pending
         'status'         => 'Pending',
         'approved_by'    => null,
         'approved_at'    => null,
@@ -83,10 +132,20 @@ public function show(string $id): JsonResponse
 
     /**
      * Update the specified resource in storage.
+     *
+     * Hanya bisa mengubah pengajuan cuti yang statusnya masih Pending.
+     * Perubahan status (approve/reject) tidak lewat sini, lihat approve()/reject().
      */
 public function update(UpdateLeaveRequest $request, string $id): JsonResponse
 {
     $leave = Leave::findOrFail($id);
+
+    if ($leave->status !== 'Pending') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Pengajuan cuti yang sudah diproses (Approved/Rejected) tidak bisa diubah lagi.'
+        ], 422);
+    }
 
     $validated = $request->validated();
 
@@ -99,12 +158,14 @@ public function update(UpdateLeaveRequest $request, string $id): JsonResponse
             Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1;
     }
 
-    if (
-        isset($validated['status']) &&
-        $validated['status'] === 'Approved' &&
-        empty($validated['approved_at'])
-    ) {
-        $validated['approved_at'] = now();
+    if ($request->hasFile('attachment')) {
+
+        // Hapus lampiran lama supaya storage tidak numpuk file yatim
+        if ($leave->attachment) {
+            Storage::disk('public')->delete($leave->attachment);
+        }
+
+        $validated['attachment'] = $request->file('attachment')->store('leaves', 'public');
     }
 
     $leave->update($validated);
@@ -122,11 +183,90 @@ public function update(UpdateLeaveRequest $request, string $id): JsonResponse
 }
 
     /**
+     * Setujui pengajuan cuti.
+     * approved_by diambil dari user yang sedang login, bukan dari input client.
+     */
+public function approve(Request $request, string $id): JsonResponse
+{
+    $leave = Leave::findOrFail($id);
+
+    if ($leave->status !== 'Pending') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Pengajuan cuti ini sudah pernah diproses sebelumnya.'
+        ], 422);
+    }
+
+    $validated = $request->validate([
+        'approval_notes' => 'nullable|string|max:1000',
+    ]);
+
+    $leave->update([
+        'status' => 'Approved',
+        'approved_by' => $request->user()->id,
+        'approved_at' => now(),
+        'approval_notes' => $validated['approval_notes'] ?? null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pengajuan cuti berhasil disetujui.',
+        'data' => $leave->refresh()->load(['employee', 'approver'])
+    ]);
+}
+
+    /**
+     * Tolak pengajuan cuti. Wajib menyertakan alasan penolakan.
+     */
+public function reject(Request $request, string $id): JsonResponse
+{
+    $leave = Leave::findOrFail($id);
+
+    if ($leave->status !== 'Pending') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Pengajuan cuti ini sudah pernah diproses sebelumnya.'
+        ], 422);
+    }
+
+    $validated = $request->validate([
+        'approval_notes' => 'required|string|max:1000',
+    ], [
+        'approval_notes.required' => 'Alasan penolakan wajib diisi.',
+    ]);
+
+    $leave->update([
+        'status' => 'Rejected',
+        'approved_by' => $request->user()->id,
+        'approved_at' => now(),
+        'approval_notes' => $validated['approval_notes'],
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pengajuan cuti berhasil ditolak.',
+        'data' => $leave->refresh()->load(['employee', 'approver'])
+    ]);
+}
+
+    /**
      * Remove the specified resource from storage.
+     * Cuti yang sudah Approved tidak boleh dihapus (jaga integritas riwayat).
      */
 public function destroy(string $id): JsonResponse
 {
     $leave = Leave::findOrFail($id);
+
+    if ($leave->status === 'Approved') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Pengajuan cuti yang sudah disetujui tidak bisa dihapus.'
+        ], 422);
+    }
+
+    if ($leave->attachment) {
+        Storage::disk('public')->delete($leave->attachment);
+    }
 
     $leave->delete();
 

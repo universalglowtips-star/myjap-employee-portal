@@ -25,7 +25,7 @@ class StoreLeaveRequest extends FormRequest
 
             'reason' => 'required|string|max:1000',
 
-            'attachment' => 'nullable|string|max:255',
+            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
 
         ];
     }

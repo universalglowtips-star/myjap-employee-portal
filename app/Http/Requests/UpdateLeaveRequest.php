@@ -15,9 +15,7 @@ class UpdateLeaveRequest extends FormRequest
     {
         return [
 
-            'employee_id' => 'sometimes|exists:employees,id',
-
-            'leave_type' => 'sometimes|in:Annual Leave,Sick,Permission,Maternity,Unpaid Leave,Business Trip',
+            'leave_type' => 'sometimes|in:Annual Leave,Sick Leave,Permission,Maternity Leave,Unpaid Leave,Business Trip',
 
             'start_date' => 'sometimes|date',
 
@@ -25,15 +23,7 @@ class UpdateLeaveRequest extends FormRequest
 
             'reason' => 'sometimes|string|max:1000',
 
-            'attachment' => 'nullable|string|max:255',
-
-            'status' => 'sometimes|in:Pending,Approved,Rejected',
-
-            'approved_by' => 'required_if:status,Approved|nullable|exists:employees,id',
-
-            'approved_at' => 'nullable|date',
-
-            'approval_notes' => 'nullable|string|max:1000',
+            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
 
         ];
     }
