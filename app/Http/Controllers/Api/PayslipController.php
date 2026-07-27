@@ -11,6 +11,7 @@ use App\Models\PayslipItem;
 use App\Models\SalaryComponent;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -64,7 +65,7 @@ class PayslipController extends Controller
                 'employee_id' => $validated['employee_id'],
                 'month'       => $validated['month'],
                 'year'        => $validated['year'],
-                'status'      => $validated['status'] ?? 'Draft',
+                'status'      => 'Draft',
                 'file_pdf'    => $validated['file_pdf'] ?? null,
                 'net_salary'  => 0,
 
@@ -147,12 +148,23 @@ class PayslipController extends Controller
 
     /**
      * Update payslip.
+     *
+     * Slip gaji yang sudah Published tidak boleh diubah lagi - untuk
+     * koreksi setelah publish, harus lewat proses resmi (revisi/void),
+     * bukan edit diam-diam.
      */
     public function update(UpdatePayslipRequest $request, string $id): JsonResponse
     {
-        $validated = $request->validated();
-
         $payslip = Payslip::findOrFail($id);
+
+        if ($payslip->status === 'Published') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji yang sudah dipublish tidak bisa diubah lagi.'
+            ], 422);
+        }
+
+        $validated = $request->validated();
 
         DB::beginTransaction();
 
@@ -163,7 +175,6 @@ class PayslipController extends Controller
                 'employee_id' => $validated['employee_id'] ?? $payslip->employee_id,
                 'month'       => $validated['month'] ?? $payslip->month,
                 'year'        => $validated['year'] ?? $payslip->year,
-                'status'      => $validated['status'] ?? $payslip->status,
                 'file_pdf'    => $validated['file_pdf'] ?? $payslip->file_pdf,
 
             ]);
@@ -233,16 +244,94 @@ class PayslipController extends Controller
 
     /**
      * Delete payslip.
+     * Slip gaji yang sudah Published tidak boleh dihapus (jaga integritas data finansial).
      */
     public function destroy(string $id): JsonResponse
     {
         $payslip = Payslip::findOrFail($id);
+
+        if ($payslip->status === 'Published') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji yang sudah dipublish tidak bisa dihapus. Unpublish dulu jika benar-benar perlu dihapus.'
+            ], 422);
+        }
 
         $payslip->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Slip gaji berhasil dihapus.'
+        ]);
+    }
+
+    /**
+     * Publish payslip - menandai slip gaji sudah final dan bisa dilihat karyawan.
+     * Setelah ini, payslip terkunci dari edit/hapus sampai di-unpublish.
+     */
+    public function publish(Request $request, string $id): JsonResponse
+    {
+        $payslip = Payslip::findOrFail($id);
+
+        if ($payslip->status === 'Published') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji ini sudah dipublish sebelumnya.'
+            ], 422);
+        }
+
+        $payslip->update([
+            'status' => 'Published',
+            'published_by' => $request->user()->id,
+            'published_at' => now(),
+            'unpublish_reason' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Slip gaji berhasil dipublish.',
+            'data' => $payslip->refresh()->load([
+                'employee',
+                'publisher',
+                'items.salaryComponent'
+            ])
+        ]);
+    }
+
+    /**
+     * Unpublish payslip - membuka kunci lagi untuk keperluan revisi resmi.
+     * Wajib menyertakan alasan supaya tetap ada jejak kenapa dibuka kembali.
+     */
+    public function unpublish(Request $request, string $id): JsonResponse
+    {
+        $payslip = Payslip::findOrFail($id);
+
+        if ($payslip->status !== 'Published') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji ini belum dipublish, tidak perlu di-unpublish.'
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'unpublish_reason' => 'required|string|max:1000',
+        ], [
+            'unpublish_reason.required' => 'Alasan unpublish wajib diisi.',
+        ]);
+
+        $payslip->update([
+            'status' => 'Draft',
+            'unpublish_reason' => $validated['unpublish_reason'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Slip gaji berhasil di-unpublish, sekarang bisa direvisi.',
+            'data' => $payslip->refresh()->load([
+                'employee',
+                'publisher',
+                'items.salaryComponent'
+            ])
         ]);
     }
 }

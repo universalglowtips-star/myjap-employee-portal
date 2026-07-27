@@ -21,8 +21,6 @@ class StorePayslipRequest extends FormRequest
 
         'year' => 'required|integer|min:2024',
 
-        'status' => 'nullable|in:Draft,Published',
-
         'file_pdf' => 'nullable|string|max:255',
 
         'items' => 'required|array|min:1',

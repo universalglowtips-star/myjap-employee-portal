@@ -78,4 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('payslips', PayslipController::class);
 
+    Route::post('payslips/{payslip}/publish', [PayslipController::class, 'publish']);
+
+    Route::post('payslips/{payslip}/unpublish', [PayslipController::class, 'unpublish']);
+
 });

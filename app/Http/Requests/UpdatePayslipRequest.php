@@ -21,8 +21,6 @@ class UpdatePayslipRequest extends FormRequest
 
         'year' => 'sometimes|integer|min:2024',
 
-        'status' => 'sometimes|in:Draft,Published',
-
         'file_pdf' => 'nullable|string|max:255',
 
         'items' => 'sometimes|array|min:1',

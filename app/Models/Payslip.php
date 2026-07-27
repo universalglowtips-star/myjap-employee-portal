@@ -25,6 +25,12 @@ class Payslip extends Model
 
         'file_pdf',
 
+        'published_by',
+
+        'published_at',
+
+        'unpublish_reason',
+
     ];
 
     protected function casts(): array
@@ -32,6 +38,8 @@ class Payslip extends Model
         return [
 
             'net_salary' => 'decimal:2',
+
+            'published_at' => 'datetime:Y-m-d H:i:s',
 
         ];
     }
@@ -45,6 +53,11 @@ class Payslip extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function publisher(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'published_by');
     }
 
     public function items(): HasMany
