@@ -80,6 +80,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('payslips-summary', [PayslipController::class, 'summary']);
 
+    Route::post('payroll/generate-bulk', [PayslipController::class, 'generateBulk']);
+
+    Route::post('payroll/publish-bulk', [PayslipController::class, 'publishBulk']);
+
     Route::post('payslips/{payslip}/publish', [PayslipController::class, 'publish']);
 
     Route::post('payslips/{payslip}/unpublish', [PayslipController::class, 'unpublish']);

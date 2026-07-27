@@ -129,6 +129,160 @@ class PayslipController extends Controller
     }
 
     /**
+     * Generate payslip untuk SEMUA karyawan aktif sekaligus dalam satu periode.
+     *
+     * Cuma pakai komponen gaji yang wajib (is_required=true) sebagai baseline -
+     * BASIC pakai basic_salary masing-masing karyawan, komponen wajib lain
+     * (kalau ada) pakai default_amount. Komponen opsional (bonus, lembur, dll)
+     * TIDAK ikut otomatis - HRD tambahkan manual per karyawan sesudahnya lewat
+     * update payslip biasa, karena tiap bulan kebijakannya bisa beda-beda.
+     *
+     * Karyawan yang sudah punya payslip di periode itu otomatis dilewati
+     * (tidak dibuat dobel).
+     */
+    public function generateBulk(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2024',
+        ]);
+
+        $requiredComponents = SalaryComponent::where('is_required', true)
+            ->where('is_active', true)
+            ->get();
+
+        if ($requiredComponents->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Belum ada komponen gaji wajib (is_required) yang aktif. Set dulu komponen wajib sebelum generate payroll massal.'
+            ], 422);
+        }
+
+        $employees = Employee::where('is_active', true)->get();
+
+        $existingEmployeeIds = Payslip::where('month', $validated['month'])
+            ->where('year', $validated['year'])
+            ->pluck('employee_id');
+
+        $created = [];
+        $skipped = [];
+
+        DB::beginTransaction();
+
+        try {
+
+            foreach ($employees as $employee) {
+
+                if ($existingEmployeeIds->contains($employee->id)) {
+                    $skipped[] = $employee->id;
+                    continue;
+                }
+
+                $payslip = Payslip::create([
+                    'employee_id' => $employee->id,
+                    'month' => $validated['month'],
+                    'year' => $validated['year'],
+                    'status' => 'Draft',
+                    'net_salary' => 0,
+                ]);
+
+                $netSalary = 0;
+
+                foreach ($requiredComponents as $index => $component) {
+
+                    $amount = $component->code === 'BASIC'
+                        ? $employee->basic_salary
+                        : $component->default_amount;
+
+                    PayslipItem::create([
+                        'payslip_id' => $payslip->id,
+                        'salary_component_id' => $component->id,
+                        'amount' => $amount,
+                        'notes' => 'Auto-generated (payroll massal)',
+                        'sort_order' => $index + 1,
+                    ]);
+
+                    $netSalary += $component->type === 'earning' ? $amount : -$amount;
+                }
+
+                $payslip->update(['net_salary' => $netSalary]);
+
+                $created[] = $payslip->id;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payroll massal berhasil digenerate.',
+                'period' => [
+                    'month' => (int) $validated['month'],
+                    'year' => (int) $validated['year'],
+                ],
+                'total_created' => count($created),
+                'total_skipped' => count($skipped),
+                'created_payslip_ids' => $created,
+                'skipped_employee_ids' => $skipped,
+            ], 201);
+
+        } catch (Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal generate payroll massal.',
+                'error' => $e->getMessage()
+            ], 500);
+
+        }
+    }
+
+    /**
+     * Publish SEMUA payslip berstatus Draft dalam satu periode sekaligus.
+     * Dipakai setelah HRD selesai review & lengkapi komponen tambahan
+     * (bonus, lembur, dll) satu-satu lewat update payslip biasa.
+     */
+    public function publishBulk(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2024',
+        ]);
+
+        $draftPayslips = Payslip::where('month', $validated['month'])
+            ->where('year', $validated['year'])
+            ->where('status', 'Draft')
+            ->get();
+
+        if ($draftPayslips->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada payslip berstatus Draft di periode ini untuk dipublish.'
+            ], 422);
+        }
+
+        foreach ($draftPayslips as $payslip) {
+            $payslip->update([
+                'status' => 'Published',
+                'published_by' => $request->user()->id,
+                'published_at' => now(),
+                'unpublish_reason' => null,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payroll massal berhasil dipublish.',
+            'period' => [
+                'month' => (int) $validated['month'],
+                'year' => (int) $validated['year'],
+            ],
+            'total_published' => $draftPayslips->count(),
+        ]);
+    }
+
+    /**
      * Store new payslip.
      */
     public function store(StorePayslipRequest $request): JsonResponse
