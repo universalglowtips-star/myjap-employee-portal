@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePayslipRequest;
 use App\Http\Requests\UpdatePayslipRequest;
 
+use App\Models\Employee;
 use App\Models\Payslip;
 use App\Models\PayslipItem;
 use App\Models\SalaryComponent;
@@ -19,21 +20,111 @@ class PayslipController extends Controller
 {
     /**
      * Display all payslips.
+     *
+     * Query params yang didukung:
+     * - employee_id   : filter berdasarkan karyawan
+     * - department_id : filter berdasarkan departemen karyawan
+     * - month, year   : filter periode
+     * - status        : Draft | Published
+     * - search        : cari nama karyawan
+     * - per_page      : jumlah data per halaman (default 10)
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $payslips = Payslip::with([
+        $query = Payslip::with([
             'employee',
             'items.salaryComponent'
         ])
-        ->latest()
-        ->get();
+        ->when($request->filled('employee_id'), function ($q) use ($request) {
+            $q->where('employee_id', $request->employee_id);
+        })
+        ->when($request->filled('month'), function ($q) use ($request) {
+            $q->where('month', $request->month);
+        })
+        ->when($request->filled('year'), function ($q) use ($request) {
+            $q->where('year', $request->year);
+        })
+        ->when($request->filled('status'), function ($q) use ($request) {
+            $q->where('status', $request->status);
+        })
+        ->when($request->filled('department_id'), function ($q) use ($request) {
+            $q->whereHas('employee', function ($emp) use ($request) {
+                $emp->where('department_id', $request->department_id);
+            });
+        })
+        ->when($request->filled('search'), function ($q) use ($request) {
+            $search = $request->search;
+
+            $q->whereHas('employee', function ($emp) use ($search) {
+                $emp->where('full_name', 'like', "%{$search}%");
+            });
+        })
+        ->latest();
+
+        $payslips = $query->paginate($request->integer('per_page', 10));
 
         return response()->json([
             'success' => true,
             'message' => 'Data slip gaji berhasil diambil.',
-            'total'   => $payslips->count(),
-            'data'    => $payslips
+            'total'   => $payslips->total(),
+            'data'    => $payslips->items(),
+            'pagination' => [
+                'current_page' => $payslips->currentPage(),
+                'per_page' => $payslips->perPage(),
+                'last_page' => $payslips->lastPage(),
+            ]
+        ]);
+    }
+
+    /**
+     * Rekap payroll untuk satu periode (bulan/tahun).
+     *
+     * Menampilkan ringkasan: total slip gaji, total nominal per status
+     * (Draft/Published), dan berapa karyawan aktif yang BELUM punya
+     * payslip di periode itu (supaya HRD tahu siapa yang belum diproses).
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2024',
+        ]);
+
+        $payslips = Payslip::with('employee:id,full_name,employee_code,department_id')
+            ->where('month', $validated['month'])
+            ->where('year', $validated['year'])
+            ->get();
+
+        $draft = $payslips->where('status', 'Draft');
+        $published = $payslips->where('status', 'Published');
+
+        $activeEmployeeIds = Employee::where('is_active', true)->pluck('id');
+
+        $employeesWithoutPayslip = $activeEmployeeIds
+            ->diff($payslips->pluck('employee_id'))
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rekap payroll berhasil diambil.',
+            'period' => [
+                'month' => (int) $validated['month'],
+                'year' => (int) $validated['year'],
+            ],
+            'summary' => [
+                'total_payslips' => $payslips->count(),
+                'total_net_salary' => $payslips->sum('net_salary'),
+                'draft' => [
+                    'count' => $draft->count(),
+                    'total_net_salary' => $draft->sum('net_salary'),
+                ],
+                'published' => [
+                    'count' => $published->count(),
+                    'total_net_salary' => $published->sum('net_salary'),
+                ],
+                'active_employees_without_payslip' => $employeesWithoutPayslip,
+            ],
+            'data' => $payslips->values(),
         ]);
     }
 
