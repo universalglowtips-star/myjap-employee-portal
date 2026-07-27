@@ -14,10 +14,34 @@ use App\Models\SalaryComponent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 
 class PayslipController extends Controller
 {
+    /**
+     * Generate & download PDF slip gaji.
+     */
+    public function pdf(string $id)
+    {
+        $payslip = Payslip::with([
+            'employee',
+            'items.salaryComponent'
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.payslip', [
+            'payslip' => $payslip,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = sprintf(
+            'Slip-Gaji-%s-%02d-%d.pdf',
+            str_replace(' ', '-', $payslip->employee->full_name),
+            $payslip->month,
+            $payslip->year
+        );
+
+        return $pdf->download($filename);
+    }
     /**
      * Display all payslips.
      *
