@@ -46,7 +46,7 @@ public function index()
             $actualCheckIn = Carbon::parse($checkIn);
 
             if ($actualCheckIn->gt($toleratedCheckIn)) {
-                $lateMinutes = $actualCheckIn->diffInMinutes($shiftCheckIn);
+                $lateMinutes = $actualCheckIn->diffInMinutes($shiftCheckIn, true);
             }
         }
 
@@ -55,11 +55,11 @@ public function index()
             $start = Carbon::parse($checkIn);
             $end = Carbon::parse($checkOut);
 
-            $totalMinutes = max(0, $end->diffInMinutes($start));
+            $totalMinutes = max(0, $end->diffInMinutes($start, true));
 
             if ($shift && $shift->break_start && $shift->break_end) {
                 $breakMinutes = Carbon::parse($shift->break_start)
-                    ->diffInMinutes(Carbon::parse($shift->break_end));
+                    ->diffInMinutes(Carbon::parse($shift->break_end), true);
 
                 $totalMinutes = max(0, $totalMinutes - $breakMinutes);
             }
@@ -76,11 +76,11 @@ public function index()
                     $shiftEnd->addDay();
                 }
 
-                $standardMinutes = $shiftEnd->diffInMinutes($shiftStart);
+                $standardMinutes = $shiftEnd->diffInMinutes($shiftStart, true);
 
                 if ($shift->break_start && $shift->break_end) {
                     $standardMinutes -= Carbon::parse($shift->break_start)
-                        ->diffInMinutes(Carbon::parse($shift->break_end));
+                        ->diffInMinutes(Carbon::parse($shift->break_end), true);
                 }
 
                 $standardHours = round(max(0, $standardMinutes) / 60, 2);
