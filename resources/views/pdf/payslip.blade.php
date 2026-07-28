@@ -100,7 +100,17 @@
 
     <div class="header">
         <h1>SLIP GAJI KARYAWAN</h1>
-        <p>PT MyJAP Employee Portal</p>
+        <p>{{ $company->company_name }}</p>
+        @if ($company->address)
+            <p>{{ $company->address }}</p>
+        @endif
+        @if ($company->phone || $company->email)
+            <p>
+                {{ $company->phone ? 'Telp: ' . $company->phone : '' }}
+                {{ $company->phone && $company->email ? ' | ' : '' }}
+                {{ $company->email ? 'Email: ' . $company->email : '' }}
+            </p>
+        @endif
     </div>
 
     <table class="info-table">

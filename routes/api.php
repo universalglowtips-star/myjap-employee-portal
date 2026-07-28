@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\OfficeLocationController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\PayslipController;
+use App\Http\Controllers\Api\CompanySettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,5 +90,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('payslips/{payslip}/publish', [PayslipController::class, 'publish']);
 
     Route::post('payslips/{payslip}/unpublish', [PayslipController::class, 'unpublish']);
+
+    // =========================
+    // COMPANY SETTINGS (singleton)
+    // =========================
+    Route::get('company-settings', [CompanySettingController::class, 'index']);
+
+    Route::put('company-settings', [CompanySettingController::class, 'update']);
 
 });

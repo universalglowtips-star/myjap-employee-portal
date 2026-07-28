@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Payslip;
 use App\Models\PayslipItem;
 use App\Models\SalaryComponent;
+use App\Models\CompanySetting;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class PayslipController extends Controller
 
         $pdf = Pdf::loadView('pdf.payslip', [
             'payslip' => $payslip,
+            'company' => CompanySetting::current(),
         ])->setPaper('a4', 'portrait');
 
         $filename = sprintf(
