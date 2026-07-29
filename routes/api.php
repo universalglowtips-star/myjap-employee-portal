@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\PayslipController;
 use App\Http\Controllers\Api\CompanySettingController;
+use App\Http\Controllers\Api\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,5 +98,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('company-settings', [CompanySettingController::class, 'index']);
 
     Route::put('company-settings', [CompanySettingController::class, 'update']);
+
+    // =========================
+    // DASHBOARD
+    // =========================
+    Route::get('dashboard/summary', [DashboardController::class, 'summary']);
+
+    Route::get('dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
 
 });
