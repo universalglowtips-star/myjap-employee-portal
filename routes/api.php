@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\StoreItemController;
 use App\Http\Controllers\Api\StoreTransactionController;
+use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\RolePermissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -129,5 +131,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('store-transactions', StoreTransactionController::class)
         ->only(['index', 'store', 'show', 'destroy']);
+
+    // =========================
+    // RBAC (Permission)
+    // =========================
+    Route::get('permissions', [PermissionController::class, 'index']);
+
+    Route::get('roles/{role}/permissions', [RolePermissionController::class, 'show']);
+
+    Route::put('roles/{role}/permissions', [RolePermissionController::class, 'update']);
 
 });
