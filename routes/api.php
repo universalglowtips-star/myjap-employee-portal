@@ -57,15 +57,65 @@ Route::middleware('auth:sanctum')->group(function () {
     // MASTER DATA
     // =========================
 
-    Route::apiResource('departments', DepartmentController::class);
+    Route::apiResource('departments', DepartmentController::class)
+        ->only(['index', 'show'])->middleware('permission:department.view');
 
-    Route::apiResource('positions', PositionController::class);
+    Route::apiResource('departments', DepartmentController::class)
+        ->only(['store'])->middleware('permission:department.create');
 
-    Route::apiResource('roles', RoleController::class);
+    Route::apiResource('departments', DepartmentController::class)
+        ->only(['update'])->middleware('permission:department.update');
 
-    Route::apiResource('work-shifts', WorkShiftController::class);
+    Route::apiResource('departments', DepartmentController::class)
+        ->only(['destroy'])->middleware('permission:department.delete');
 
-    Route::apiResource('office-locations', OfficeLocationController::class);
+    Route::apiResource('positions', PositionController::class)
+        ->only(['index', 'show'])->middleware('permission:position.view');
+
+    Route::apiResource('positions', PositionController::class)
+        ->only(['store'])->middleware('permission:position.create');
+
+    Route::apiResource('positions', PositionController::class)
+        ->only(['update'])->middleware('permission:position.update');
+
+    Route::apiResource('positions', PositionController::class)
+        ->only(['destroy'])->middleware('permission:position.delete');
+
+    Route::apiResource('roles', RoleController::class)
+        ->only(['index', 'show'])->middleware('permission:role.view');
+
+    Route::apiResource('roles', RoleController::class)
+        ->only(['store'])->middleware('permission:role.create');
+
+    Route::apiResource('roles', RoleController::class)
+        ->only(['update'])->middleware('permission:role.update');
+
+    Route::apiResource('roles', RoleController::class)
+        ->only(['destroy'])->middleware('permission:role.delete');
+
+    Route::apiResource('work-shifts', WorkShiftController::class)
+        ->only(['index', 'show'])->middleware('permission:work-shift.view');
+
+    Route::apiResource('work-shifts', WorkShiftController::class)
+        ->only(['store'])->middleware('permission:work-shift.create');
+
+    Route::apiResource('work-shifts', WorkShiftController::class)
+        ->only(['update'])->middleware('permission:work-shift.update');
+
+    Route::apiResource('work-shifts', WorkShiftController::class)
+        ->only(['destroy'])->middleware('permission:work-shift.delete');
+
+    Route::apiResource('office-locations', OfficeLocationController::class)
+        ->only(['index', 'show'])->middleware('permission:office-location.view');
+
+    Route::apiResource('office-locations', OfficeLocationController::class)
+        ->only(['store'])->middleware('permission:office-location.create');
+
+    Route::apiResource('office-locations', OfficeLocationController::class)
+        ->only(['update'])->middleware('permission:office-location.update');
+
+    Route::apiResource('office-locations', OfficeLocationController::class)
+        ->only(['destroy'])->middleware('permission:office-location.delete');
 
     Route::apiResource('employees', EmployeeController::class)
         ->only(['index', 'show'])->middleware('permission:employee.view');
@@ -149,9 +199,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // =========================
     // COMPANY SETTINGS (singleton)
     // =========================
-    Route::get('company-settings', [CompanySettingController::class, 'index']);
+    Route::get('company-settings', [CompanySettingController::class, 'index'])
+        ->middleware('permission:company-setting.view');
 
-    Route::put('company-settings', [CompanySettingController::class, 'update']);
+    Route::put('company-settings', [CompanySettingController::class, 'update'])
+        ->middleware('permission:company-setting.update');
 
     // =========================
     // DASHBOARD
@@ -183,18 +235,37 @@ Route::middleware('auth:sanctum')->group(function () {
     // =========================
     // STORE (INVENTARIS)
     // =========================
-    Route::apiResource('store-items', StoreItemController::class);
+    Route::apiResource('store-items', StoreItemController::class)
+        ->only(['index', 'show'])->middleware('permission:store-item.view');
+
+    Route::apiResource('store-items', StoreItemController::class)
+        ->only(['store'])->middleware('permission:store-item.create');
+
+    Route::apiResource('store-items', StoreItemController::class)
+        ->only(['update'])->middleware('permission:store-item.update');
+
+    Route::apiResource('store-items', StoreItemController::class)
+        ->only(['destroy'])->middleware('permission:store-item.delete');
 
     Route::apiResource('store-transactions', StoreTransactionController::class)
-        ->only(['index', 'store', 'show', 'destroy']);
+        ->only(['index', 'show'])->middleware('permission:store-transaction.view');
+
+    Route::apiResource('store-transactions', StoreTransactionController::class)
+        ->only(['store'])->middleware('permission:store-transaction.create');
+
+    Route::apiResource('store-transactions', StoreTransactionController::class)
+        ->only(['destroy'])->middleware('permission:store-transaction.delete');
 
     // =========================
     // RBAC (Permission)
     // =========================
-    Route::get('permissions', [PermissionController::class, 'index']);
+    Route::get('permissions', [PermissionController::class, 'index'])
+        ->middleware('permission:role.view');
 
-    Route::get('roles/{role}/permissions', [RolePermissionController::class, 'show']);
+    Route::get('roles/{role}/permissions', [RolePermissionController::class, 'show'])
+        ->middleware('permission:role.view');
 
-    Route::put('roles/{role}/permissions', [RolePermissionController::class, 'update']);
+    Route::put('roles/{role}/permissions', [RolePermissionController::class, 'update'])
+        ->middleware('permission:role.update');
 
 });
