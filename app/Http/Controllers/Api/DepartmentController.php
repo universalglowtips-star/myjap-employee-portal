@@ -14,7 +14,7 @@ class DepartmentController extends Controller
      */
     public function index(): JsonResponse
     {
-        $departments = Department::orderBy('department_nama', 'asc')->get();
+        $departments = Department::orderBy('department_name', 'asc')->get();
 
         return response()->json([
             'status' => true,
