@@ -40,6 +40,8 @@ class PermissionSeeder extends Seeder
 
             'dashboard' => ['view'],
 
+            'notification' => ['view', 'delete'],
+
         ];
 
         foreach ($modules as $module => $actions) {

@@ -67,35 +67,84 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('office-locations', OfficeLocationController::class);
 
-    Route::apiResource('employees', EmployeeController::class);
+    Route::apiResource('employees', EmployeeController::class)
+        ->only(['index', 'show'])->middleware('permission:employee.view');
+
+    Route::apiResource('employees', EmployeeController::class)
+        ->only(['store'])->middleware('permission:employee.create');
+
+    Route::apiResource('employees', EmployeeController::class)
+        ->only(['update'])->middleware('permission:employee.update');
+
+    Route::apiResource('employees', EmployeeController::class)
+        ->only(['destroy'])->middleware('permission:employee.delete');
 
     // =========================
     // TRANSACTION
     // =========================
 
-    Route::apiResource('attendances', AttendanceController::class);
+    Route::apiResource('attendances', AttendanceController::class)
+        ->only(['index', 'show'])->middleware('permission:attendance.view');
 
-    Route::apiResource('leaves', LeaveController::class);
+    Route::apiResource('attendances', AttendanceController::class)
+        ->only(['store'])->middleware('permission:attendance.create');
 
-    Route::post('leaves/{leave}/approve', [LeaveController::class, 'approve']);
+    Route::apiResource('attendances', AttendanceController::class)
+        ->only(['update'])->middleware('permission:attendance.update');
 
-    Route::post('leaves/{leave}/reject', [LeaveController::class, 'reject']);
+    Route::apiResource('attendances', AttendanceController::class)
+        ->only(['destroy'])->middleware('permission:attendance.delete');
 
-    Route::post('leaves/{leave}/cancel', [LeaveController::class, 'cancel']);
+    Route::apiResource('leaves', LeaveController::class)
+        ->only(['index', 'show'])->middleware('permission:leave.view');
 
-    Route::apiResource('payslips', PayslipController::class);
+    Route::apiResource('leaves', LeaveController::class)
+        ->only(['store'])->middleware('permission:leave.create');
 
-    Route::get('payslips-summary', [PayslipController::class, 'summary']);
+    Route::apiResource('leaves', LeaveController::class)
+        ->only(['update'])->middleware('permission:leave.update');
 
-    Route::get('payslips/{payslip}/pdf', [PayslipController::class, 'pdf']);
+    Route::apiResource('leaves', LeaveController::class)
+        ->only(['destroy'])->middleware('permission:leave.delete');
 
-    Route::post('payroll/generate-bulk', [PayslipController::class, 'generateBulk']);
+    Route::post('leaves/{leave}/approve', [LeaveController::class, 'approve'])
+        ->middleware('permission:leave.approve');
 
-    Route::post('payroll/publish-bulk', [PayslipController::class, 'publishBulk']);
+    Route::post('leaves/{leave}/reject', [LeaveController::class, 'reject'])
+        ->middleware('permission:leave.reject');
 
-    Route::post('payslips/{payslip}/publish', [PayslipController::class, 'publish']);
+    Route::post('leaves/{leave}/cancel', [LeaveController::class, 'cancel'])
+        ->middleware('permission:leave.cancel');
 
-    Route::post('payslips/{payslip}/unpublish', [PayslipController::class, 'unpublish']);
+    Route::apiResource('payslips', PayslipController::class)
+        ->only(['index', 'show'])->middleware('permission:payslip.view');
+
+    Route::apiResource('payslips', PayslipController::class)
+        ->only(['store'])->middleware('permission:payslip.create');
+
+    Route::apiResource('payslips', PayslipController::class)
+        ->only(['update'])->middleware('permission:payslip.update');
+
+    Route::apiResource('payslips', PayslipController::class)
+        ->only(['destroy'])->middleware('permission:payslip.delete');
+
+    Route::get('payslips-summary', [PayslipController::class, 'summary'])
+        ->middleware('permission:payslip.view');
+
+    Route::get('payslips/{payslip}/pdf', [PayslipController::class, 'pdf'])
+        ->middleware('permission:payslip.view');
+
+    Route::post('payroll/generate-bulk', [PayslipController::class, 'generateBulk'])
+        ->middleware('permission:payroll.generate-bulk');
+
+    Route::post('payroll/publish-bulk', [PayslipController::class, 'publishBulk'])
+        ->middleware('permission:payroll.publish-bulk');
+
+    Route::post('payslips/{payslip}/publish', [PayslipController::class, 'publish'])
+        ->middleware('permission:payslip.publish');
+
+    Route::post('payslips/{payslip}/unpublish', [PayslipController::class, 'unpublish'])
+        ->middleware('permission:payslip.unpublish');
 
     // =========================
     // COMPANY SETTINGS (singleton)
@@ -107,22 +156,29 @@ Route::middleware('auth:sanctum')->group(function () {
     // =========================
     // DASHBOARD
     // =========================
-    Route::get('dashboard/summary', [DashboardController::class, 'summary']);
+    Route::get('dashboard/summary', [DashboardController::class, 'summary'])
+        ->middleware('permission:dashboard.view');
 
-    Route::get('dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
+    Route::get('dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend'])
+        ->middleware('permission:dashboard.view');
 
     // =========================
     // NOTIFICATION
     // =========================
-    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->middleware('permission:notification.view');
 
-    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])
+        ->middleware('permission:notification.view');
 
-    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->middleware('permission:notification.view');
 
-    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])
+        ->middleware('permission:notification.view');
 
-    Route::delete('notifications/{id}', [NotificationController::class, 'destroy']);
+    Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])
+        ->middleware('permission:notification.delete');
 
     // =========================
     // STORE (INVENTARIS)
