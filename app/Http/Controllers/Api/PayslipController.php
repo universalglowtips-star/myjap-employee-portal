@@ -11,6 +11,7 @@ use App\Models\Payslip;
 use App\Models\PayslipItem;
 use App\Models\SalaryComponent;
 use App\Models\CompanySetting;
+use App\Models\Notification;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -558,6 +559,14 @@ class PayslipController extends Controller
             'unpublish_reason' => null,
         ]);
 
+        Notification::notify(
+            $payslip->employee_id,
+            'payslip_published',
+            'Slip Gaji Tersedia',
+            "Slip gaji periode {$payslip->month}/{$payslip->year} sudah bisa dilihat.",
+            ['payslip_id' => $payslip->id]
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Slip gaji berhasil dipublish.',
@@ -594,6 +603,14 @@ class PayslipController extends Controller
             'status' => 'Draft',
             'unpublish_reason' => $validated['unpublish_reason'],
         ]);
+
+        Notification::notify(
+            $payslip->employee_id,
+            'payslip_unpublished',
+            'Slip Gaji Direvisi',
+            "Slip gaji periode {$payslip->month}/{$payslip->year} sedang direvisi HRD. Alasan: {$validated['unpublish_reason']}",
+            ['payslip_id' => $payslip->id]
+        );
 
         return response()->json([
             'success' => true,

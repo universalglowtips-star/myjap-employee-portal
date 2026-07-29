@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\PayslipController;
 use App\Http\Controllers\Api\CompanySettingController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,5 +106,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 
     Route::get('dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
+
+    // =========================
+    // NOTIFICATION
+    // =========================
+    Route::get('notifications', [NotificationController::class, 'index']);
+
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
+    Route::delete('notifications/{id}', [NotificationController::class, 'destroy']);
 
 });

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLeaveRequest;
 use App\Http\Requests\UpdateLeaveRequest;
 use App\Models\Leave;
+use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -208,6 +209,14 @@ public function approve(Request $request, string $id): JsonResponse
         'approval_notes' => $validated['approval_notes'] ?? null,
     ]);
 
+    Notification::notify(
+        $leave->employee_id,
+        'leave_approved',
+        'Pengajuan Cuti Disetujui',
+        "Pengajuan cuti {$leave->leave_type} kamu tanggal {$leave->start_date} - {$leave->end_date} telah disetujui.",
+        ['leave_id' => $leave->id]
+    );
+
     return response()->json([
         'success' => true,
         'message' => 'Pengajuan cuti berhasil disetujui.',
@@ -241,6 +250,14 @@ public function reject(Request $request, string $id): JsonResponse
         'approved_at' => now(),
         'approval_notes' => $validated['approval_notes'],
     ]);
+
+    Notification::notify(
+        $leave->employee_id,
+        'leave_rejected',
+        'Pengajuan Cuti Ditolak',
+        "Pengajuan cuti {$leave->leave_type} kamu tanggal {$leave->start_date} - {$leave->end_date} ditolak. Alasan: {$validated['approval_notes']}",
+        ['leave_id' => $leave->id]
+    );
 
     return response()->json([
         'success' => true,
@@ -277,6 +294,14 @@ public function cancel(Request $request, string $id): JsonResponse
         'cancelled_at' => now(),
         'cancel_reason' => $validated['cancel_reason'],
     ]);
+
+    Notification::notify(
+        $leave->employee_id,
+        'leave_cancelled',
+        'Cuti Dibatalkan',
+        "Cuti {$leave->leave_type} kamu tanggal {$leave->start_date} - {$leave->end_date} telah dibatalkan. Alasan: {$validated['cancel_reason']}",
+        ['leave_id' => $leave->id]
+    );
 
     return response()->json([
         'success' => true,
