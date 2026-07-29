@@ -213,7 +213,7 @@ public function approve(Request $request, string $id): JsonResponse
         $leave->employee_id,
         'leave_approved',
         'Pengajuan Cuti Disetujui',
-        "Pengajuan cuti {$leave->leave_type} kamu tanggal {$leave->start_date} - {$leave->end_date} telah disetujui.",
+        "Pengajuan cuti {$leave->leave_type} kamu tanggal {$leave->start_date->format('Y-m-d')} - {$leave->end_date->format('Y-m-d')} telah disetujui.",
         ['leave_id' => $leave->id]
     );
 
@@ -255,7 +255,7 @@ public function reject(Request $request, string $id): JsonResponse
         $leave->employee_id,
         'leave_rejected',
         'Pengajuan Cuti Ditolak',
-        "Pengajuan cuti {$leave->leave_type} kamu tanggal {$leave->start_date} - {$leave->end_date} ditolak. Alasan: {$validated['approval_notes']}",
+        "Pengajuan cuti {$leave->leave_type} kamu tanggal {$leave->start_date->format('Y-m-d')} - {$leave->end_date->format('Y-m-d')} ditolak. Alasan: {$validated['approval_notes']}",
         ['leave_id' => $leave->id]
     );
 
@@ -299,7 +299,7 @@ public function cancel(Request $request, string $id): JsonResponse
         $leave->employee_id,
         'leave_cancelled',
         'Cuti Dibatalkan',
-        "Cuti {$leave->leave_type} kamu tanggal {$leave->start_date} - {$leave->end_date} telah dibatalkan. Alasan: {$validated['cancel_reason']}",
+        "Cuti {$leave->leave_type} kamu tanggal {$leave->start_date->format('Y-m-d')} - {$leave->end_date->format('Y-m-d')} telah dibatalkan. Alasan: {$validated['cancel_reason']}",
         ['leave_id' => $leave->id]
     );
 
