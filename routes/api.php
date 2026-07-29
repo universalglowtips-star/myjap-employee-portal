@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\PayslipController;
 use App\Http\Controllers\Api\CompanySettingController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\StoreItemController;
+use App\Http\Controllers\Api\StoreTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -119,5 +121,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 
     Route::delete('notifications/{id}', [NotificationController::class, 'destroy']);
+
+    // =========================
+    // STORE (INVENTARIS)
+    // =========================
+    Route::apiResource('store-items', StoreItemController::class);
+
+    Route::apiResource('store-transactions', StoreTransactionController::class)
+        ->only(['index', 'store', 'show', 'destroy']);
 
 });
