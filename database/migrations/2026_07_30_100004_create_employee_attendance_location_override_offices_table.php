@@ -11,12 +11,16 @@ return new class extends Migration
         Schema::create('employee_attendance_location_override_offices', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('employee_attendance_location_override_id')
-                ->constrained('employee_attendance_location_overrides', 'id')
+            $table->unsignedBigInteger('employee_attendance_location_override_id');
+
+            $table->unsignedBigInteger('office_location_id');
+
+            $table->foreign('employee_attendance_location_override_id', 'ealo_offices_override_fk')
+                ->references('id')->on('employee_attendance_location_overrides')
                 ->cascadeOnDelete();
 
-            $table->foreignId('office_location_id')
-                ->constrained('office_locations')
+            $table->foreign('office_location_id', 'ealo_offices_office_fk')
+                ->references('id')->on('office_locations')
                 ->cascadeOnDelete();
 
             $table->timestamps();

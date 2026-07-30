@@ -15,12 +15,14 @@ return new class extends Migration
         Schema::create('attendance_location_policy_offices', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('attendance_location_policy_id')
-                ->constrained('attendance_location_policies')
-                ->cascadeOnDelete();
+            $table->unsignedBigInteger('attendance_location_policy_id');
 
             $table->foreignId('office_location_id')
                 ->constrained('office_locations')
+                ->cascadeOnDelete();
+
+            $table->foreign('attendance_location_policy_id', 'alp_offices_policy_fk')
+                ->references('id')->on('attendance_location_policies')
                 ->cascadeOnDelete();
 
             $table->timestamps();
