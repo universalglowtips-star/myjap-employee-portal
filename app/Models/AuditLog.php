@@ -55,7 +55,7 @@ class AuditLog extends Model
 
     public function changedBy(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'changed_by');
+        return $this->belongsTo(Employee::class, 'changed_by')->withTrashed();
     }
 
     /**

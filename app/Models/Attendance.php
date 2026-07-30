@@ -61,17 +61,17 @@ class Attendance extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class)->withTrashed();
     }
 
     public function officeLocation(): BelongsTo
     {
-        return $this->belongsTo(OfficeLocation::class);
+        return $this->belongsTo(OfficeLocation::class)->withTrashed();
     }
 
     public function workShift(): BelongsTo
     {
-        return $this->belongsTo(WorkShift::class);
+        return $this->belongsTo(WorkShift::class)->withTrashed();
     }
 
 

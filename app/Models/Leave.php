@@ -71,17 +71,17 @@ class Leave extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class)->withTrashed();
     }
 
     public function approver(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'approved_by');
+        return $this->belongsTo(Employee::class, 'approved_by')->withTrashed();
     }
 
     public function canceller(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'cancelled_by');
+        return $this->belongsTo(Employee::class, 'cancelled_by')->withTrashed();
     }
 
     protected function serializeDate(\DateTimeInterface $date): string

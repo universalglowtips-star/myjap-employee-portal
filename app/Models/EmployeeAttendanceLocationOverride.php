@@ -61,12 +61,12 @@ class EmployeeAttendanceLocationOverride extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class)->withTrashed();
     }
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'created_by');
+        return $this->belongsTo(Employee::class, 'created_by')->withTrashed();
     }
 
     public function offices(): BelongsToMany
@@ -76,6 +76,6 @@ class EmployeeAttendanceLocationOverride extends Model
             'employee_attendance_location_override_offices',
             'employee_attendance_location_override_id',
             'office_location_id'
-        );
+        )->withTrashed();
     }
 }

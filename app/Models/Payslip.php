@@ -52,12 +52,12 @@ class Payslip extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class)->withTrashed();
     }
 
     public function publisher(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'published_by');
+        return $this->belongsTo(Employee::class, 'published_by')->withTrashed();
     }
 
     public function items(): HasMany

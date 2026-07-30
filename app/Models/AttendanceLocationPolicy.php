@@ -18,7 +18,7 @@ class AttendanceLocationPolicy extends Model
 
     public function position(): BelongsTo
     {
-        return $this->belongsTo(Position::class);
+        return $this->belongsTo(Position::class)->withTrashed();
     }
 
     public function offices(): BelongsToMany
@@ -26,6 +26,6 @@ class AttendanceLocationPolicy extends Model
         return $this->belongsToMany(
             OfficeLocation::class,
             'attendance_location_policy_offices'
-        );
+        )->withTrashed();
     }
 }

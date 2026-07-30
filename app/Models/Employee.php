@@ -85,22 +85,22 @@ class Employee extends Authenticatable
 
     public function department(): BelongsTo
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(Department::class)->withTrashed();
     }
 
     public function position(): BelongsTo
     {
-        return $this->belongsTo(Position::class);
+        return $this->belongsTo(Position::class)->withTrashed();
     }
 
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class)->withTrashed();
     }
 
     public function workShift(): BelongsTo
     {
-        return $this->belongsTo(WorkShift::class);
+        return $this->belongsTo(WorkShift::class)->withTrashed();
     }
 
     /**
@@ -117,12 +117,12 @@ class Employee extends Authenticatable
      */
     public function supervisedOffices(): BelongsToMany
     {
-        return $this->belongsToMany(OfficeLocation::class, 'office_location_supervisors');
+        return $this->belongsToMany(OfficeLocation::class, 'office_location_supervisors')->withTrashed();
     }
 
     public function officeLocation(): BelongsTo
     {
-        return $this->belongsTo(OfficeLocation::class);
+        return $this->belongsTo(OfficeLocation::class)->withTrashed();
     }
 
     public function attendances(): HasMany

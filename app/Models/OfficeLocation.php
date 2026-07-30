@@ -53,7 +53,7 @@ class OfficeLocation extends Model
      */
     public function supervisors(): BelongsToMany
     {
-        return $this->belongsToMany(Employee::class, 'office_location_supervisors');
+        return $this->belongsToMany(Employee::class, 'office_location_supervisors')->withTrashed();
     }
 
 }
