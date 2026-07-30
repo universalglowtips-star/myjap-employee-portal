@@ -41,6 +41,8 @@ class RolePermissionSeeder extends Seeder
                 'store-item.view', 'store-transaction.view',
                 'dashboard.view',
                 'notification.view', 'notification.delete',
+                'attendance-location-policy.view',
+                'audit-log.view',
             ],
 
             'MANAGER' => [
@@ -71,6 +73,8 @@ class RolePermissionSeeder extends Seeder
                 'store-transaction.view', 'store-transaction.create', 'store-transaction.delete',
                 'dashboard.view',
                 'notification.view', 'notification.delete',
+                'attendance-location-policy.view', 'attendance-location-policy.update',
+                'audit-log.view',
             ],
 
             'EMPLOYEE' => [

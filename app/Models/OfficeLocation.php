@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class OfficeLocation extends Model
 {
@@ -42,6 +43,14 @@ class OfficeLocation extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    /**
+     * Employee yang jadi supervisor buat cabang ini (scope SUPERVISED_BRANCHES)
+     */
+    public function supervisors(): BelongsToMany
+    {
+        return $this->belongsToMany(Employee::class, 'office_location_supervisors');
     }
 
 }

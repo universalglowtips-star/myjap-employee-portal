@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
+use App\Models\Employee;
 use App\Models\WorkShift;
+use App\Services\AttendanceLocationPolicyService;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -140,6 +142,17 @@ public function store(Request $request)
 
     ]);
 
+    $employee = Employee::findOrFail($validated['employee_id']);
+
+    $locationPolicyService = new AttendanceLocationPolicyService();
+
+    if (!$locationPolicyService->isOfficeAllowed($employee, $validated['office_location_id'])) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Karyawan ini tidak diizinkan absen di lokasi kantor tersebut sesuai kebijakan lokasi absensi (Attendance Location Policy).'
+        ], 422);
+    }
+
     $shift = isset($validated['work_shift_id'])
         ? WorkShift::find($validated['work_shift_id'])
         : null;
@@ -224,6 +237,25 @@ public function update(Request $request, string $id)
         'notes' => 'nullable|string'
 
     ]);
+
+    // Kalau employee_id atau office_location_id ikut diubah, cek ulang
+    // Attendance Location Policy-nya
+    $employeeId = $validated['employee_id'] ?? $attendance->employee_id;
+    $officeLocationId = $validated['office_location_id'] ?? $attendance->office_location_id;
+
+    if (isset($validated['employee_id']) || isset($validated['office_location_id'])) {
+
+        $employee = Employee::findOrFail($employeeId);
+
+        $locationPolicyService = new AttendanceLocationPolicyService();
+
+        if (!$locationPolicyService->isOfficeAllowed($employee, $officeLocationId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Karyawan ini tidak diizinkan absen di lokasi kantor tersebut sesuai kebijakan lokasi absensi (Attendance Location Policy).'
+            ], 422);
+        }
+    }
 
     // Gabungkan data lama + baru buat hitung ulang metrics-nya
     $workShiftId = $validated['work_shift_id'] ?? $attendance->work_shift_id;

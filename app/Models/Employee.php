@@ -7,6 +7,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Employee extends Authenticatable
 {
@@ -98,6 +100,23 @@ class Employee extends Authenticatable
     public function workShift(): BelongsTo
     {
         return $this->belongsTo(WorkShift::class);
+    }
+
+    /**
+     * Override attendance location individu (kalau ada) - prioritas
+     * paling tinggi, mengalahkan policy per Position.
+     */
+    public function attendanceLocationOverride(): HasOne
+    {
+        return $this->hasOne(EmployeeAttendanceLocationOverride::class);
+    }
+
+    /**
+     * Kantor-kantor yang diawasi employee ini (kalau dia supervisor).
+     */
+    public function supervisedOffices(): BelongsToMany
+    {
+        return $this->belongsToMany(OfficeLocation::class, 'office_location_supervisors');
     }
 
     public function officeLocation(): BelongsTo

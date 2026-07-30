@@ -42,6 +42,10 @@ class PermissionSeeder extends Seeder
 
             'notification' => ['view', 'delete'],
 
+            'attendance-location-policy' => ['view', 'update'],
+
+            'audit-log' => ['view'],
+
         ];
 
         foreach ($modules as $module => $actions) {

@@ -20,6 +20,10 @@ use App\Http\Controllers\Api\StoreItemController;
 use App\Http\Controllers\Api\StoreTransactionController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RolePermissionController;
+use App\Http\Controllers\Api\AttendanceLocationPolicyController;
+use App\Http\Controllers\Api\EmployeeAttendanceLocationOverrideController;
+use App\Http\Controllers\Api\OfficeLocationSupervisorController;
+use App\Http\Controllers\Api\AuditLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -267,5 +271,44 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::put('roles/{role}/permissions', [RolePermissionController::class, 'update'])
         ->middleware('permission:role.update');
+
+    // =========================
+    // ATTENDANCE LOCATION POLICY
+    // =========================
+    Route::get('attendance-location-policies', [AttendanceLocationPolicyController::class, 'index'])
+        ->middleware('permission:attendance-location-policy.view');
+
+    Route::get('positions/{position}/attendance-location-policy', [AttendanceLocationPolicyController::class, 'show'])
+        ->middleware('permission:attendance-location-policy.view');
+
+    Route::put('positions/{position}/attendance-location-policy', [AttendanceLocationPolicyController::class, 'update'])
+        ->middleware('permission:attendance-location-policy.update');
+
+    Route::delete('positions/{position}/attendance-location-policy', [AttendanceLocationPolicyController::class, 'destroy'])
+        ->middleware('permission:attendance-location-policy.update');
+
+    Route::get('employees/{employee}/attendance-location-override', [EmployeeAttendanceLocationOverrideController::class, 'show'])
+        ->middleware('permission:attendance-location-policy.view');
+
+    Route::put('employees/{employee}/attendance-location-override', [EmployeeAttendanceLocationOverrideController::class, 'update'])
+        ->middleware('permission:attendance-location-policy.update');
+
+    Route::delete('employees/{employee}/attendance-location-override', [EmployeeAttendanceLocationOverrideController::class, 'destroy'])
+        ->middleware('permission:attendance-location-policy.update');
+
+    Route::get('office-locations/{officeLocation}/supervisors', [OfficeLocationSupervisorController::class, 'index'])
+        ->middleware('permission:attendance-location-policy.view');
+
+    Route::put('office-locations/{officeLocation}/supervisors', [OfficeLocationSupervisorController::class, 'update'])
+        ->middleware('permission:attendance-location-policy.update');
+
+    // =========================
+    // AUDIT LOG (global, semua modul)
+    // =========================
+    Route::get('audit-logs', [AuditLogController::class, 'index'])
+        ->middleware('permission:audit-log.view');
+
+    Route::get('audit-logs/{id}', [AuditLogController::class, 'show'])
+        ->middleware('permission:audit-log.view');
 
 });
