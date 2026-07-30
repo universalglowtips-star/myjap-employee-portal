@@ -8,6 +8,8 @@ use App\Http\Requests\StoreLeaveRequest;
 use App\Http\Requests\UpdateLeaveRequest;
 use App\Models\Leave;
 use App\Models\Notification;
+use App\Services\AuditLogService;
+use App\Traits\ScopesOwnData;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
+use ScopesOwnData;
+
 /**
  * Display a listing of the resource.
  *
@@ -26,6 +30,9 @@ class LeaveController extends Controller
  * - end_date    : filter cuti yang berakhir sampai tanggal ini
  * - search      : cari di nama karyawan / alasan cuti
  * - per_page    : jumlah data per halaman (default 10)
+ *
+ * Row-level scoping: kalau yang login role EMPLOYEE, cuma lihat
+ * cutinya sendiri (gak bisa lihat cuti orang lain).
  */
 public function index(Request $request): JsonResponse
 {
@@ -57,8 +64,11 @@ public function index(Request $request): JsonResponse
                     $emp->where('full_name', 'like', "%{$search}%");
                 });
         });
-    })
-    ->latest();
+    });
+
+    $this->scopeToOwnDataIfEmployee($query, $request);
+
+    $query->latest();
 
     $leaves = $query->paginate($request->integer('per_page', 10));
 
@@ -75,9 +85,16 @@ public function index(Request $request): JsonResponse
     ]);
 }
 
+/**
+ * Employee_id WAJIB dari user yang login kalau role-nya EMPLOYEE -
+ * gak bisa ngajuin cuti atas nama orang lain. Role administratif
+ * (HRD/Manager/dst) tetap bebas isi employee_id manapun.
+ */
 public function store(StoreLeaveRequest $request): JsonResponse
 {
     $validated = $request->validated();
+
+    $validated['employee_id'] = $this->resolveEmployeeIdForStore($request, $validated['employee_id'] ?? null);
 
     $totalDays = Carbon::parse($validated['start_date'])
         ->diffInDays(Carbon::parse($validated['end_date'])) + 1;
@@ -107,6 +124,15 @@ public function store(StoreLeaveRequest $request): JsonResponse
 
     ]);
 
+    AuditLogService::log(
+        $leave,
+        'created',
+        null,
+        $leave->only(['employee_id', 'leave_type', 'start_date', 'end_date', 'reason']),
+        $request->user()->id,
+        'Pengajuan cuti baru dibuat'
+    );
+
     return response()->json([
         'success' => true,
         'message' => 'Pengajuan cuti berhasil dibuat.',
@@ -117,12 +143,14 @@ public function store(StoreLeaveRequest $request): JsonResponse
     ], 201);
 }
 
-public function show(string $id): JsonResponse
+public function show(Request $request, string $id): JsonResponse
 {
     $leave = Leave::with([
         'employee',
         'approver'
     ])->findOrFail($id);
+
+    $this->ensureOwnDataOrAdmin($request, $leave->employee_id);
 
     return response()->json([
         'success' => true,
@@ -140,6 +168,8 @@ public function show(string $id): JsonResponse
 public function update(UpdateLeaveRequest $request, string $id): JsonResponse
 {
     $leave = Leave::findOrFail($id);
+
+    $this->ensureOwnDataOrAdmin($request, $leave->employee_id);
 
     if ($leave->status !== 'Pending') {
         return response()->json([
@@ -169,7 +199,18 @@ public function update(UpdateLeaveRequest $request, string $id): JsonResponse
         $validated['attachment'] = $request->file('attachment')->store('leaves', 'public');
     }
 
+    $oldValues = $leave->only(['leave_type', 'start_date', 'end_date', 'reason']);
+
     $leave->update($validated);
+
+    AuditLogService::log(
+        $leave,
+        'updated',
+        $oldValues,
+        $leave->only(['leave_type', 'start_date', 'end_date', 'reason']),
+        $request->user()->id,
+        'Update pengajuan cuti'
+    );
 
     $leave->refresh()->load([
         'employee',
@@ -208,6 +249,15 @@ public function approve(Request $request, string $id): JsonResponse
         'approved_at' => now(),
         'approval_notes' => $validated['approval_notes'] ?? null,
     ]);
+
+    AuditLogService::log(
+        $leave,
+        'approved',
+        ['status' => 'Pending'],
+        ['status' => 'Approved'],
+        $request->user()->id,
+        'Approve pengajuan cuti'
+    );
 
     Notification::notify(
         $leave->employee_id,
@@ -250,6 +300,15 @@ public function reject(Request $request, string $id): JsonResponse
         'approved_at' => now(),
         'approval_notes' => $validated['approval_notes'],
     ]);
+
+    AuditLogService::log(
+        $leave,
+        'rejected',
+        ['status' => 'Pending'],
+        ['status' => 'Rejected', 'approval_notes' => $validated['approval_notes']],
+        $request->user()->id,
+        'Reject pengajuan cuti'
+    );
 
     Notification::notify(
         $leave->employee_id,
@@ -295,6 +354,15 @@ public function cancel(Request $request, string $id): JsonResponse
         'cancel_reason' => $validated['cancel_reason'],
     ]);
 
+    AuditLogService::log(
+        $leave,
+        'cancelled',
+        ['status' => 'Approved'],
+        ['status' => 'Cancelled', 'cancel_reason' => $validated['cancel_reason']],
+        $request->user()->id,
+        'Cancel cuti'
+    );
+
     Notification::notify(
         $leave->employee_id,
         'leave_cancelled',
@@ -314,9 +382,11 @@ public function cancel(Request $request, string $id): JsonResponse
      * Remove the specified resource from storage.
      * Cuti yang sudah Approved atau Cancelled tidak boleh dihapus (jaga integritas riwayat).
      */
-public function destroy(string $id): JsonResponse
+public function destroy(Request $request, string $id): JsonResponse
 {
     $leave = Leave::findOrFail($id);
+
+    $this->ensureOwnDataOrAdmin($request, $leave->employee_id);
 
     if (in_array($leave->status, ['Approved', 'Cancelled'])) {
         return response()->json([
@@ -329,7 +399,18 @@ public function destroy(string $id): JsonResponse
         Storage::disk('public')->delete($leave->attachment);
     }
 
+    $oldValues = $leave->only(['employee_id', 'leave_type', 'start_date', 'end_date', 'status']);
+
     $leave->delete();
+
+    AuditLogService::log(
+        $leave,
+        'deleted',
+        $oldValues,
+        null,
+        $request->user()->id,
+        'Hapus pengajuan cuti'
+    );
 
     return response()->json([
         'success' => true,

@@ -8,27 +8,87 @@ use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\WorkShift;
 use App\Services\AttendanceLocationPolicyService;
+use App\Services\AuditLogService;
+use App\Traits\ScopesOwnData;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
-public function index()
+use ScopesOwnData;
+
+/**
+ * Query params: employee_id, office_location_id, attendance_status,
+ * start_date, end_date, per_page. Row-level scoping: EMPLOYEE cuma
+ * lihat absensinya sendiri.
+ */
+public function index(Request $request)
 {
-    $attendance = Attendance::with([
+    $query = Attendance::with([
         'employee',
         'officeLocation',
         'workShift'
     ])
-    ->latest()
-    ->get();
+    ->when($request->filled('employee_id'), fn ($q) => $q->where('employee_id', $request->employee_id))
+    ->when($request->filled('office_location_id'), fn ($q) => $q->where('office_location_id', $request->office_location_id))
+    ->when($request->filled('attendance_status'), fn ($q) => $q->where('attendance_status', $request->attendance_status))
+    ->when($request->filled('start_date'), fn ($q) => $q->whereDate('attendance_date', '>=', $request->start_date))
+    ->when($request->filled('end_date'), fn ($q) => $q->whereDate('attendance_date', '<=', $request->end_date));
+
+    $this->scopeToOwnDataIfEmployee($query, $request);
+
+    $query->latest();
+
+    $attendance = $query->paginate($request->integer('per_page', 15));
 
     return response()->json([
         'success' => true,
         'message' => 'Data absensi berhasil diambil.',
-        'total' => $attendance->count(),
-        'data' => $attendance
+        'total' => $attendance->total(),
+        'data' => $attendance->items(),
+        'pagination' => [
+            'current_page' => $attendance->currentPage(),
+            'per_page' => $attendance->perPage(),
+            'last_page' => $attendance->lastPage(),
+        ]
     ]);
 }
+
+    /**
+     * Hitung jarak antara 2 koordinat pakai formula Haversine (meter).
+     */
+    private function distanceInMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000; // meter
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Validasi GPS di server - TIDAK PERCAYA is_valid_location dari
+     * client. Kalau koordinat check-in dikirim, hitung jaraknya ke
+     * office_location, bandingkan sama radius_meter kantor tersebut.
+     */
+    private function validateLocation(?float $lat, ?float $lon, $officeLocation): bool
+    {
+        if ($lat === null || $lon === null || !$officeLocation) {
+            return false;
+        }
+
+        $distance = $this->distanceInMeters(
+            (float) $lat,
+            (float) $lon,
+            (float) $officeLocation->latitude,
+            (float) $officeLocation->longitude
+        );
+
+        return $distance <= $officeLocation->radius_meter;
+    }
 
     /**
      * Hitung late_minutes, working_hours, dan overtime_hours otomatis
@@ -102,7 +162,7 @@ public function store(Request $request)
 {
     $validated = $request->validate([
 
-        'employee_id' => 'required|exists:employees,id',
+        'employee_id' => 'nullable|exists:employees,id',
 
         'office_location_id' => 'required|exists:office_locations,id',
 
@@ -132,15 +192,22 @@ public function store(Request $request)
 
         'attendance_status' => 'required|in:Present,Late,Leave,Sick,Permission,Absent',
 
-        'is_valid_location' => 'boolean',
-
-        'is_valid_selfie' => 'boolean',
-
         'is_approved' => 'boolean',
 
         'notes' => 'nullable|string'
 
     ]);
+
+    // employee_id WAJIB dari user login kalau role EMPLOYEE (self check-in),
+    // role administratif tetap bebas isi employee_id manapun (input manual)
+    $validated['employee_id'] = $this->resolveEmployeeIdForStore($request, $validated['employee_id'] ?? null);
+
+    if (!$validated['employee_id']) {
+        return response()->json([
+            'success' => false,
+            'message' => 'employee_id wajib diisi.'
+        ], 422);
+    }
 
     $employee = Employee::findOrFail($validated['employee_id']);
 
@@ -164,7 +231,26 @@ public function store(Request $request)
         $validated['check_out'] ?? null
     );
 
-    $attendance = Attendance::create($validated + $metrics);
+    // Validasi GPS di server - is_valid_location TIDAK diterima dari client
+    $isValidLocation = $this->validateLocation(
+        $validated['check_in_latitude'] ?? null,
+        $validated['check_in_longitude'] ?? null,
+        \App\Models\OfficeLocation::find($validated['office_location_id'])
+    );
+
+    $attendance = Attendance::create($validated + $metrics + [
+        'is_valid_location' => $isValidLocation,
+        'is_valid_selfie' => false, // baru bisa true lewat review manual HRD (is_approved) - belum ada face recognition
+    ]);
+
+    AuditLogService::log(
+        $attendance,
+        'created',
+        null,
+        $attendance->only(['employee_id', 'office_location_id', 'attendance_date', 'attendance_status']),
+        $request->user()->id,
+        'Absensi baru dibuat'
+    );
 
     return response()->json([
         'success' => true,
@@ -177,13 +263,15 @@ public function store(Request $request)
     ],201);
 }
 
-public function show(string $id)
+public function show(Request $request, string $id)
 {
     $attendance = Attendance::with([
         'employee',
         'officeLocation',
         'workShift'
     ])->findOrFail($id);
+
+    $this->ensureOwnDataOrAdmin($request, $attendance->employee_id);
 
     return response()->json([
         'success' => true,
@@ -195,6 +283,8 @@ public function show(string $id)
 public function update(Request $request, string $id)
 {
     $attendance = Attendance::findOrFail($id);
+
+    $this->ensureOwnDataOrAdmin($request, $attendance->employee_id);
 
     $validated = $request->validate([
 
@@ -228,15 +318,16 @@ public function update(Request $request, string $id)
 
         'attendance_status' => 'sometimes|in:Present,Late,Leave,Sick,Permission,Absent',
 
-        'is_valid_location' => 'boolean',
-
-        'is_valid_selfie' => 'boolean',
-
         'is_approved' => 'boolean',
 
         'notes' => 'nullable|string'
 
     ]);
+
+    // Kalau role EMPLOYEE, gak boleh pindahin absensi ke employee_id lain
+    if (isset($validated['employee_id'])) {
+        $this->resolveEmployeeIdForStore($request, $validated['employee_id']);
+    }
 
     // Kalau employee_id atau office_location_id ikut diubah, cek ulang
     // Attendance Location Policy-nya
@@ -272,7 +363,26 @@ public function update(Request $request, string $id)
         $checkOut ? (string) $checkOut : null
     );
 
-    $attendance->update($validated + $metrics);
+    // Kalau koordinat check-in ikut diupdate, hitung ulang validasi lokasi
+    $extra = [];
+    if (array_key_exists('check_in_latitude', $validated) || array_key_exists('check_in_longitude', $validated)) {
+        $lat = $validated['check_in_latitude'] ?? $attendance->check_in_latitude;
+        $lon = $validated['check_in_longitude'] ?? $attendance->check_in_longitude;
+        $extra['is_valid_location'] = $this->validateLocation($lat, $lon, \App\Models\OfficeLocation::find($officeLocationId));
+    }
+
+    $oldValues = $attendance->only(['attendance_status', 'check_in', 'check_out', 'office_location_id']);
+
+    $attendance->update($validated + $metrics + $extra);
+
+    AuditLogService::log(
+        $attendance,
+        'updated',
+        $oldValues,
+        $attendance->fresh()->only(['attendance_status', 'check_in', 'check_out', 'office_location_id']),
+        $request->user()->id,
+        'Update absensi'
+    );
 
     return response()->json([
         'success' => true,
@@ -285,11 +395,24 @@ public function update(Request $request, string $id)
     ]);
 }
 
-public function destroy(string $id)
+public function destroy(Request $request, string $id)
 {
     $attendance = Attendance::findOrFail($id);
 
+    $this->ensureOwnDataOrAdmin($request, $attendance->employee_id);
+
+    $oldValues = $attendance->only(['employee_id', 'attendance_date', 'attendance_status']);
+
     $attendance->delete();
+
+    AuditLogService::log(
+        $attendance,
+        'deleted',
+        $oldValues,
+        null,
+        $request->user()->id,
+        'Hapus absensi'
+    );
 
     return response()->json([
         'success' => true,

@@ -12,6 +12,7 @@ use App\Models\PayslipItem;
 use App\Models\SalaryComponent;
 use App\Models\CompanySetting;
 use App\Models\Notification;
+use App\Traits\ScopesOwnData;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,8 @@ use Exception;
 
 class PayslipController extends Controller
 {
+use ScopesOwnData;
+
     /**
      * Generate & download PDF slip gaji.
      */
@@ -85,8 +88,11 @@ class PayslipController extends Controller
             $q->whereHas('employee', function ($emp) use ($search) {
                 $emp->where('full_name', 'like', "%{$search}%");
             });
-        })
-        ->latest();
+        });
+
+        $this->scopeToOwnDataIfEmployee($query, $request);
+
+        $query->latest();
 
         $payslips = $query->paginate($request->integer('per_page', 10));
 
@@ -404,12 +410,14 @@ class PayslipController extends Controller
     /**
      * Show detail payslip.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $payslip = Payslip::with([
             'employee',
             'items.salaryComponent'
         ])->findOrFail($id);
+
+        $this->ensureOwnDataOrAdmin($request, $payslip->employee_id);
 
         return response()->json([
             'success' => true,

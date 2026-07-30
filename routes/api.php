@@ -133,6 +133,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('employees', EmployeeController::class)
         ->only(['destroy'])->middleware('permission:employee.delete');
 
+    Route::get('employees-trashed', [EmployeeController::class, 'trashed'])
+        ->middleware('permission:employee.delete');
+
+    Route::post('employees/{id}/restore', [EmployeeController::class, 'restore'])
+        ->middleware('permission:employee.delete');
+
     // =========================
     // TRANSACTION
     // =========================
