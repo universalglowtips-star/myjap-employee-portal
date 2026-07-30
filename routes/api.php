@@ -34,7 +34,9 @@ use App\Http\Controllers\Api\AuditLogController;
 |
 */
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+Route::post('/v1/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -45,7 +47,7 @@ Route::post('/login', [AuthController::class, 'login']);
 |
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+$apiRoutes = function () {
 
     // =========================
     // AUTH
@@ -317,4 +319,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('audit-logs/{id}', [AuditLogController::class, 'show'])
         ->middleware('permission:audit-log.view');
 
-});
+};
+
+// Route lama TANPA prefix - dipertahankan biar Postman collection lama
+// (dan konsumen lain yang udah pernah dibuat) tetap jalan tanpa perlu
+// ganti semua URL. Dianggap "deprecated", akan dilepas di masa depan
+// setelah semua konsumen resmi pindah ke /api/v1.
+Route::middleware('auth:sanctum')->group($apiRoutes);
+
+// Route BARU dengan versioning - pakai ini untuk semua development baru
+// (Website Admin, Flutter app) supaya kalau ada breaking change nanti,
+// /api/v1 tetap stabil dan kita bikin /api/v2 terpisah tanpa mendadak
+// merusak konsumen lama.
+Route::prefix('v1')->middleware('auth:sanctum')->group($apiRoutes);

@@ -17,7 +17,7 @@ class DepartmentController extends Controller
         $departments = Department::orderBy('department_name', 'asc')->get();
 
         return response()->json([
-            'status' => true,
+            'success' => true,
             'message' => 'Data departemen berhasil di ambil.',
             'data' => $departments
         ], 200);

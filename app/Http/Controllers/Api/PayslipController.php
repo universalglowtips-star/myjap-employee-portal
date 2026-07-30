@@ -12,6 +12,7 @@ use App\Models\PayslipItem;
 use App\Models\SalaryComponent;
 use App\Models\CompanySetting;
 use App\Models\Notification;
+use App\Services\AuditLogService;
 use App\Traits\ScopesOwnData;
 
 use Illuminate\Http\JsonResponse;
@@ -385,6 +386,15 @@ use ScopesOwnData;
 
             DB::commit();
 
+            AuditLogService::log(
+                $payslip,
+                'created',
+                null,
+                $payslip->only(['employee_id', 'month', 'year', 'net_salary']),
+                $request->user()->id,
+                'Slip gaji baru dibuat'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Slip gaji berhasil dibuat.',
@@ -446,6 +456,8 @@ use ScopesOwnData;
 
         $validated = $request->validated();
 
+        $oldValues = $payslip->only(['employee_id', 'month', 'year', 'net_salary']);
+
         DB::beginTransaction();
 
         try {
@@ -500,6 +512,15 @@ use ScopesOwnData;
 
             DB::commit();
 
+            AuditLogService::log(
+                $payslip,
+                'updated',
+                $oldValues,
+                $payslip->fresh()->only(['employee_id', 'month', 'year', 'net_salary']),
+                $request->user()->id,
+                'Update slip gaji'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Slip gaji berhasil diperbarui.',
@@ -526,7 +547,7 @@ use ScopesOwnData;
      * Delete payslip.
      * Slip gaji yang sudah Published tidak boleh dihapus (jaga integritas data finansial).
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $payslip = Payslip::findOrFail($id);
 
@@ -537,7 +558,18 @@ use ScopesOwnData;
             ], 422);
         }
 
+        $oldValues = $payslip->only(['employee_id', 'month', 'year', 'net_salary', 'status']);
+
         $payslip->delete();
+
+        AuditLogService::log(
+            $payslip,
+            'deleted',
+            $oldValues,
+            null,
+            $request->user()->id,
+            'Hapus slip gaji'
+        );
 
         return response()->json([
             'success' => true,
@@ -566,6 +598,15 @@ use ScopesOwnData;
             'published_at' => now(),
             'unpublish_reason' => null,
         ]);
+
+        AuditLogService::log(
+            $payslip,
+            'published',
+            ['status' => 'Draft'],
+            ['status' => 'Published'],
+            $request->user()->id,
+            'Publish slip gaji'
+        );
 
         Notification::notify(
             $payslip->employee_id,
@@ -611,6 +652,15 @@ use ScopesOwnData;
             'status' => 'Draft',
             'unpublish_reason' => $validated['unpublish_reason'],
         ]);
+
+        AuditLogService::log(
+            $payslip,
+            'unpublished',
+            ['status' => 'Published'],
+            ['status' => 'Draft', 'unpublish_reason' => $validated['unpublish_reason']],
+            $request->user()->id,
+            'Unpublish slip gaji'
+        );
 
         Notification::notify(
             $payslip->employee_id,

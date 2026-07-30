@@ -24,7 +24,7 @@ class EmployeeController extends Controller
     /**
      * Menampilkan seluruh data karyawan
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $employees = Employee::with([
             'department',
@@ -34,13 +34,18 @@ class EmployeeController extends Controller
             'officeLocation'
         ])
         ->orderBy('full_name', 'asc')
-        ->get();
+        ->paginate($request->integer('per_page', 15));
 
         return response()->json([
             'success' => true,
             'message' => 'Data karyawan berhasil diambil.',
-            'total'   => $employees->count(),
-            'data'    => $employees
+            'total'   => $employees->total(),
+            'data'    => $employees->items(),
+            'pagination' => [
+                'current_page' => $employees->currentPage(),
+                'per_page' => $employees->perPage(),
+                'last_page' => $employees->lastPage(),
+            ]
         ], 200);
     }
 
