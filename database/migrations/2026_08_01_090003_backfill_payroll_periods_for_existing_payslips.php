@@ -15,9 +15,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $payslips = DB::table('payslips')->whereNull('payroll_period_id')->get();
+        // Cuma proses payslip yang MASIH AKTIF (belum soft-deleted).
+        // Payslip yang sudah dihapus (soft delete) sengaja TIDAK ditaut
+        // ke payroll_period manapun - biar gak collide sama unique
+        // constraint (payroll_period_id, employee_id) kalau kebetulan
+        // ada payslip aktif lain dengan employee+bulan+tahun yang sama
+        // persis (skenario umum: data testing lama yang dihapus, lalu
+        // dibuat ulang).
+        $payslips = DB::table('payslips')
+            ->whereNull('deleted_at')
+            ->whereNull('payroll_period_id')
+            ->get();
 
-        // Kelompokkan per month+year, satu period per kombinasi
+        // Kelompokkan per month+year, satu period per kombinasi.
+        // Pakai cek-dulu-baru-insert (bukan insertGetId langsung) supaya
+        // migration ini aman diulang kalau sempat gagal di tengah jalan
+        // sebelumnya (idempotent).
         $periodCache = [];
 
         foreach ($payslips as $payslip) {
@@ -26,26 +39,35 @@ return new class extends Migration
 
             if (!isset($periodCache[$key])) {
 
-                $start = Carbon::create($payslip->year, $payslip->month, 1)->startOfMonth();
-                $end = (clone $start)->endOfMonth();
+                $code = 'REGULAR-' . $payslip->year . '-' . str_pad($payslip->month, 2, '0', STR_PAD_LEFT) . '-LEGACY';
 
-                $periodId = DB::table('payroll_periods')->insertGetId([
-                    'period_code' => 'REGULAR-' . $payslip->year . '-' . str_pad($payslip->month, 2, '0', STR_PAD_LEFT) . '-LEGACY',
-                    'period_type' => 'REGULAR',
-                    'period_start' => $start,
-                    'period_end' => $end,
-                    'pay_date' => $end,
-                    // Samain status sama payslip yang paling "maju" di periode itu,
-                    // supaya data lama yang sudah Published tidak keliatan
-                    // Draft lagi setelah migration ini
-                    'status' => $payslip->status === 'Published' ? 'Published' : 'Draft',
-                    'locked' => $payslip->status === 'Published',
-                    'published_at' => $payslip->status === 'Published' ? now() : null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $existingPeriodId = DB::table('payroll_periods')->where('period_code', $code)->value('id');
 
-                $periodCache[$key] = $periodId;
+                if ($existingPeriodId) {
+
+                    $periodCache[$key] = $existingPeriodId;
+
+                } else {
+
+                    $start = Carbon::create($payslip->year, $payslip->month, 1)->startOfMonth();
+                    $end = (clone $start)->endOfMonth();
+
+                    $periodCache[$key] = DB::table('payroll_periods')->insertGetId([
+                        'period_code' => $code,
+                        'period_type' => 'REGULAR',
+                        'period_start' => $start,
+                        'period_end' => $end,
+                        'pay_date' => $end,
+                        // Samain status sama payslip yang paling "maju" di periode itu,
+                        // supaya data lama yang sudah Published tidak keliatan
+                        // Draft lagi setelah migration ini
+                        'status' => $payslip->status === 'Published' ? 'Published' : 'Draft',
+                        'locked' => $payslip->status === 'Published',
+                        'published_at' => $payslip->status === 'Published' ? now() : null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
 
             $employee = DB::table('employees')->where('id', $payslip->employee_id)->first();
@@ -84,12 +106,36 @@ return new class extends Migration
             ]);
         }
 
-        // Baru pasang unique constraint SETELAH backfill selesai -
+        // Jaga-jaga: pastikan TIDAK ADA payslip soft-deleted yang kebetulan
+        // sudah punya payroll_period_id (misal dari percobaan migration
+        // sebelumnya yang gagal di tengah) - kosongin lagi biar gak
+        // nge-collide pas unique constraint dipasang di bawah.
+        DB::table('payslips')
+            ->whereNotNull('deleted_at')
+            ->update(['payroll_period_id' => null]);
+
+        // Baru pasang unique constraint SETELAH backfill & cleanup selesai -
         // kalau dipasang di awal migration lain, insert period legacy
         // di atas bisa gagal duluan kalau ternyata ada data yang belum sempat ditaut.
-        Schema::table('payslips', function (Blueprint $table) {
-            $table->unique(['payroll_period_id', 'employee_id'], 'payslips_period_employee_unique');
-        });
+        if (!$this->uniqueConstraintExists('payslips', 'payslips_period_employee_unique')) {
+            Schema::table('payslips', function (Blueprint $table) {
+                $table->unique(['payroll_period_id', 'employee_id'], 'payslips_period_employee_unique');
+            });
+        }
+    }
+
+    /**
+     * Cek apakah sebuah unique constraint sudah terpasang - biar migration
+     * ini aman dijalankan ulang (idempotent) kalau sempat gagal di tengah.
+     */
+    private function uniqueConstraintExists(string $table, string $indexName): bool
+    {
+        $result = DB::select(
+            "SHOW INDEX FROM `{$table}` WHERE Key_name = ?",
+            [$indexName]
+        );
+
+        return count($result) > 0;
     }
 
     public function down(): void
