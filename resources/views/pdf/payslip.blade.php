@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Slip Gaji - {{ $payslip->employee->full_name }}</title>
+    <title>Slip Gaji - {{ $payslip->employee_name_snapshot ?? $payslip->employee->full_name }}</title>
     <style>
         body {
             font-family: 'DejaVu Sans', sans-serif;
@@ -100,15 +100,21 @@
 
     <div class="header">
         <h1>SLIP GAJI KARYAWAN</h1>
-        <p>{{ $company->company_name }}</p>
-        @if ($company->address)
-            <p>{{ $company->address }}</p>
+        @php
+            $companyName = $payslip->company_name_snapshot ?? ($company->company_name ?? '');
+            $companyAddress = $payslip->company_address_snapshot ?? ($company->address ?? null);
+            $companyPhone = $payslip->company_phone_snapshot ?? ($company->phone ?? null);
+            $companyEmail = $payslip->company_email_snapshot ?? ($company->email ?? null);
+        @endphp
+        <p>{{ $companyName }}</p>
+        @if ($companyAddress)
+            <p>{{ $companyAddress }}</p>
         @endif
-        @if ($company->phone || $company->email)
+        @if ($companyPhone || $companyEmail)
             <p>
-                {{ $company->phone ? 'Telp: ' . $company->phone : '' }}
-                {{ $company->phone && $company->email ? ' | ' : '' }}
-                {{ $company->email ? 'Email: ' . $company->email : '' }}
+                {{ $companyPhone ? 'Telp: ' . $companyPhone : '' }}
+                {{ $companyPhone && $companyEmail ? ' | ' : '' }}
+                {{ $companyEmail ? 'Email: ' . $companyEmail : '' }}
             </p>
         @endif
     </div>
@@ -116,13 +122,13 @@
     <table class="info-table">
         <tr>
             <td class="info-label">Nama Karyawan</td>
-            <td>: {{ $payslip->employee->full_name }}</td>
+            <td>: {{ $payslip->employee_name_snapshot ?? $payslip->employee->full_name }}</td>
             <td class="info-label">Periode</td>
             <td>: {{ \Carbon\Carbon::create()->month($payslip->month)->translatedFormat('F') }} {{ $payslip->year }}</td>
         </tr>
         <tr>
             <td class="info-label">Kode Karyawan</td>
-            <td>: {{ $payslip->employee->employee_code }}</td>
+            <td>: {{ $payslip->employee_code_snapshot ?? $payslip->employee->employee_code }}</td>
             <td class="info-label">Status</td>
             <td>: <span class="status-badge">{{ $payslip->status }}</span></td>
         </tr>
@@ -142,9 +148,9 @@
 
             @php $totalEarning = 0; @endphp
 
-            @foreach ($payslip->items->where('salaryComponent.type', 'earning') as $item)
+            @foreach ($payslip->items->where('component_type', 'earning') as $item)
                 <tr>
-                    <td>{{ $item->salaryComponent->name }}{{ $item->notes ? ' - ' . $item->notes : '' }}</td>
+                    <td>{{ $item->component_name }}{{ $item->notes ? ' - ' . $item->notes : '' }}</td>
                     <td class="amount">{{ number_format($item->amount, 0, ',', '.') }}</td>
                 </tr>
                 @php $totalEarning += $item->amount; @endphp
@@ -156,9 +162,9 @@
 
             @php $totalDeduction = 0; @endphp
 
-            @foreach ($payslip->items->where('salaryComponent.type', 'deduction') as $item)
+            @foreach ($payslip->items->where('component_type', 'deduction') as $item)
                 <tr>
-                    <td>{{ $item->salaryComponent->name }}{{ $item->notes ? ' - ' . $item->notes : '' }}</td>
+                    <td>{{ $item->component_name }}{{ $item->notes ? ' - ' . $item->notes : '' }}</td>
                     <td class="amount">{{ number_format($item->amount, 0, ',', '.') }}</td>
                 </tr>
                 @php $totalDeduction += $item->amount; @endphp
@@ -180,7 +186,7 @@
     </table>
 
     <div class="footer">
-        Dokumen ini digenerate otomatis oleh sistem MyJAP Employee Portal pada {{ now()->translatedFormat('d F Y H:i') }}.
+        Dokumen ini digenerate otomatis oleh sistem MyJAP Employee Portal pada {{ ($payslip->pdf_generated_at ?? now())->translatedFormat('d F Y H:i') }}.
     </div>
 
 </body>

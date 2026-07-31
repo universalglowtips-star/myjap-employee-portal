@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatePayslipRequest;
 use App\Models\Employee;
 use App\Models\Payslip;
 use App\Models\PayslipItem;
+use App\Models\PayrollPeriod;
 use App\Models\SalaryComponent;
 use App\Models\CompanySetting;
 use App\Models\Notification;
@@ -18,6 +19,7 @@ use App\Traits\ScopesOwnData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 
@@ -28,17 +30,17 @@ use ScopesOwnData;
     /**
      * Generate & download PDF slip gaji.
      */
-    public function pdf(string $id)
+    public function pdf(Request $request, string $id)
     {
         $payslip = Payslip::with([
             'employee',
+            'department',
+            'officeLocation',
             'items.salaryComponent'
         ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('pdf.payslip', [
-            'payslip' => $payslip,
-            'company' => CompanySetting::current(),
-        ])->setPaper('a4', 'portrait');
+        $this->ensureOwnDataOrAdmin($request, $payslip->employee_id);
+        $this->ensurePublishedOrAdmin($request, $payslip->status);
 
         $filename = sprintf(
             'Slip-Gaji-%s-%02d-%d.pdf',
@@ -47,7 +49,74 @@ use ScopesOwnData;
             $payslip->year
         );
 
+        // Slip yang sudah Published adalah ARSIP FINAL - selalu serve file
+        // yang sudah dibekukan saat publish, JANGAN regenerate dari data
+        // live (kalau nama komponen/data perusahaan berubah nanti, slip
+        // yang sudah di-download orang tidak boleh ikut berubah).
+        if ($payslip->status === 'Published') {
+
+            if (!$payslip->file_pdf || !Storage::disk('public')->exists($payslip->file_pdf)) {
+                // Data lama sebelum fitur arsip ini ada, atau file kehilangan
+                // secara tidak sengaja - generate & simpan sekali sebagai
+                // pemulihan, SETELAH ini akan selalu jadi arsip yang sama.
+                $payslip->file_pdf = $this->generateAndStorePayslipPdf($payslip);
+                $payslip->saveQuietly(); // saveQuietly - hindari trigger guard/observer lain buat sekadar isi path file
+            }
+
+            return Storage::disk('public')->download($payslip->file_pdf, $filename);
+        }
+
+        // Draft/belum Published - boleh preview dinamis, karena datanya
+        // memang masih bisa berubah sebelum final.
+        $pdf = Pdf::loadView('pdf.payslip', [
+            'payslip' => $payslip,
+            'company' => CompanySetting::current(),
+        ])->setPaper('a4', 'portrait');
+
         return $pdf->download($filename);
+    }
+
+    /**
+     * Render PDF dan simpan sebagai file fisik - dipanggil waktu publish()
+     * ATAU waktu recovery (file hilang, storage rusak, dll).
+     *
+     * PENTING (opsi B - PDF recoverable dari snapshot, bukan master data):
+     * snapshot company/employee CUMA dibekukan SEKALI, di percobaan
+     * pertama (biasanya pas publish). Kalau dipanggil lagi nanti buat
+     * recovery, snapshot yang SUDAH ADA dipakai apa adanya - TIDAK
+     * pernah nge-query ulang ke CompanySetting/Employee. Jadi hasil
+     * regenerate dijamin identik sama versi aslinya, walau data
+     * perusahaan/karyawan sudah berubah atau server sudah pindah.
+     */
+    private function generateAndStorePayslipPdf(Payslip $payslip): string
+    {
+        $payslip->loadMissing(['employee', 'department', 'officeLocation', 'items']);
+
+        if (!$payslip->pdf_generated_at) {
+
+            $company = CompanySetting::current();
+
+            $payslip->company_name_snapshot = $company->company_name;
+            $payslip->company_address_snapshot = $company->address;
+            $payslip->company_phone_snapshot = $company->phone;
+            $payslip->company_email_snapshot = $company->email;
+            $payslip->employee_name_snapshot = $payslip->employee->full_name;
+            $payslip->employee_code_snapshot = $payslip->employee->employee_code;
+            $payslip->pdf_generated_at = now();
+
+            $payslip->saveQuietly();
+        }
+
+        $pdf = Pdf::loadView('pdf.payslip', [
+            'payslip' => $payslip,
+            'company' => CompanySetting::current(), // fallback aja - snapshot di atas sudah dijamin ke-isi duluan
+        ])->setPaper('a4', 'portrait');
+
+        $path = "payslips/payslip-{$payslip->id}-" . now()->format('YmdHis') . ".pdf";
+
+        Storage::disk('public')->put($path, $pdf->output());
+
+        return $path;
     }
     /**
      * Display all payslips.
@@ -92,6 +161,7 @@ use ScopesOwnData;
         });
 
         $this->scopeToOwnDataIfEmployee($query, $request);
+        $this->restrictToPublishedIfEmployee($query, $request);
 
         $query->latest();
 
@@ -192,84 +262,137 @@ use ScopesOwnData;
             ], 422);
         }
 
-        $employees = Employee::where('is_active', true)->get();
+        $period = PayrollPeriod::findOrCreateRegular(
+            $validated['month'],
+            $validated['year'],
+            $request->user()->id
+        );
 
-        $existingEmployeeIds = Payslip::where('month', $validated['month'])
-            ->where('year', $validated['year'])
-            ->pluck('employee_id');
+        $existingEmployeeIds = Payslip::where('payroll_period_id', $period->id)
+            ->pluck('employee_id')
+            ->flip(); // flip -> key lookup O(1), bukan ->contains() O(n) di dalam loop
 
         $created = [];
         $skipped = [];
 
-        DB::beginTransaction();
-
         try {
 
-            foreach ($employees as $employee) {
+            // Chunking - biar gak nge-load ribuan employee sekaligus ke memory,
+            // dan gak nahan 1 transaksi raksasa buat semua data. Tiap chunk
+            // 200 karyawan punya transaksi sendiri.
+            Employee::where('is_active', true)->chunkById(200, function ($employees) use (
+                $requiredComponents,
+                $period,
+                $validated,
+                $existingEmployeeIds,
+                &$created,
+                &$skipped
+            ) {
 
-                if ($existingEmployeeIds->contains($employee->id)) {
-                    $skipped[] = $employee->id;
-                    continue;
+                DB::beginTransaction();
+
+                try {
+
+                    foreach ($employees as $employee) {
+
+                        if ($existingEmployeeIds->has($employee->id)) {
+                            $skipped[] = $employee->id;
+                            continue;
+                        }
+
+                        $payslip = Payslip::create([
+                            'payroll_period_id'  => $period->id,
+                            'employee_id'        => $employee->id,
+                            'department_id'       => $employee->department_id,
+                            'office_location_id'  => $employee->office_location_id,
+                            'month'               => $validated['month'],
+                            'year'                => $validated['year'],
+                            'status'              => 'Draft',
+                            'gross_earning'       => 0,
+                            'total_deduction'     => 0,
+                            'net_salary'          => 0,
+                        ]);
+
+                        $grossEarning = 0;
+                        $totalDeduction = 0;
+                        $itemRows = [];
+                        $now = now();
+
+                        foreach ($requiredComponents as $index => $component) {
+
+                            $amount = $component->code === 'BASIC'
+                                ? $employee->basic_salary
+                                : $component->default_amount;
+
+                            $itemRows[] = [
+                                'payslip_id' => $payslip->id,
+                                'salary_component_id' => $component->id,
+                                'component_code' => $component->code,
+                                'component_name' => $component->name,
+                                'component_type' => $component->type,
+                                'amount' => $amount,
+                                'notes' => 'Auto-generated (payroll massal)',
+                                'sort_order' => $index + 1,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+
+                            if ($component->type === 'earning') {
+                                $grossEarning += $amount;
+                            } else {
+                                $totalDeduction += $amount;
+                            }
+                        }
+
+                        // Bulk insert semua item sekaligus (1 query per payslip,
+                        // bukan 1 query per komponen) - ini yang paling nolong
+                        // waktu komponen wajibnya banyak.
+                        PayslipItem::insert($itemRows);
+
+                        $payslip->update([
+                            'gross_earning' => $grossEarning,
+                            'total_deduction' => $totalDeduction,
+                            'net_salary' => $grossEarning - $totalDeduction,
+                        ]);
+
+                        $created[] = $payslip->id;
+                    }
+
+                    DB::commit();
+
+                } catch (Exception $e) {
+
+                    DB::rollBack();
+
+                    throw $e;
                 }
-
-                $payslip = Payslip::create([
-                    'employee_id' => $employee->id,
-                    'month' => $validated['month'],
-                    'year' => $validated['year'],
-                    'status' => 'Draft',
-                    'net_salary' => 0,
-                ]);
-
-                $netSalary = 0;
-
-                foreach ($requiredComponents as $index => $component) {
-
-                    $amount = $component->code === 'BASIC'
-                        ? $employee->basic_salary
-                        : $component->default_amount;
-
-                    PayslipItem::create([
-                        'payslip_id' => $payslip->id,
-                        'salary_component_id' => $component->id,
-                        'amount' => $amount,
-                        'notes' => 'Auto-generated (payroll massal)',
-                        'sort_order' => $index + 1,
-                    ]);
-
-                    $netSalary += $component->type === 'earning' ? $amount : -$amount;
-                }
-
-                $payslip->update(['net_salary' => $netSalary]);
-
-                $created[] = $payslip->id;
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payroll massal berhasil digenerate.',
-                'period' => [
-                    'month' => (int) $validated['month'],
-                    'year' => (int) $validated['year'],
-                ],
-                'total_created' => count($created),
-                'total_skipped' => count($skipped),
-                'created_payslip_ids' => $created,
-                'skipped_employee_ids' => $skipped,
-            ], 201);
+            });
 
         } catch (Exception $e) {
-
-            DB::rollBack();
 
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal generate payroll massal.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'note' => 'Sebagian chunk mungkin sudah ter-commit sebelum error terjadi (tiap 200 karyawan punya transaksi sendiri) - cek total_created di percobaan berikutnya sebelum retry.',
+                'total_created_before_error' => count($created),
             ], 500);
-
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payroll massal berhasil digenerate.',
+            'period' => [
+                'id' => $period->id,
+                'period_code' => $period->period_code,
+                'month' => (int) $validated['month'],
+                'year' => (int) $validated['year'],
+            ],
+            'total_created' => count($created),
+            'total_skipped' => count($skipped),
+            'created_payslip_ids' => $created,
+            'skipped_employee_ids' => $skipped,
+        ], 201);
     }
 
     /**
@@ -284,36 +407,89 @@ use ScopesOwnData;
             'year' => 'required|integer|min:2024',
         ]);
 
-        $draftPayslips = Payslip::where('month', $validated['month'])
+        $draftPayslipIds = Payslip::where('month', $validated['month'])
             ->where('year', $validated['year'])
             ->where('status', 'Draft')
-            ->get();
+            ->pluck('id');
 
-        if ($draftPayslips->isEmpty()) {
+        if ($draftPayslipIds->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak ada payslip berstatus Draft di periode ini untuk dipublish.'
             ], 422);
         }
 
-        foreach ($draftPayslips as $payslip) {
-            $payslip->update([
-                'status' => 'Published',
-                'published_by' => $request->user()->id,
-                'published_at' => now(),
-                'unpublish_reason' => null,
-            ]);
+        $published = [];
+        $failed = [];
+
+        // Chunk 100 per transaksi - konsisten sama prinsip generateBulk,
+        // biar 1 periode besar gak jadi satu transaksi raksasa yang
+        // nahan lock kelamaan.
+        foreach ($draftPayslipIds->chunk(100) as $chunkIds) {
+
+            try {
+
+                DB::transaction(function () use ($chunkIds, $request, &$published) {
+
+                    $payslips = Payslip::whereIn('id', $chunkIds)->get();
+
+                    foreach ($payslips as $payslip) {
+
+                        $payslip->update([
+                            'status' => 'Published',
+                            'published_by' => $request->user()->id,
+                            'published_at' => now(),
+                            'unpublish_reason' => null,
+                        ]);
+
+                        $payslip->load(['employee', 'department', 'officeLocation', 'items']);
+                        $payslip->file_pdf = $this->generateAndStorePayslipPdf($payslip);
+                        $payslip->saveQuietly();
+
+                        AuditLogService::log(
+                            $payslip,
+                            'published',
+                            ['status' => 'Draft'],
+                            ['status' => 'Published'],
+                            $request->user()->id,
+                            'Publish slip gaji (massal)'
+                        );
+
+                        Notification::notify(
+                            $payslip->employee_id,
+                            'payslip_published',
+                            'Slip Gaji Tersedia',
+                            "Slip gaji periode {$payslip->month}/{$payslip->year} sudah bisa dilihat.",
+                            ['payslip_id' => $payslip->id]
+                        );
+
+                        $published[] = $payslip->id;
+                    }
+                });
+
+            } catch (Exception $e) {
+
+                // Chunk ini gagal & rollback total - chunk lain yang SUDAH
+                // ter-commit sebelumnya tetap aman (masing-masing transaksi
+                // independen). ID yang gagal dicatat biar bisa di-retry.
+                $failed = array_merge($failed, $chunkIds->all());
+            }
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Payroll massal berhasil dipublish.',
+            'success' => empty($failed),
+            'message' => empty($failed)
+                ? 'Payroll massal berhasil dipublish.'
+                : 'Sebagian payslip gagal dipublish, cek published_payslip_ids vs failed_payslip_ids.',
             'period' => [
                 'month' => (int) $validated['month'],
                 'year' => (int) $validated['year'],
             ],
-            'total_published' => $draftPayslips->count(),
-        ]);
+            'total_published' => count($published),
+            'total_failed' => count($failed),
+            'published_payslip_ids' => $published,
+            'failed_payslip_ids' => $failed,
+        ], empty($failed) ? 200 : 207);
     }
 
     /**
@@ -323,11 +499,18 @@ use ScopesOwnData;
     {
         $validated = $request->validated();
 
-        if (
-            Payslip::where('employee_id', $validated['employee_id'])
-                ->where('month', $validated['month'])
-                ->where('year', $validated['year'])
-                ->exists()
+        // Cari/bikin PayrollPeriod REGULAR otomatis dari month+year -
+        // request body TIDAK berubah, klien lama tetap kirim month+year
+        // seperti biasa, period-nya ditangani di belakang layar.
+        $period = PayrollPeriod::findOrCreateRegular(
+            $validated['month'],
+            $validated['year'],
+            $request->user()->id
+        );
+
+        if (Payslip::where('payroll_period_id', $period->id)
+            ->where('employee_id', $validated['employee_id'])
+            ->exists()
         ) {
             return response()->json([
                 'success' => false,
@@ -335,27 +518,38 @@ use ScopesOwnData;
             ], 409);
         }
 
+        $employee = Employee::findOrFail($validated['employee_id']);
+
         DB::beginTransaction();
 
         try {
 
             $payslip = Payslip::create([
 
-                'employee_id' => $validated['employee_id'],
-                'month'       => $validated['month'],
-                'year'        => $validated['year'],
-                'status'      => 'Draft',
-                'file_pdf'    => $validated['file_pdf'] ?? null,
-                'net_salary'  => 0,
+                'payroll_period_id'  => $period->id,
+                'employee_id'        => $validated['employee_id'],
+                // Snapshot - departemen/kantor karyawan SAAT slip ini dibuat
+                'department_id'      => $employee->department_id,
+                'office_location_id' => $employee->office_location_id,
+                'month'              => $validated['month'],
+                'year'               => $validated['year'],
+                'status'             => 'Draft',
+                'file_pdf'           => $validated['file_pdf'] ?? null,
+                'gross_earning'      => 0,
+                'total_deduction'    => 0,
+                'net_salary'         => 0,
 
             ]);
 
-            $netSalary = 0;
+            $grossEarning = 0;
+            $totalDeduction = 0;
 
             foreach ($validated['items'] as $index => $item) {
 
                 $component = SalaryComponent::select(
                     'id',
+                    'code',
+                    'name',
                     'type'
                 )->findOrFail($item['salary_component_id']);
 
@@ -363,6 +557,12 @@ use ScopesOwnData;
 
                     'payslip_id'          => $payslip->id,
                     'salary_component_id' => $component->id,
+                    // Snapshot - nama/kode/tipe komponen SAAT item ini dibuat.
+                    // Kalau nanti HRD rename/ubah komponennya, slip ini tetap
+                    // menampilkan yang aslinya.
+                    'component_code'      => $component->code,
+                    'component_name'      => $component->name,
+                    'component_type'      => $component->type,
                     'amount'              => $item['amount'],
                     'notes'               => $item['notes'] ?? null,
                     'sort_order'          => $index + 1,
@@ -370,18 +570,16 @@ use ScopesOwnData;
                 ]);
 
                 if ($component->type === 'earning') {
-
-                    $netSalary += $item['amount'];
-
+                    $grossEarning += $item['amount'];
                 } else {
-
-                    $netSalary -= $item['amount'];
-
+                    $totalDeduction += $item['amount'];
                 }
             }
 
             $payslip->update([
-                'net_salary' => $netSalary
+                'gross_earning' => $grossEarning,
+                'total_deduction' => $totalDeduction,
+                'net_salary' => $grossEarning - $totalDeduction,
             ]);
 
             DB::commit();
@@ -390,7 +588,7 @@ use ScopesOwnData;
                 $payslip,
                 'created',
                 null,
-                $payslip->only(['employee_id', 'month', 'year', 'net_salary']),
+                $payslip->only(['employee_id', 'payroll_period_id', 'month', 'year', 'net_salary']),
                 $request->user()->id,
                 'Slip gaji baru dibuat'
             );
@@ -400,6 +598,7 @@ use ScopesOwnData;
                 'message' => 'Slip gaji berhasil dibuat.',
                 'data'    => $payslip->load([
                     'employee',
+                    'payrollPeriod',
                     'items.salaryComponent'
                 ])
             ], 201);
@@ -428,6 +627,7 @@ use ScopesOwnData;
         ])->findOrFail($id);
 
         $this->ensureOwnDataOrAdmin($request, $payslip->employee_id);
+        $this->ensurePublishedOrAdmin($request, $payslip->status);
 
         return response()->json([
             'success' => true,
@@ -464,7 +664,6 @@ use ScopesOwnData;
 
             $payslip->update([
 
-                'employee_id' => $validated['employee_id'] ?? $payslip->employee_id,
                 'month'       => $validated['month'] ?? $payslip->month,
                 'year'        => $validated['year'] ?? $payslip->year,
                 'file_pdf'    => $validated['file_pdf'] ?? $payslip->file_pdf,
@@ -475,38 +674,46 @@ use ScopesOwnData;
 
                 $payslip->items()->delete();
 
-                $netSalary = 0;
+                $grossEarning = 0;
+                $totalDeduction = 0;
+                $itemRows = [];
+                $now = now();
 
                 foreach ($validated['items'] as $index => $item) {
 
                     $component = SalaryComponent::select(
                         'id',
+                        'code',
+                        'name',
                         'type'
                     )->findOrFail($item['salary_component_id']);
 
-                    PayslipItem::create([
-
+                    $itemRows[] = [
                         'payslip_id'          => $payslip->id,
                         'salary_component_id' => $component->id,
+                        'component_code'      => $component->code,
+                        'component_name'      => $component->name,
+                        'component_type'      => $component->type,
                         'amount'              => $item['amount'],
                         'notes'               => $item['notes'] ?? null,
                         'sort_order'          => $index + 1,
-
-                    ]);
+                        'created_at'          => $now,
+                        'updated_at'          => $now,
+                    ];
 
                     if ($component->type === 'earning') {
-
-                        $netSalary += $item['amount'];
-
+                        $grossEarning += $item['amount'];
                     } else {
-
-                        $netSalary -= $item['amount'];
-
+                        $totalDeduction += $item['amount'];
                     }
                 }
 
+                PayslipItem::insert($itemRows);
+
                 $payslip->update([
-                    'net_salary' => $netSalary
+                    'gross_earning' => $grossEarning,
+                    'total_deduction' => $totalDeduction,
+                    'net_salary' => $grossEarning - $totalDeduction,
                 ]);
             }
 
@@ -592,29 +799,52 @@ use ScopesOwnData;
             ], 422);
         }
 
-        $payslip->update([
-            'status' => 'Published',
-            'published_by' => $request->user()->id,
-            'published_at' => now(),
-            'unpublish_reason' => null,
-        ]);
+        try {
 
-        AuditLogService::log(
-            $payslip,
-            'published',
-            ['status' => 'Draft'],
-            ['status' => 'Published'],
-            $request->user()->id,
-            'Publish slip gaji'
-        );
+            DB::transaction(function () use ($payslip, $request) {
 
-        Notification::notify(
-            $payslip->employee_id,
-            'payslip_published',
-            'Slip Gaji Tersedia',
-            "Slip gaji periode {$payslip->month}/{$payslip->year} sudah bisa dilihat.",
-            ['payslip_id' => $payslip->id]
-        );
+                $payslip->update([
+                    'status' => 'Published',
+                    'published_by' => $request->user()->id,
+                    'published_at' => now(),
+                    'unpublish_reason' => null,
+                ]);
+
+                // Bekukan PDF-nya SEKARANG, saat data masih benar & final -
+                // ini yang jadi arsip permanen. Kalau langkah ini gagal
+                // (storage penuh, dompdf error, dll), seluruh transaksi di
+                // atas ikut rollback - status TIDAK akan kepublish sendirian
+                // tanpa PDF-nya.
+                $payslip->load(['employee', 'department', 'officeLocation', 'items']);
+                $payslip->file_pdf = $this->generateAndStorePayslipPdf($payslip);
+                $payslip->saveQuietly();
+
+                AuditLogService::log(
+                    $payslip,
+                    'published',
+                    ['status' => 'Draft'],
+                    ['status' => 'Published'],
+                    $request->user()->id,
+                    'Publish slip gaji'
+                );
+
+                Notification::notify(
+                    $payslip->employee_id,
+                    'payslip_published',
+                    'Slip Gaji Tersedia',
+                    "Slip gaji periode {$payslip->month}/{$payslip->year} sudah bisa dilihat.",
+                    ['payslip_id' => $payslip->id]
+                );
+            });
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal publish slip gaji. Semua perubahan sudah dibatalkan (rollback), status tetap Draft.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
@@ -648,27 +878,44 @@ use ScopesOwnData;
             'unpublish_reason.required' => 'Alasan unpublish wajib diisi.',
         ]);
 
-        $payslip->update([
-            'status' => 'Draft',
-            'unpublish_reason' => $validated['unpublish_reason'],
-        ]);
+        $previousPdfPath = $payslip->file_pdf;
 
-        AuditLogService::log(
-            $payslip,
-            'unpublished',
-            ['status' => 'Published'],
-            ['status' => 'Draft', 'unpublish_reason' => $validated['unpublish_reason']],
-            $request->user()->id,
-            'Unpublish slip gaji'
-        );
+        try {
 
-        Notification::notify(
-            $payslip->employee_id,
-            'payslip_unpublished',
-            'Slip Gaji Direvisi',
-            "Slip gaji periode {$payslip->month}/{$payslip->year} sedang direvisi HRD. Alasan: {$validated['unpublish_reason']}",
-            ['payslip_id' => $payslip->id]
-        );
+            DB::transaction(function () use ($payslip, $request, $validated, $previousPdfPath) {
+
+                $payslip->update([
+                    'status' => 'Draft',
+                    'unpublish_reason' => $validated['unpublish_reason'],
+                    'file_pdf' => null, // publish berikutnya bikin arsip baru - file LAMA tetap ada di disk sebagai jejak historis, tidak dihapus
+                ]);
+
+                AuditLogService::log(
+                    $payslip,
+                    'unpublished',
+                    ['status' => 'Published', 'file_pdf' => $previousPdfPath],
+                    ['status' => 'Draft', 'unpublish_reason' => $validated['unpublish_reason']],
+                    $request->user()->id,
+                    'Unpublish slip gaji'
+                );
+
+                Notification::notify(
+                    $payslip->employee_id,
+                    'payslip_unpublished',
+                    'Slip Gaji Direvisi',
+                    "Slip gaji periode {$payslip->month}/{$payslip->year} sedang direvisi HRD. Alasan: {$validated['unpublish_reason']}",
+                    ['payslip_id' => $payslip->id]
+                );
+            });
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal unpublish slip gaji. Semua perubahan sudah dibatalkan (rollback).',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,

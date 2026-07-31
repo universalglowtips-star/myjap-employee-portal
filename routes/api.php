@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\AttendanceLocationPolicyController;
 use App\Http\Controllers\Api\EmployeeAttendanceLocationOverrideController;
 use App\Http\Controllers\Api\OfficeLocationSupervisorController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\PayrollPeriodController;
 
 /*
 |--------------------------------------------------------------------------
@@ -318,6 +319,15 @@ $apiRoutes = function () {
 
     Route::get('audit-logs/{id}', [AuditLogController::class, 'show'])
         ->middleware('permission:audit-log.view');
+
+    // =========================
+    // PAYROLL PERIOD (Tahap 0 - read only, Tahap 1 nanti manajemen approval penuh)
+    // =========================
+    Route::get('payroll-periods', [PayrollPeriodController::class, 'index'])
+        ->middleware('permission:payslip.view');
+
+    Route::get('payroll-periods/{id}', [PayrollPeriodController::class, 'show'])
+        ->middleware('permission:payslip.view');
 
 };
 

@@ -38,6 +38,35 @@ trait ScopesOwnData
     }
 
     /**
+     * Batasi query cuma ke status Published kalau role-nya EMPLOYEE.
+     * Dipakai khusus buat Payslip - Draft/Submitted/Pending Approval
+     * gak boleh kelihatan karyawan biasa, cuma yang udah final.
+     */
+    protected function restrictToPublishedIfEmployee(Builder $query, Request $request, string $statusColumn = 'status'): Builder
+    {
+        $user = $request->user();
+
+        if ($user->role && $user->role->role_code === 'EMPLOYEE') {
+            $query->where($statusColumn, 'Published');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Cek 1 record spesifik - kalau EMPLOYEE dan statusnya belum
+     * Published, tolak 403. Dipakai di show()/pdf() Payslip.
+     */
+    protected function ensurePublishedOrAdmin(Request $request, string $status): void
+    {
+        $user = $request->user();
+
+        if ($user->role && $user->role->role_code === 'EMPLOYEE' && $status !== 'Published') {
+            throw new HttpException(403, 'Slip gaji ini belum dipublish, belum bisa dilihat.');
+        }
+    }
+
+    /**
      * Kalau role EMPLOYEE, employee_id WAJIB dirinya sendiri - gak boleh
      * ngirim employee_id orang lain di body (cegah "ngaku-ngaku" jadi
      * orang lain). Role administratif (HRD/Manager/dst) tetap bebas
