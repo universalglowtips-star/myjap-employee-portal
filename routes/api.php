@@ -191,8 +191,10 @@ $apiRoutes = function () {
     Route::apiResource('payslips', PayslipController::class)
         ->only(['destroy'])->middleware('permission:payslip.delete');
 
+    // Sengaja dashboard.view (bukan payslip.view) - endpoint ini rekap
+    // AGREGAT semua karyawan dalam 1 periode, admin-level only.
     Route::get('payslips-summary', [PayslipController::class, 'summary'])
-        ->middleware('permission:payslip.view');
+        ->middleware('permission:dashboard.view');
 
     Route::get('payslips/{payslip}/pdf', [PayslipController::class, 'pdf'])
         ->middleware('permission:payslip.view');
@@ -322,12 +324,18 @@ $apiRoutes = function () {
 
     // =========================
     // PAYROLL PERIOD (Tahap 0 - read only, Tahap 1 nanti manajemen approval penuh)
+    //
+    // Sengaja pakai permission 'dashboard.view' (bukan 'payslip.view') -
+    // endpoint ini nampilin AGREGAT semua payslip dalam 1 periode
+    // (termasuk milik orang lain), jadi harus admin-level only.
+    // EMPLOYEE punya payslip.view tapi TIDAK punya dashboard.view,
+    // sehingga tetap gak bisa intip data gaji semua orang lewat sini.
     // =========================
     Route::get('payroll-periods', [PayrollPeriodController::class, 'index'])
-        ->middleware('permission:payslip.view');
+        ->middleware('permission:dashboard.view');
 
     Route::get('payroll-periods/{id}', [PayrollPeriodController::class, 'show'])
-        ->middleware('permission:payslip.view');
+        ->middleware('permission:dashboard.view');
 
 };
 

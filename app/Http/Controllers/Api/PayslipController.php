@@ -378,6 +378,22 @@ use ScopesOwnData;
                 }
             });
 
+            if (!empty($created)) {
+
+                AuditLogService::log(
+                    $period,
+                    'bulk_generated',
+                    null,
+                    [
+                        'created_count' => count($created),
+                        'skipped_count' => count($skipped),
+                        'created_payslip_ids' => $created,
+                    ],
+                    $request->user()->id,
+                    'Generate payroll massal untuk periode ' . $period->period_code
+                );
+            }
+
         } catch (Exception $e) {
 
             return response()->json([
@@ -612,6 +628,19 @@ use ScopesOwnData;
                     'items.salaryComponent'
                 ])
             ], 201);
+
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+
+            DB::rollBack();
+
+            // Race condition: request lain sempat bikin payslip yang sama
+            // persis di antara pengecekan exists() di atas dan create() ini
+            // (dua request nyaris bersamaan). Constraint DB yang jadi
+            // pengaman terakhir - kembalikan 409 yang rapi, bukan 500 mentah.
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji pada periode tersebut sudah ada.'
+            ], 409);
 
         } catch (Exception $e) {
 
