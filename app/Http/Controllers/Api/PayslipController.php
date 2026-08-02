@@ -59,7 +59,7 @@ use ScopesOwnData;
                 // Data lama sebelum fitur arsip ini ada, atau file kehilangan
                 // secara tidak sengaja - generate & simpan sekali sebagai
                 // pemulihan, SETELAH ini akan selalu jadi arsip yang sama.
-                $payslip->file_pdf = $this->generateAndStorePayslipPdf($payslip);
+                $payslip->file_pdf = $this->generateAndStorePayslipPdf($payslip, isNewPublishEvent: false);
                 $payslip->saveQuietly(); // saveQuietly - hindari trigger guard/observer lain buat sekadar isi path file
             }
 
@@ -88,11 +88,11 @@ use ScopesOwnData;
      * regenerate dijamin identik sama versi aslinya, walau data
      * perusahaan/karyawan sudah berubah atau server sudah pindah.
      */
-    private function generateAndStorePayslipPdf(Payslip $payslip): string
+    private function generateAndStorePayslipPdf(Payslip $payslip, bool $isNewPublishEvent = true): string
     {
         $payslip->loadMissing(['employee', 'department', 'officeLocation', 'items']);
 
-        if (!$payslip->pdf_generated_at) {
+        if (!$payslip->company_name_snapshot) {
 
             $company = CompanySetting::current();
 
@@ -102,10 +102,20 @@ use ScopesOwnData;
             $payslip->company_email_snapshot = $company->email;
             $payslip->employee_name_snapshot = $payslip->employee->full_name;
             $payslip->employee_code_snapshot = $payslip->employee->employee_code;
-            $payslip->pdf_generated_at = now();
-
-            $payslip->saveQuietly();
         }
+
+        // pdf_generated_at merepresentasikan KAPAN FILE PDF INI dibuat,
+        // bukan kapan identitas company/employee dibekukan. Jadi:
+        // - publish()/publishBulk() (isNewPublishEvent=true) -> SELALU
+        //   di-refresh ke waktu sekarang, karena ini beneran arsip baru.
+        // - Recovery di pdf() (file hilang, isNewPublishEvent=false) ->
+        //   TIDAK di-refresh, biar arsip yang di-regenerate 100% identik
+        //   ke versi asli (kecuali memang belum pernah ke-set sama sekali).
+        if ($isNewPublishEvent || !$payslip->pdf_generated_at) {
+            $payslip->pdf_generated_at = now();
+        }
+
+        $payslip->saveQuietly();
 
         $pdf = Pdf::loadView('pdf.payslip', [
             'payslip' => $payslip,
