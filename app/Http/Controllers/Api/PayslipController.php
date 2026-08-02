@@ -55,7 +55,7 @@ use ScopesOwnData;
         // yang sudah di-download orang tidak boleh ikut berubah).
         if ($payslip->status === 'Published') {
 
-            if (!$payslip->file_pdf || !Storage::disk('public')->exists($payslip->file_pdf)) {
+            if (!$payslip->file_pdf || !Storage::disk('local')->exists($payslip->file_pdf)) {
                 // Data lama sebelum fitur arsip ini ada, atau file kehilangan
                 // secara tidak sengaja - generate & simpan sekali sebagai
                 // pemulihan, SETELAH ini akan selalu jadi arsip yang sama.
@@ -63,7 +63,7 @@ use ScopesOwnData;
                 $payslip->saveQuietly(); // saveQuietly - hindari trigger guard/observer lain buat sekadar isi path file
             }
 
-            return Storage::disk('public')->download($payslip->file_pdf, $filename);
+            return Storage::disk('local')->download($payslip->file_pdf, $filename);
         }
 
         // Draft/belum Published - boleh preview dinamis, karena datanya
@@ -124,7 +124,7 @@ use ScopesOwnData;
 
         $path = "payslips/payslip-{$payslip->id}-" . now()->format('YmdHis') . ".pdf";
 
-        Storage::disk('public')->put($path, $pdf->output());
+        Storage::disk('local')->put($path, $pdf->output());
 
         return $path;
     }
@@ -310,6 +310,24 @@ use ScopesOwnData;
                             continue;
                         }
 
+                        // Hitung total DULU sebelum create payslip - biar gak
+                        // perlu query UPDATE terpisah sesudahnya. Di skala
+                        // 2000-10000 karyawan, ini motong 1 query/karyawan.
+                        $grossEarning = 0;
+                        $totalDeduction = 0;
+
+                        foreach ($requiredComponents as $component) {
+                            $amount = $component->code === 'BASIC'
+                                ? $employee->basic_salary
+                                : $component->default_amount;
+
+                            if ($component->type === 'earning') {
+                                $grossEarning += $amount;
+                            } else {
+                                $totalDeduction += $amount;
+                            }
+                        }
+
                         $payslip = Payslip::create([
                             'payroll_period_id'  => $period->id,
                             'employee_id'        => $employee->id,
@@ -318,13 +336,11 @@ use ScopesOwnData;
                             'month'               => $validated['month'],
                             'year'                => $validated['year'],
                             'status'              => 'Draft',
-                            'gross_earning'       => 0,
-                            'total_deduction'     => 0,
-                            'net_salary'          => 0,
+                            'gross_earning'       => $grossEarning,
+                            'total_deduction'     => $totalDeduction,
+                            'net_salary'          => $grossEarning - $totalDeduction,
                         ]);
 
-                        $grossEarning = 0;
-                        $totalDeduction = 0;
                         $itemRows = [];
                         $now = now();
 
@@ -346,24 +362,12 @@ use ScopesOwnData;
                                 'created_at' => $now,
                                 'updated_at' => $now,
                             ];
-
-                            if ($component->type === 'earning') {
-                                $grossEarning += $amount;
-                            } else {
-                                $totalDeduction += $amount;
-                            }
                         }
 
                         // Bulk insert semua item sekaligus (1 query per payslip,
                         // bukan 1 query per komponen) - ini yang paling nolong
                         // waktu komponen wajibnya banyak.
                         PayslipItem::insert($itemRows);
-
-                        $payslip->update([
-                            'gross_earning' => $grossEarning,
-                            'total_deduction' => $totalDeduction,
-                            'net_salary' => $grossEarning - $totalDeduction,
-                        ]);
 
                         $created[] = $payslip->id;
                     }
