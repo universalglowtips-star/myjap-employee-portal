@@ -97,18 +97,39 @@ class Payslip extends Model
 
         static::updating(function (self $payslip) {
 
-            if ($payslip->getOriginal('status') !== 'Published') {
-                return; // belum Published, bebas diubah seperti biasa
+            if ($payslip->getOriginal('status') === 'Published') {
+
+                $allowedDuringUnpublish = ['status', 'unpublish_reason', 'file_pdf', 'updated_at'];
+                $dirtyKeys = array_keys($payslip->getDirty());
+                $disallowed = array_diff($dirtyKeys, $allowedDuringUnpublish);
+
+                $isLegitimateUnpublish = empty($disallowed) && $payslip->status === 'Draft';
+
+                if (!$isLegitimateUnpublish) {
+                    throw new RuntimeException('Slip gaji yang sudah Published bersifat immutable. Harus di-unpublish resmi dulu (dengan alasan) sebelum bisa direvisi.');
+                }
+
+                return;
             }
 
-            $allowedDuringUnpublish = ['status', 'unpublish_reason', 'file_pdf', 'updated_at'];
-            $dirtyKeys = array_keys($payslip->getDirty());
-            $disallowed = array_diff($dirtyKeys, $allowedDuringUnpublish);
+            // Payslip masih Draft (belum pernah Published). Kalau ini
+            // transisi ke Published (proses publish resmi), izinkan -
+            // terlepas dari status periode induknya.
+            $isPublishTransition = $payslip->isDirty('status') && $payslip->status === 'Published';
 
-            $isLegitimateUnpublish = empty($disallowed) && $payslip->status === 'Draft';
+            if ($isPublishTransition) {
+                return;
+            }
 
-            if (!$isLegitimateUnpublish) {
-                throw new RuntimeException('Slip gaji yang sudah Published bersifat immutable. Harus di-unpublish resmi dulu (dengan alasan) sebelum bisa direvisi.');
+            // Selain itu (edit nominal/komponen/dll): kalau periode induk
+            // lagi Submitted/Approved (proses approval berjalan), payslip
+            // TERKUNCI - gak boleh ada perubahan angka diam-diam di
+            // tengah approval. Harus reject periode dulu (balik ke Draft)
+            // baru bisa direvisi.
+            $period = $payslip->payrollPeriod;
+
+            if ($period && in_array($period->status, ['Submitted', 'Approved'])) {
+                throw new RuntimeException('Slip gaji ini terkunci - periode payroll-nya sedang dalam proses approval (' . $period->status . '). Reject periode ini dulu (kembali ke Draft) untuk bisa merevisi.');
             }
         });
 

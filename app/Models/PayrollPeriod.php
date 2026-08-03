@@ -18,6 +18,10 @@ class PayrollPeriod extends Model
 
         'period_type',
 
+        'office_location_id',
+
+        'approval_workflow_id',
+
         'period_start',
 
         'period_end',
@@ -25,6 +29,14 @@ class PayrollPeriod extends Model
         'pay_date',
 
         'status',
+
+        'submission_cycle',
+
+        'current_approval_level',
+
+        'submitted_at',
+
+        'submitted_by',
 
         'locked',
 
@@ -48,6 +60,8 @@ class PayrollPeriod extends Model
 
             'published_at' => 'datetime:Y-m-d H:i:s',
 
+            'submitted_at' => 'datetime:Y-m-d H:i:s',
+
             'locked' => 'boolean',
 
         ];
@@ -56,6 +70,37 @@ class PayrollPeriod extends Model
     public function payslips(): HasMany
     {
         return $this->hasMany(Payslip::class);
+    }
+
+    public function officeLocation(): BelongsTo
+    {
+        return $this->belongsTo(OfficeLocation::class)->withTrashed();
+    }
+
+    public function approvalWorkflow(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalWorkflow::class);
+    }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(PayrollApproval::class)->orderBy('level');
+    }
+
+    /**
+     * Approval yang aktif untuk siklus submit SAAT INI aja (bukan
+     * riwayat cycle lama) - ini yang dipakai buat cek "giliran siapa".
+     */
+    public function currentCycleApprovals(): HasMany
+    {
+        return $this->hasMany(PayrollApproval::class)
+            ->where('submission_cycle', $this->submission_cycle)
+            ->orderBy('level');
+    }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'submitted_by')->withTrashed();
     }
 
     public function publisher(): BelongsTo
@@ -92,16 +137,28 @@ class PayrollPeriod extends Model
     }
 
     /**
-     * Cari periode REGULAR untuk bulan/tahun tertentu, bikin baru
-     * kalau belum ada. Dipanggil dari PayslipController supaya
-     * request lama (month+year) tetap jalan tanpa perlu klien kirim
-     * payroll_period_id secara eksplisit.
+     * Cari periode REGULAR untuk bulan/tahun + CABANG tertentu, bikin
+     * baru kalau belum ada. Satu bulan bisa punya banyak periode
+     * paralel (1 per cabang) - approval jadi benar-benar terisolasi
+     * per cabang, Manager cabang A gak bisa approve punya cabang B.
+     *
+     * officeLocationId nullable buat backward-compat sama data lama
+     * (sebelum fitur ini ada) - tapi flow baru SELALU isi ini
+     * (diambil dari office_location_id karyawan yang bersangkutan).
      */
-    public static function findOrCreateRegular(int $month, int $year, ?int $createdBy = null): self
+    public static function findOrCreateRegular(int $month, int $year, ?int $createdBy = null, ?int $officeLocationId = null): self
     {
         $start = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
         $end = (clone $start)->endOfMonth();
-        $code = 'REGULAR-' . $year . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT);
+
+        $officeCode = null;
+
+        if ($officeLocationId) {
+            $officeCode = OfficeLocation::withTrashed()->find($officeLocationId)?->office_code ?? "LOC{$officeLocationId}";
+        }
+
+        $code = 'REGULAR-' . $year . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT)
+            . ($officeCode ? '-' . $officeCode : '');
 
         $existing = self::where('period_code', $code)->first();
 
@@ -114,6 +171,7 @@ class PayrollPeriod extends Model
             $period = self::create([
                 'period_code' => $code,
                 'period_type' => 'REGULAR',
+                'office_location_id' => $officeLocationId,
                 'period_start' => $start,
                 'period_end' => $end,
                 'pay_date' => $end,
@@ -134,7 +192,7 @@ class PayrollPeriod extends Model
             $period,
             'created',
             null,
-            $period->only(['period_code', 'period_type', 'status']),
+            $period->only(['period_code', 'period_type', 'office_location_id', 'status']),
             $createdBy,
             'Payroll period baru dibuat otomatis'
         );

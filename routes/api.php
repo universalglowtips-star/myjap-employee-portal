@@ -334,8 +334,36 @@ $apiRoutes = function () {
     Route::get('payroll-periods', [PayrollPeriodController::class, 'index'])
         ->middleware('permission:dashboard.view');
 
+    Route::get('payroll-periods/pending-my-approval', [PayrollPeriodController::class, 'pendingMyApproval'])
+        ->middleware('permission:payroll-period.view');
+
     Route::get('payroll-periods/{id}', [PayrollPeriodController::class, 'show'])
         ->middleware('permission:dashboard.view');
+
+    Route::post('payroll-periods/{id}/submit', [PayrollPeriodController::class, 'submit'])
+        ->middleware('permission:payroll-period.submit');
+
+    Route::post('payroll-periods/{id}/approve', [PayrollPeriodController::class, 'approve'])
+        ->middleware('permission:payroll-period.approve');
+
+    Route::post('payroll-periods/{id}/reject', [PayrollPeriodController::class, 'reject'])
+        ->middleware('permission:payroll-period.reject');
+
+    // =========================
+    // APPROVAL WORKFLOW CONFIG (HRD/SUPER_ADMIN only - ini yang atur
+    // "aturan main" approval, bukan yang jalanin approval-nya)
+    // =========================
+    Route::apiResource('approval-workflows', ApprovalWorkflowController::class)
+        ->only(['index', 'show'])->middleware('permission:approval-workflow.view');
+
+    Route::apiResource('approval-workflows', ApprovalWorkflowController::class)
+        ->only(['store'])->middleware('permission:approval-workflow.create');
+
+    Route::apiResource('approval-workflows', ApprovalWorkflowController::class)
+        ->only(['update'])->middleware('permission:approval-workflow.update');
+
+    Route::apiResource('approval-workflows', ApprovalWorkflowController::class)
+        ->only(['destroy'])->middleware('permission:approval-workflow.delete');
 
 };
 

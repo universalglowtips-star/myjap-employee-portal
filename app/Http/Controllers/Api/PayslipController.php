@@ -77,6 +77,36 @@ use ScopesOwnData;
     }
 
     /**
+     * Cek apakah periode ini siap dipublish. Kalau period_type-nya
+     * punya workflow approval AKTIF, publish CUMA boleh kalau status
+     * period sudah 'Approved' (semua level approval udah lolos).
+     * Kalau gak ada workflow aktif buat period_type ini, publish tetap
+     * bebas seperti Tahap 0 (backward compatible, gak wajib approval).
+     *
+     * Return null kalau boleh publish, atau string pesan error kalau
+     * belum boleh.
+     */
+    private function assertPeriodReadyToPublish(?PayrollPeriod $period): ?string
+    {
+        if (!$period) {
+            return null; // gak ketemu periode - biarin lolos, biar gak nge-block backward-compat
+        }
+
+        $workflow = \App\Models\ApprovalWorkflow::activeFor($period->period_type);
+
+        if (!$workflow) {
+            return null; // period_type ini gak butuh approval sama sekali
+        }
+
+        if ($period->status !== 'Approved') {
+            return "Periode payroll ini masih '{$period->status}' - harus melewati seluruh proses approval (Submitted -> Approved) dulu sebelum bisa dipublish.";
+        }
+
+        return null;
+    }
+
+
+    /**
      * Render PDF dan simpan sebagai file fisik - dipanggil waktu publish()
      * ATAU waktu recovery (file hilang, storage rusak, dll).
      *
@@ -272,31 +302,28 @@ use ScopesOwnData;
             ], 422);
         }
 
-        $period = PayrollPeriod::findOrCreateRegular(
-            $validated['month'],
-            $validated['year'],
-            $request->user()->id
-        );
-
-        $existingEmployeeIds = Payslip::where('payroll_period_id', $period->id)
-            ->pluck('employee_id')
-            ->flip(); // flip -> key lookup O(1), bukan ->contains() O(n) di dalam loop
-
         $created = [];
         $skipped = [];
+        $createdByOffice = []; // office_location_id => [payslip_id, ...] - buat audit log per cabang
+        $periodCache = [];     // office_location_id => PayrollPeriod (resolve sekali, dipakai ulang)
+        $existingCache = [];   // office_location_id => Collection employee_id yang udah punya payslip di period itu
 
         try {
 
             // Chunking - biar gak nge-load ribuan employee sekaligus ke memory,
             // dan gak nahan 1 transaksi raksasa buat semua data. Tiap chunk
-            // 200 karyawan punya transaksi sendiri.
+            // 200 karyawan punya transaksi sendiri. $periodCache/$existingCache
+            // dipakai LINTAS chunk (by reference) - period cabang yang sama
+            // cuma di-resolve sekali walau karyawannya kesebar di banyak chunk.
             Employee::where('is_active', true)->chunkById(200, function ($employees) use (
                 $requiredComponents,
-                $period,
                 $validated,
-                $existingEmployeeIds,
+                $request,
                 &$created,
-                &$skipped
+                &$skipped,
+                &$createdByOffice,
+                &$periodCache,
+                &$existingCache
             ) {
 
                 DB::beginTransaction();
@@ -305,7 +332,30 @@ use ScopesOwnData;
 
                     foreach ($employees as $employee) {
 
-                        if ($existingEmployeeIds->has($employee->id)) {
+                        $officeKey = $employee->office_location_id ?? 'null';
+
+                        if (!isset($periodCache[$officeKey])) {
+
+                            $periodCache[$officeKey] = PayrollPeriod::findOrCreateRegular(
+                                $validated['month'],
+                                $validated['year'],
+                                $request->user()->id,
+                                $employee->office_location_id
+                            );
+
+                            $existingCache[$officeKey] = Payslip::where('payroll_period_id', $periodCache[$officeKey]->id)
+                                ->pluck('employee_id')
+                                ->flip();
+                        }
+
+                        $period = $periodCache[$officeKey];
+
+                        if ($period->locked) {
+                            $skipped[] = $employee->id;
+                            continue;
+                        }
+
+                        if ($existingCache[$officeKey]->has($employee->id)) {
                             $skipped[] = $employee->id;
                             continue;
                         }
@@ -370,6 +420,8 @@ use ScopesOwnData;
                         PayslipItem::insert($itemRows);
 
                         $created[] = $payslip->id;
+                        $createdByOffice[$officeKey][] = $payslip->id;
+                        $existingCache[$officeKey]->put($employee->id, true);
                     }
 
                     DB::commit();
@@ -382,16 +434,24 @@ use ScopesOwnData;
                 }
             });
 
-            if (!empty($created)) {
+            // Audit log 1 baris PER CABANG yang kesentuh (bukan per payslip,
+            // biar gak nambah ribuan write pas generate skala besar) -
+            // konsisten sama prinsip sebelumnya, cuma sekarang per-period.
+            foreach ($createdByOffice as $officeKey => $payslipIds) {
+
+                if (empty($payslipIds)) {
+                    continue;
+                }
+
+                $period = $periodCache[$officeKey];
 
                 AuditLogService::log(
                     $period,
                     'bulk_generated',
                     null,
                     [
-                        'created_count' => count($created),
-                        'skipped_count' => count($skipped),
-                        'created_payslip_ids' => $created,
+                        'created_count' => count($payslipIds),
+                        'created_payslip_ids' => $payslipIds,
                     ],
                     $request->user()->id,
                     'Generate payroll massal untuk periode ' . $period->period_code
@@ -412,12 +472,11 @@ use ScopesOwnData;
         return response()->json([
             'success' => true,
             'message' => 'Payroll massal berhasil digenerate.',
-            'period' => [
-                'id' => $period->id,
-                'period_code' => $period->period_code,
-                'month' => (int) $validated['month'],
-                'year' => (int) $validated['year'],
-            ],
+            'periods' => collect($periodCache)->map(fn ($p) => [
+                'id' => $p->id,
+                'period_code' => $p->period_code,
+                'office_location_id' => $p->office_location_id,
+            ])->values(),
             'total_created' => count($created),
             'total_skipped' => count($skipped),
             'created_payslip_ids' => $created,
@@ -433,28 +492,120 @@ use ScopesOwnData;
     public function publishBulk(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'month' => 'required|integer|between:1,12',
-            'year' => 'required|integer|min:2024',
+            'period_code' => 'nullable|string',
+            'month' => 'required_without:period_code|integer|between:1,12',
+            'year' => 'required_without:period_code|integer|min:2024',
+            // office_location_id OPSIONAL - kalau diisi, publish cabang itu
+            // aja. Kalau kosong, publish SEMUA cabang yang punya periode di
+            // bulan itu sekaligus (masing-masing tetap dicek Approved
+            // sendiri-sendiri, gak nyampur).
+            'office_location_id' => 'nullable|exists:office_locations,id',
         ]);
 
-        $draftPayslipIds = Payslip::where('month', $validated['month'])
-            ->where('year', $validated['year'])
-            ->where('status', 'Draft')
-            ->pluck('id');
+        // payroll_period_id TETAP jadi detail internal backend - klien
+        // cukup kirim month/year/office_location_id (atau period_code
+        // kalau udah tau persis), resolusi ke ID dikerjakan di sini.
+        if (!empty($validated['period_code'])) {
 
-        if ($draftPayslipIds->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak ada payslip berstatus Draft di periode ini untuk dipublish.'
-            ], 422);
+            $periods = PayrollPeriod::where('period_code', $validated['period_code'])->get();
+
+        } else {
+
+            $periods = PayrollPeriod::where('period_type', 'REGULAR')
+                ->whereYear('period_start', $validated['year'])
+                ->whereMonth('period_start', $validated['month'])
+                ->when(!empty($validated['office_location_id']), fn ($q) => $q->where('office_location_id', $validated['office_location_id']))
+                ->get();
         }
 
+        if ($periods->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode payroll tidak ditemukan untuk parameter yang diberikan.'
+            ], 404);
+        }
+
+        $results = [];
+        $anyFailed = false;
+
+        foreach ($periods as $period) {
+
+            $draftPayslipIds = Payslip::where('payroll_period_id', $period->id)
+                ->where('status', 'Draft')
+                ->pluck('id');
+
+            if ($draftPayslipIds->isEmpty()) {
+                $results[] = [
+                    'period_id' => $period->id,
+                    'period_code' => $period->period_code,
+                    'office_location_id' => $period->office_location_id,
+                    'success' => false,
+                    'message' => 'Tidak ada payslip berstatus Draft di periode ini.',
+                    'total_published' => 0,
+                    'total_failed' => 0,
+                ];
+                continue;
+            }
+
+            $blockReason = $this->assertPeriodReadyToPublish($period);
+
+            if ($blockReason) {
+                $anyFailed = true;
+                $results[] = [
+                    'period_id' => $period->id,
+                    'period_code' => $period->period_code,
+                    'office_location_id' => $period->office_location_id,
+                    'success' => false,
+                    'message' => $blockReason,
+                    'total_published' => 0,
+                    'total_failed' => 0,
+                ];
+                continue;
+            }
+
+            [$published, $failed] = $this->publishDraftPayslipsForPeriod($draftPayslipIds, $request);
+
+            if (!empty($failed)) {
+                $anyFailed = true;
+            }
+
+            $this->lockPeriodIfFullyPublished($period, $request);
+
+            $results[] = [
+                'period_id' => $period->id,
+                'period_code' => $period->period_code,
+                'office_location_id' => $period->office_location_id,
+                'success' => empty($failed),
+                'message' => empty($failed) ? 'Berhasil dipublish.' : 'Sebagian gagal, cek failed_payslip_ids.',
+                'total_published' => count($published),
+                'total_failed' => count($failed),
+                'published_payslip_ids' => $published,
+                'failed_payslip_ids' => $failed,
+            ];
+        }
+
+        return response()->json([
+            'success' => !$anyFailed,
+            'message' => !$anyFailed
+                ? 'Payroll massal berhasil dipublish.'
+                : 'Sebagian periode/payslip gagal dipublish, cek detail per periode.',
+            'total_periods_processed' => count($results),
+            'periods' => $results,
+        ], !$anyFailed ? 200 : 207);
+    }
+
+    /**
+     * Publish semua payslip Draft dalam 1 batch id, dibagi chunk 100 per
+     * transaksi. Dipakai publishBulk() - diekstrak jadi method sendiri
+     * supaya bisa dipanggil berulang per periode (1 periode = 1 cabang).
+     *
+     * Return [array publishedIds, array failedIds].
+     */
+    private function publishDraftPayslipsForPeriod($draftPayslipIds, Request $request): array
+    {
         $published = [];
         $failed = [];
 
-        // Chunk 100 per transaksi - konsisten sama prinsip generateBulk,
-        // biar 1 periode besar gak jadi satu transaksi raksasa yang
-        // nahan lock kelamaan.
         foreach ($draftPayslipIds->chunk(100) as $chunkIds) {
 
             try {
@@ -506,20 +657,42 @@ use ScopesOwnData;
             }
         }
 
-        return response()->json([
-            'success' => empty($failed),
-            'message' => empty($failed)
-                ? 'Payroll massal berhasil dipublish.'
-                : 'Sebagian payslip gagal dipublish, cek published_payslip_ids vs failed_payslip_ids.',
-            'period' => [
-                'month' => (int) $validated['month'],
-                'year' => (int) $validated['year'],
-            ],
-            'total_published' => count($published),
-            'total_failed' => count($failed),
-            'published_payslip_ids' => $published,
-            'failed_payslip_ids' => $failed,
-        ], empty($failed) ? 200 : 207);
+        return [$published, $failed];
+    }
+
+    /**
+     * Kunci periode jadi Published begitu SEMUA payslip di dalamnya
+     * sudah Published. Dipakai publish() single dan publishBulk().
+     */
+    private function lockPeriodIfFullyPublished(PayrollPeriod $period, Request $request): void
+    {
+        $stillDraft = Payslip::where('payroll_period_id', $period->id)
+            ->where('status', 'Draft')
+            ->exists();
+
+        if ($stillDraft) {
+            return;
+        }
+
+        DB::transaction(function () use ($period, $request) {
+
+            $oldPeriodValues = $period->only(['status', 'locked']);
+
+            $period->status = 'Published';
+            $period->locked = true;
+            $period->published_at = now();
+            $period->published_by = $request->user()->id;
+            $period->saveQuietly();
+
+            AuditLogService::log(
+                $period,
+                'published',
+                $oldPeriodValues,
+                ['status' => 'Published', 'locked' => true],
+                $request->user()->id,
+                'Seluruh payslip di periode ini sudah dipublish - periode dikunci penuh'
+            );
+        });
     }
 
     /**
@@ -529,14 +702,25 @@ use ScopesOwnData;
     {
         $validated = $request->validated();
 
-        // Cari/bikin PayrollPeriod REGULAR otomatis dari month+year -
-        // request body TIDAK berubah, klien lama tetap kirim month+year
-        // seperti biasa, period-nya ditangani di belakang layar.
+        $employee = Employee::findOrFail($validated['employee_id']);
+
+        // Cari/bikin PayrollPeriod REGULAR otomatis dari month+year DAN
+        // cabang karyawan ini - satu bulan bisa punya banyak periode
+        // paralel (1 per cabang), approval jadi terisolasi per cabang.
+        // Request body TIDAK berubah, klien tetap kirim month+year saja.
         $period = PayrollPeriod::findOrCreateRegular(
             $validated['month'],
             $validated['year'],
-            $request->user()->id
+            $request->user()->id,
+            $employee->office_location_id
         );
+
+        if ($period->locked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode ini sudah locked (Published), tidak bisa nambah payslip baru. Unpublish periode ini dulu kalau benar-benar perlu.'
+            ], 422);
+        }
 
         if (Payslip::where('payroll_period_id', $period->id)
             ->where('employee_id', $validated['employee_id'])
@@ -547,8 +731,6 @@ use ScopesOwnData;
                 'message' => 'Slip gaji pada periode tersebut sudah ada.'
             ], 409);
         }
-
-        $employee = Employee::findOrFail($validated['employee_id']);
 
         DB::beginTransaction();
 
@@ -697,6 +879,13 @@ use ScopesOwnData;
             ], 422);
         }
 
+        if (in_array($payslip->payrollPeriod?->status, ['Submitted', 'Approved'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji ini terkunci - periode payroll-nya sedang dalam proses approval. Reject periode ini dulu untuk bisa merevisi.'
+            ], 422);
+        }
+
         $validated = $request->validated();
 
         $oldValues = $payslip->only(['employee_id', 'month', 'year', 'net_salary']);
@@ -808,6 +997,13 @@ use ScopesOwnData;
             ], 422);
         }
 
+        if (in_array($payslip->payrollPeriod?->status, ['Submitted', 'Approved'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Slip gaji ini terkunci - periode payroll-nya sedang dalam proses approval. Reject periode ini dulu untuk bisa menghapus/merevisi.'
+            ], 422);
+        }
+
         $oldValues = $payslip->only(['employee_id', 'month', 'year', 'net_salary', 'status']);
 
         $payslip->delete();
@@ -842,9 +1038,19 @@ use ScopesOwnData;
             ], 422);
         }
 
+        $period = $payslip->payrollPeriod;
+        $blockReason = $this->assertPeriodReadyToPublish($period);
+
+        if ($blockReason) {
+            return response()->json([
+                'success' => false,
+                'message' => $blockReason
+            ], 422);
+        }
+
         try {
 
-            DB::transaction(function () use ($payslip, $request) {
+            DB::transaction(function () use ($payslip, $request, $period) {
 
                 $payslip->update([
                     'status' => 'Published',
@@ -878,6 +1084,12 @@ use ScopesOwnData;
                     "Slip gaji periode {$payslip->month}/{$payslip->year} sudah bisa dilihat.",
                     ['payslip_id' => $payslip->id]
                 );
+
+                // Kalau ini payslip TERAKHIR yang masih Draft di periode ini,
+                // periode-nya ikut dikunci Published - konsisten sama publishBulk.
+                if ($period) {
+                    $this->lockPeriodIfFullyPublished($period, $request);
+                }
             });
 
         } catch (Exception $e) {
@@ -922,10 +1134,11 @@ use ScopesOwnData;
         ]);
 
         $previousPdfPath = $payslip->file_pdf;
+        $period = $payslip->payrollPeriod;
 
         try {
 
-            DB::transaction(function () use ($payslip, $request, $validated, $previousPdfPath) {
+            DB::transaction(function () use ($payslip, $request, $validated, $previousPdfPath, $period) {
 
                 $payslip->update([
                     'status' => 'Draft',
@@ -949,6 +1162,42 @@ use ScopesOwnData;
                     "Slip gaji periode {$payslip->month}/{$payslip->year} sedang direvisi HRD. Alasan: {$validated['unpublish_reason']}",
                     ['payslip_id' => $payslip->id]
                 );
+
+                // PENTING: kalau periode induknya sudah Approved/Published,
+                // unpublish 1 payslip HARUS memaksa SELURUH periode balik
+                // ke Draft - supaya satu-satunya jalan republish adalah
+                // submit ulang -> approval ulang -> publish ulang lagi,
+                // BUKAN sekadar publish ulang payslip itu diam-diam tanpa
+                // approval baru (itu akan membatalkan makna approval yang
+                // sudah dilakukan sebelumnya).
+                if ($period && in_array($period->status, ['Approved', 'Published'])) {
+
+                    $oldPeriodValues = $period->only(['status', 'locked']);
+
+                    $period->status = 'Draft';
+                    $period->locked = false;
+                    $period->current_approval_level = null;
+                    $period->saveQuietly(); // bypass guard locked - ini transisi sistem yang sah, bukan celah
+
+                    AuditLogService::log(
+                        $period,
+                        'unpublished_cascade',
+                        $oldPeriodValues,
+                        ['status' => 'Draft', 'locked' => false],
+                        $request->user()->id,
+                        "Periode dipaksa balik ke Draft karena payslip #{$payslip->id} di-unpublish - approval sebelumnya tidak berlaku lagi, wajib submit & approval ulang"
+                    );
+
+                    if ($period->submitted_by) {
+                        Notification::notify(
+                            $period->submitted_by,
+                            'payroll_period_reverted',
+                            'Payroll Period Kembali ke Draft',
+                            "Periode {$period->period_code} kembali ke Draft karena ada payslip yang di-unpublish. Approval sebelumnya sudah tidak berlaku - perlu submit & approval ulang setelah revisi selesai.",
+                            ['payroll_period_id' => $period->id]
+                        );
+                    }
+                }
             });
 
         } catch (Exception $e) {

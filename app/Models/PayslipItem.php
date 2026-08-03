@@ -56,12 +56,24 @@ class PayslipItem extends Model
             if ($item->payslip && $item->payslip->status === 'Published') {
                 throw new RuntimeException('Item slip gaji ini terikat payslip yang sudah Published dan bersifat immutable.');
             }
+
+            $period = $item->payslip?->payrollPeriod;
+
+            if ($period && in_array($period->status, ['Submitted', 'Approved'])) {
+                throw new RuntimeException('Item slip gaji ini terkunci - periode payroll-nya sedang dalam proses approval.');
+            }
         });
 
         static::deleting(function (self $item) {
 
             if (!$item->isForceDeleting() && $item->payslip && $item->payslip->status === 'Published') {
                 throw new RuntimeException('Item slip gaji ini terikat payslip yang sudah Published, tidak boleh dihapus.');
+            }
+
+            $period = $item->payslip?->payrollPeriod;
+
+            if (!$item->isForceDeleting() && $period && in_array($period->status, ['Submitted', 'Approved'])) {
+                throw new RuntimeException('Item slip gaji ini terkunci - periode payroll-nya sedang dalam proses approval.');
             }
         });
     }

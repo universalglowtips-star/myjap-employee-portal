@@ -43,6 +43,7 @@ class RolePermissionSeeder extends Seeder
                 'notification.view', 'notification.delete',
                 'attendance-location-policy.view',
                 'audit-log.view',
+                'payroll-period.view',
             ],
 
             'MANAGER' => [
@@ -55,6 +56,16 @@ class RolePermissionSeeder extends Seeder
                 'store-item.view', 'store-transaction.view', 'store-transaction.create',
                 'dashboard.view',
                 'notification.view', 'notification.delete',
+                'payroll-period.view', 'payroll-period.approve', 'payroll-period.reject',
+            ],
+
+            'FINANCE' => [
+                'employee.view',
+                'payslip.view',
+                'company-setting.view',
+                'dashboard.view',
+                'notification.view', 'notification.delete',
+                'payroll-period.view', 'payroll-period.approve', 'payroll-period.reject',
             ],
 
             'HRD' => [
@@ -75,6 +86,8 @@ class RolePermissionSeeder extends Seeder
                 'notification.view', 'notification.delete',
                 'attendance-location-policy.view', 'attendance-location-policy.update',
                 'audit-log.view',
+                'payroll-period.view', 'payroll-period.submit', 'payroll-period.approve', 'payroll-period.reject',
+                'approval-workflow.view', 'approval-workflow.create', 'approval-workflow.update', 'approval-workflow.delete',
             ],
 
             'EMPLOYEE' => [

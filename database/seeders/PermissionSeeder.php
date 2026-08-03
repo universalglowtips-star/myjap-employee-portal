@@ -46,6 +46,10 @@ class PermissionSeeder extends Seeder
 
             'audit-log' => ['view'],
 
+            'payroll-period' => ['view', 'submit', 'approve', 'reject'],
+
+            'approval-workflow' => $crud,
+
         ];
 
         foreach ($modules as $module => $actions) {

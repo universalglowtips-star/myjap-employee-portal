@@ -8,57 +8,63 @@ use App\Models\Role;
 class RoleSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Pakai firstOrCreate (bukan insert() mentah) - idempotent, aman
+     * dijalankan ulang di environment manapun tanpa bikin duplikat.
+     * Ini yang bikin FINANCE (dan role core lainnya) otomatis konsisten
+     * di semua environment tanpa perlu setup manual lewat API.
      */
     public function run(): void
     {
-        Role::insert([
+        $roles = [
 
             [
                 'role_code' => 'SUPER_ADMIN',
                 'role_name' => 'Super Administrator',
                 'description' => 'Akses penuh ke seluruh sistem',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
 
             [
                 'role_code' => 'DIRECTOR',
                 'role_name' => 'Director',
                 'description' => 'Direktur Perusahaan',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
 
             [
                 'role_code' => 'MANAGER',
                 'role_name' => 'Manager',
-                'description' => 'Manager Divisi',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'description' => 'Manager Divisi/Cabang',
+            ],
+
+            [
+                'role_code' => 'FINANCE',
+                'role_name' => 'Finance',
+                'description' => 'Divisi Keuangan',
             ],
 
             [
                 'role_code' => 'HRD',
                 'role_name' => 'Human Resource',
                 'description' => 'Human Resource Department',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
 
             [
                 'role_code' => 'EMPLOYEE',
                 'role_name' => 'Employee',
                 'description' => 'Karyawan',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
 
-        ]);
+        ];
+
+        foreach ($roles as $role) {
+
+            Role::firstOrCreate(
+                ['role_code' => $role['role_code']],
+                [
+                    'role_name' => $role['role_name'],
+                    'description' => $role['description'],
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }
