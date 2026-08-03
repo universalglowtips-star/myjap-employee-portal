@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\EmployeeAttendanceLocationOverrideController;
 use App\Http\Controllers\Api\OfficeLocationSupervisorController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\PayrollPeriodController;
+use App\Http\Controllers\Api\ApprovalWorkflowController;
 
 /*
 |--------------------------------------------------------------------------
