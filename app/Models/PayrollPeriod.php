@@ -82,21 +82,36 @@ class PayrollPeriod extends Model
         return $this->belongsTo(ApprovalWorkflow::class);
     }
 
+    /**
+     * Riwayat approval LENGKAP (semua submission_cycle, termasuk yang
+     * pernah di-reject). Relasi ini AMAN untuk eager-load (->with()/
+     * ->load()) karena query-nya polos, gak ada closure yang baca
+     * atribut $this.
+     *
+     * PENDEKATAN RESMI untuk ambil approval SIKLUS SEKARANG SAJA:
+     *   $period->load('approvals');
+     *   $current = $period->approvals->where('submission_cycle', $period->submission_cycle)->values();
+     *
+     * JANGAN bikin relation method baru dengan closure
+     * ->where('kolom', $this->atribut) untuk kebutuhan filter serupa -
+     * pola itu TIDAK RELIABLE lewat eager-load (lihat riwayat method
+     * currentCycleApprovals() yang pernah ada di sini, dihapus karena
+     * bug ini - detail di bawah). Selalu load relasi polos ini dulu,
+     * baru filter di PHP pakai Collection::where().
+     */
     public function approvals(): HasMany
     {
         return $this->hasMany(PayrollApproval::class)->orderBy('level');
     }
 
     /**
-     * Approval yang aktif untuk siklus submit SAAT INI aja (bukan
-     * riwayat cycle lama) - ini yang dipakai buat cek "giliran siapa".
+     * CATATAN: dulu ada method currentCycleApprovals() di sini (HasMany
+     * dengan closure where('submission_cycle', $this->submission_cycle))
+     * - dihapus karena terbukti TIDAK RELIABLE lewat eager-load
+     * (Model::load()/with()). Untuk filter "approval cycle sekarang",
+     * load relasi approvals() (aman, gak ada closure dinamis) lalu
+     * filter submission_cycle di PHP - lihat PayrollPeriodController.
      */
-    public function currentCycleApprovals(): HasMany
-    {
-        return $this->hasMany(PayrollApproval::class)
-            ->where('submission_cycle', $this->submission_cycle)
-            ->orderBy('level');
-    }
 
     public function submitter(): BelongsTo
     {

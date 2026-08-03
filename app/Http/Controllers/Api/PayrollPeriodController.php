@@ -180,10 +180,25 @@ class PayrollPeriodController extends Controller
             ], 500);
         }
 
+        $period = $period->fresh()->load(['approvalWorkflow.steps.approverRole', 'approvals.approverRole']);
+
+        // currentCycleApprovals sebagai Eloquent relation dengan closure
+        // where('submission_cycle', $this->submission_cycle) TIDAK bisa
+        // diandalkan lewat eager-load (Model::load()/with()) - Laravel
+        // membangun ulang query relasi itu lewat mekanisme internal yang
+        // gak menjamin $this merujuk instance yang atributnya sudah ke-
+        // populate, jadi $this->submission_cycle bisa kebaca null.
+        // Fix: load relasi 'approvals' yang aman (query polos, tanpa
+        // closure dinamis), baru filter cycle sekarang di PHP.
+        $period->setAttribute(
+            'current_cycle_approvals',
+            $period->approvals->where('submission_cycle', $period->submission_cycle)->values()
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Payroll period berhasil disubmit.',
-            'data' => $period->fresh()->load(['approvalWorkflow.steps.approverRole', 'currentCycleApprovals.approverRole']),
+            'data' => $period,
         ]);
     }
 
@@ -270,10 +285,17 @@ class PayrollPeriodController extends Controller
             ], 500);
         }
 
+        $period = $period->fresh()->load(['approvals.approverRole', 'approvals.actor']);
+
+        $period->setAttribute(
+            'current_cycle_approvals',
+            $period->approvals->where('submission_cycle', $period->submission_cycle)->values()
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Payroll period berhasil di-approve.',
-            'data' => $period->fresh()->load(['currentCycleApprovals.approverRole', 'currentCycleApprovals.actor']),
+            'data' => $period,
         ]);
     }
 
