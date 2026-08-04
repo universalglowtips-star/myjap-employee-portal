@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\EmployeeOfficeScopeController;
 use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\WorkShiftController;
@@ -142,6 +143,20 @@ $apiRoutes = function () {
 
     Route::post('employees/{id}/restore', [EmployeeController::class, 'restore'])
         ->middleware('permission:employee.delete');
+
+    // =========================
+    // EMPLOYEE OFFICE SCOPE (wewenang cabang, terpisah dari kantor
+    // asal employee.office_location_id) - dipakai buat branch
+    // restriction di Payroll Approval Workflow
+    // =========================
+    Route::get('employees/{id}/office-scopes', [EmployeeOfficeScopeController::class, 'index'])
+        ->middleware('permission:employee.update');
+
+    Route::post('employees/{id}/office-scopes', [EmployeeOfficeScopeController::class, 'store'])
+        ->middleware('permission:employee.update');
+
+    Route::delete('employees/{id}/office-scopes/{officeLocationId}', [EmployeeOfficeScopeController::class, 'destroy'])
+        ->middleware('permission:employee.update');
 
     // =========================
     // TRANSACTION

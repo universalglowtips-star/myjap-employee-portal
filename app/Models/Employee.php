@@ -125,6 +125,27 @@ class Employee extends Authenticatable
         return $this->belongsTo(OfficeLocation::class)->withTrashed();
     }
 
+    /**
+     * office_location_id di atas adalah KANTOR ASAL (tempat kerja),
+     * BUKAN wewenang. Wewenang approval branch-restricted SELALU
+     * lewat tabel ini (employee_office_scopes) - satu employee bisa
+     * punya banyak scope (misal Manager Kaltim berwenang di banyak
+     * cabang sekaligus, walau kantor asalnya cuma satu).
+     */
+    public function officeScopes(): HasMany
+    {
+        return $this->hasMany(EmployeeOfficeScope::class);
+    }
+
+    /**
+     * Cek wewenang - TANPA fallback ke office_location_id sama sekali,
+     * sesuai keputusan desain: kantor asal bukan dasar wewenang.
+     */
+    public function hasScopeFor(int $officeLocationId): bool
+    {
+        return $this->officeScopes()->where('office_location_id', $officeLocationId)->exists();
+    }
+
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);

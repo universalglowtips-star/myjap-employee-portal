@@ -378,10 +378,12 @@ class PayrollPeriodController extends Controller
     {
         $user = $request->user();
 
+        $isSuperAdmin = $user->role && $user->role->role_code === 'SUPER_ADMIN';
+
         $periods = PayrollPeriod::where('status', 'Submitted')
             ->with(['approvalWorkflow', 'creator', 'submitter'])
             ->get()
-            ->filter(function (PayrollPeriod $period) use ($user) {
+            ->filter(function (PayrollPeriod $period) use ($user, $isSuperAdmin) {
 
                 $currentApproval = PayrollApproval::where('payroll_period_id', $period->id)
                     ->where('submission_cycle', $period->submission_cycle)
@@ -389,12 +391,26 @@ class PayrollPeriodController extends Controller
                     ->where('status', 'Pending')
                     ->first();
 
-                if (!$currentApproval || (int) $currentApproval->approver_role_id !== (int) $user->role_id) {
+                if (!$currentApproval) {
+                    return false;
+                }
+
+                // SUPER_ADMIN bypass eksplisit - jangan bergantung ke
+                // urutan pengecekan role_id di bawah ini (yang secara
+                // tidak sengaja juga menolak SUPER_ADMIN karena dia
+                // memang bukan approver_role_id manapun). Ditulis
+                // eksplisit supaya gak rapuh kalau logic di bawah
+                // berubah nanti.
+                if ($isSuperAdmin) {
+                    return true;
+                }
+
+                if ((int) $currentApproval->approver_role_id !== (int) $user->role_id) {
                     return false;
                 }
 
                 if ($currentApproval->restrict_to_office_location) {
-                    return (int) $user->office_location_id === (int) $period->office_location_id;
+                    return $user->hasScopeFor($period->office_location_id);
                 }
 
                 return true;
@@ -446,15 +462,17 @@ class PayrollPeriodController extends Controller
         }
 
         // Level ini branch-scoped (misal Manager cabang) - approver
-        // WAJIB berkantor di cabang yang SAMA PERSIS sama periode ini.
-        // Manager cabang lain gak bisa approve payroll cabang yang
-        // bukan tanggung jawabnya, walau role-nya sama-sama MANAGER.
+        // WAJIB punya WEWENANG eksplisit di cabang periode ini (tabel
+        // employee_office_scopes), BUKAN sekadar berkantor di situ.
+        // Manager Kaltim yang berkantor di Balikpapan tapi punya scope
+        // ke Samarinda tetap BISA approve periode Samarinda - kantor
+        // asal sama sekali gak relevan di sini.
         if (!$isSuperAdmin && $currentApproval->restrict_to_office_location) {
 
-            if ((int) $user->office_location_id !== (int) $period->office_location_id) {
+            if (!$user->hasScopeFor($period->office_location_id)) {
                 return [null, response()->json([
                     'success' => false,
-                    'message' => 'Level approval ini dibatasi per cabang - kamu bukan penanggung jawab cabang periode ini.'
+                    'message' => 'Level approval ini dibatasi per cabang - kamu tidak punya wewenang di cabang periode ini.'
                 ], 403)];
             }
         }
