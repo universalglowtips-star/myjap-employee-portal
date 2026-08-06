@@ -50,6 +50,8 @@ class PermissionSeeder extends Seeder
 
             'approval-workflow' => $crud,
 
+            'system-warning' => ['view', 'resolve'],
+
         ];
 
         foreach ($modules as $module => $actions) {

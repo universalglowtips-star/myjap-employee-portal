@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\OfficeLocationSupervisorController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\PayrollPeriodController;
 use App\Http\Controllers\Api\ApprovalWorkflowController;
+use App\Http\Controllers\Api\SystemWarningController;
 
 /*
 |--------------------------------------------------------------------------
@@ -380,6 +381,16 @@ $apiRoutes = function () {
 
     Route::apiResource('approval-workflows', ApprovalWorkflowController::class)
         ->only(['destroy'])->middleware('permission:approval-workflow.delete');
+
+    // =========================
+    // SYSTEM WARNING (operasional, actionable - beda dari audit log
+    // yang immutable) - khusus SUPER_ADMIN/HRD
+    // =========================
+    Route::get('system-warnings', [SystemWarningController::class, 'index'])
+        ->middleware('permission:system-warning.view');
+
+    Route::post('system-warnings/{id}/resolve', [SystemWarningController::class, 'resolve'])
+        ->middleware('permission:system-warning.resolve');
 
 };
 

@@ -88,6 +88,7 @@ class RolePermissionSeeder extends Seeder
                 'audit-log.view',
                 'payroll-period.view', 'payroll-period.submit', 'payroll-period.approve', 'payroll-period.reject',
                 'approval-workflow.view', 'approval-workflow.create', 'approval-workflow.update', 'approval-workflow.delete',
+                'system-warning.view', 'system-warning.resolve',
             ],
 
             'EMPLOYEE' => [

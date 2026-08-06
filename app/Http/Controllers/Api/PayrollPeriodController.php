@@ -167,7 +167,8 @@ class PayrollPeriodController extends Controller
                     'payroll_pending_approval',
                     'Payroll Menunggu Approval Kamu',
                     "Payroll periode {$period->period_code} menunggu approval level {$firstLevel->level}.",
-                    ['payroll_period_id' => $period->id]
+                    ['payroll_period_id' => $period->id],
+                    $period
                 );
             });
 
@@ -254,7 +255,8 @@ class PayrollPeriodController extends Controller
                         'payroll_pending_approval',
                         'Payroll Menunggu Approval Kamu',
                         "Payroll periode {$period->period_code} menunggu approval level {$nextStep->level}.",
-                        ['payroll_period_id' => $period->id]
+                        ['payroll_period_id' => $period->id],
+                        $period
                     );
 
                 } else {
@@ -484,13 +486,52 @@ class PayrollPeriodController extends Controller
      * Kirim notifikasi ke SEMUA employee aktif yang punya role tertentu -
      * dipakai karena approver ditentukan by Role, bukan per-individu.
      */
-    private function notifyRoleHolders(int $roleId, string $type, string $title, string $message, array $data): void
+    /**
+     * Kirim notifikasi ke SEMUA employee aktif yang punya role tertentu -
+     * dipakai karena approver ditentukan by Role, bukan per-individu.
+     *
+     * Kalau TIDAK ADA satupun employee aktif dengan role itu, approval
+     * TETAP JALAN seperti biasa (siapapun yang login dengan role/
+     * permission yang sesuai tetap bisa approve manual) - ini BUKAN
+     * error yang menghentikan alur. Tapi kondisi ini dicatat 2 kali:
+     * 1. audit_logs (histori permanen, immutable)
+     * 2. system_warnings (operasional, actionable, bisa di-resolve,
+     *    muncul di dashboard SUPER_ADMIN/HRD) - supaya kondisi "approval
+     *    berpotensi tertunda karena gak ada yang dikasih tau" gak
+     *    kelewat begitu aja.
+     */
+    private function notifyRoleHolders(int $roleId, string $type, string $title, string $message, array $data, ?PayrollPeriod $relatedPeriod = null): void
     {
-        Employee::where('role_id', $roleId)
+        $employeeIds = Employee::where('role_id', $roleId)
             ->where('is_active', true)
-            ->pluck('id')
-            ->each(function ($employeeId) use ($type, $title, $message, $data) {
-                Notification::notify($employeeId, $type, $title, $message, $data);
-            });
+            ->pluck('id');
+
+        if ($employeeIds->isEmpty()) {
+
+            $roleCode = \App\Models\Role::find($roleId)?->role_code ?? "role #{$roleId}";
+
+            $warningMessage = "Tidak ada karyawan aktif dengan role {$roleCode} untuk menerima notifikasi '{$title}'"
+                . ($relatedPeriod ? " (periode {$relatedPeriod->period_code})" : '')
+                . ". Approval tetap bisa diproses manual oleh siapapun yang punya role/permission sesuai, tapi berpotensi tertunda karena tidak ada yang diberi tahu otomatis.";
+
+            if ($relatedPeriod) {
+                AuditLogService::log(
+                    $relatedPeriod,
+                    'notification_no_recipients',
+                    null,
+                    ['role_id' => $roleId, 'role_code' => $roleCode, 'notification_type' => $type],
+                    null,
+                    $warningMessage
+                );
+            }
+
+            \App\Models\SystemWarning::raise('notification_no_recipients', $warningMessage, $relatedPeriod);
+
+            return;
+        }
+
+        $employeeIds->each(function ($employeeId) use ($type, $title, $message, $data) {
+            Notification::notify($employeeId, $type, $title, $message, $data);
+        });
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\Leave;
 use App\Models\Payslip;
+use App\Models\SystemWarning;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +45,8 @@ class DashboardController extends Controller
             ->where('year', $currentYear)
             ->get();
 
+        $unresolvedWarnings = SystemWarning::where('is_resolved', false)->count();
+
         return response()->json([
             'success' => true,
             'message' => 'Ringkasan dashboard berhasil diambil.',
@@ -69,6 +72,12 @@ class DashboardController extends Controller
                     'draft_count' => $payslipsThisMonth->where('status', 'Draft')->count(),
                     'published_count' => $payslipsThisMonth->where('status', 'Published')->count(),
                     'total_net_salary' => $payslipsThisMonth->sum('net_salary'),
+                ],
+                // System warning operasional (misal: notifikasi approval
+                // gak ada penerima) - HRD/SUPER_ADMIN perlu tau ada yang
+                // butuh perhatian, tanpa harus buka endpoint terpisah dulu.
+                'system_warnings' => [
+                    'unresolved_count' => $unresolvedWarnings,
                 ],
             ],
         ]);
