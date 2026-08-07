@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\OfficeLocationController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\PayslipController;
+use App\Http\Controllers\Api\SalaryComponentController;
 use App\Http\Controllers\Api\CompanySettingController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
@@ -60,7 +61,26 @@ $apiRoutes = function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/me', function (Request $request) {
-        return $request->user();
+
+        $employee = $request->user()->load('role');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data profil berhasil diambil.',
+            'data' => [
+                'employee' => $employee,
+                // Daftar permission_code yang dimiliki role user - dipakai
+                // frontend buat PermissionGate (tampil/sembunyi menu &
+                // tombol) tanpa harus nembak endpoint terpisah tiap saat.
+                'permissions' => $employee->role
+                    ? $employee->role->permissions()->pluck('permission_code')
+                    : collect(),
+                // Daftar office_location_id yang jadi WEWENANG user ini
+                // (bukan cuma kantor asal) - dipakai frontend buat filter/
+                // highlight cabang mana yang relevan buat approval dia.
+                'office_scopes' => $employee->officeScopes()->pluck('office_location_id'),
+            ],
+        ]);
     });
 
     // =========================
@@ -207,6 +227,21 @@ $apiRoutes = function () {
 
     Route::apiResource('payslips', PayslipController::class)
         ->only(['destroy'])->middleware('permission:payslip.delete');
+
+    // =========================
+    // SALARY COMPONENT (Dynamic Payroll Component)
+    // =========================
+    Route::apiResource('salary-components', SalaryComponentController::class)
+        ->only(['index', 'show'])->middleware('permission:salary-component.view');
+
+    Route::apiResource('salary-components', SalaryComponentController::class)
+        ->only(['store'])->middleware('permission:salary-component.create');
+
+    Route::apiResource('salary-components', SalaryComponentController::class)
+        ->only(['update'])->middleware('permission:salary-component.update');
+
+    Route::apiResource('salary-components', SalaryComponentController::class)
+        ->only(['destroy'])->middleware('permission:salary-component.delete');
 
     // Sengaja dashboard.view (bukan payslip.view) - endpoint ini rekap
     // AGREGAT semua karyawan dalam 1 periode, admin-level only.

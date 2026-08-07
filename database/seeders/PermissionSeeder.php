@@ -30,6 +30,8 @@ class PermissionSeeder extends Seeder
 
             'payslip' => [...$crud, 'publish', 'unpublish'],
 
+            'salary-component' => $crud,
+
             'payroll' => ['generate-bulk', 'publish-bulk'],
 
             'store-item' => $crud,
