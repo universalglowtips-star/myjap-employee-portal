@@ -1,0 +1,95 @@
+/* @import HARUS di baris paling atas (sebelum @layer/rule apapun,
+   termasuk yang datang dari expand "tailwindcss") - kalau kebalik,
+   font import ini technically invalid CSS dan berisiko di-drop
+   diam-diam oleh browser/build tool yang lebih ketat. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* ============================================================
+     SEMUA nilai di sini HARUS dicerminkan persis dari
+     src/design-system/tokens.json - kalau tokens.json berubah,
+     sinkronkan di sini juga. Ini bukan sumber kebenaran kedua,
+     ini cuma representasi CSS var dari tokens.json yang sama.
+     ============================================================ */
+
+  /* Primary action / active / link - #0066FF, BUKAN navy lagi */
+  --color-primary-50: #E6F0FF;
+  --color-primary-100: #CCE1FF;
+  --color-primary-500: #3385FF;
+  --color-primary-600: #0066FF;
+  --color-primary-700: #0052CC;
+
+  /* Sidebar / dark surface - navy, TERPISAH TOTAL dari primary.
+     JANGAN pernah pakai --color-primary-* untuk elemen sidebar. */
+  --color-sidebar: #0B1826;
+  --color-sidebar-50: #EEF3F8;
+  --color-sidebar-100: #D3E1EC;
+  --color-sidebar-300: #7C9DBC;
+  --color-sidebar-500: #2C5578;
+  --color-sidebar-600: #1E3A5F;
+  --color-sidebar-700: #152A46;
+
+  /* Accent sekunder - amber, BUKAN primary navigation */
+  --color-accent-300: #F3C878;
+  --color-accent-500: #E8A33D;
+  --color-accent-600: #C7862A;
+
+  --color-status-draft: #6B7280;
+  --color-status-submitted: #2563EB;
+  --color-status-approved: #2F855A;
+  --color-status-published: #0D9488;
+  --color-status-rejected: #C53030;
+  --color-status-pending: #DD6B20;
+
+  --color-success: #2F855A;
+  --color-warning: #DD6B20;
+  --color-danger: #C53030;
+
+  --color-neutral-0: #FFFFFF;
+  --color-neutral-50: #F7F6F3;
+  --color-neutral-100: #EEECE6;
+  --color-neutral-200: #DDD9CF;
+  --color-neutral-400: #9C9689;
+  --color-neutral-600: #5C574C;
+  --color-neutral-800: #2D2A24;
+  --color-neutral-900: #1A2028;
+
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(11, 24, 38, 0.06);
+  --shadow-md: 0 4px 12px rgba(11, 24, 38, 0.08);
+  --shadow-lg: 0 12px 32px rgba(11, 24, 38, 0.12);
+}
+
+* {
+  border-color: var(--color-neutral-200);
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fokus keyboard harus selalu kelihatan - aksesibilitas, bukan opsional */
+:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
