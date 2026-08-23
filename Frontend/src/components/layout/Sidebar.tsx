@@ -66,9 +66,9 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Navigasi utama"
-      className="flex h-full w-[240px] flex-col gap-1 bg-sidebar px-4 pt-6"
+      className="flex h-full w-[240px] flex-col gap-1 border-r border-neutral-200 bg-white px-4 pt-6"
     >
-      <span className="font-display text-lg font-bold text-white">MyJAP</span>
+      <span className="font-display text-lg font-bold text-primary-600">MyJAP</span>
 
       {navGroups.map((group) => (
         <div key={group.label} className="mt-4 flex flex-col gap-1">

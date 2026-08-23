@@ -39,8 +39,12 @@ export function SidebarNavItem({ to, label, icon: Icon }: SidebarNavItemProps) {
         // total item dari audit Figma = 33px. 33-20=13px padding
         // total, dibagi rata 6.5px atas-bawah. Icon 16px < 20px teks,
         // jadi gak pengaruh ke perhitungan tinggi (teks yang dominan).
-        'flex items-center gap-2 rounded-sm px-4 py-[6.5px] font-body text-sm text-white',
-        isActive ? 'bg-primary-600/18 text-primary-500' : 'hover:bg-white/5'
+        // border-l-[3px] dipasang di KEDUA state (transparent kalau
+        // non-aktif) supaya lebar konten gak "loncat" pas item jadi aktif.
+        'flex items-center gap-2 rounded-sm border-l-[3px] px-[13px] py-[6.5px] font-body text-sm transition-colors',
+        isActive
+          ? 'border-primary-600 bg-primary-50 font-medium text-primary-600'
+          : 'border-transparent text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
       )}
     >
       <Icon size={16} strokeWidth={2} aria-hidden="true" />

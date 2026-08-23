@@ -74,10 +74,20 @@ export function Topbar({ title, actions }: TopbarProps) {
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            className="flex items-center gap-1.5 rounded-sm focus:outline-none"
+            className="flex items-center gap-2 rounded-sm px-1.5 py-1 hover:bg-neutral-50 focus:outline-none"
           >
-            <Avatar name={employee?.full_name ?? '?'} size="small" />
-            <ChevronDown size={12} strokeWidth={2} className="text-neutral-400" />
+            <Avatar name={employee?.full_name ?? '?'} size="default" />
+            {/* Nama + jabatan 2 baris - jabatan dari employee.position.position_name
+                (relasi position sekarang di-load GET /me), BUKAN teks statis. */}
+            <div className="flex flex-col items-start leading-tight">
+              <span className="font-body text-sm font-semibold text-neutral-900">
+                {employee?.full_name ?? '-'}
+              </span>
+              <span className="font-body text-xs text-neutral-500">
+                {employee?.position?.position_name ?? '-'}
+              </span>
+            </div>
+            <ChevronDown size={14} strokeWidth={2} className="text-neutral-400" />
           </button>
 
           {menuOpen && (
