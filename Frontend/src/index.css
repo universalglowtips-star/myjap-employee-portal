@@ -68,8 +68,16 @@
   --shadow-lg: 0 12px 32px rgba(11, 24, 38, 0.12);
 }
 
-* {
-  border-color: var(--color-neutral-200);
+/* Dibungkus @layer base supaya utility border-color eksplisit
+   (border-transparent, border-primary-600, dst di seluruh app) tetap
+   menang - rule unlayered SELALU menang lawan rule di dalam layer
+   manapun terlepas dari specificity (CSS Cascade Layers spec), jadi
+   kalau ini dibiarkan di luar @layer, semua border-color custom
+   ketiban abu-abu neutral-200 ini, gak peduli class apa yang dipasang. */
+@layer base {
+  * {
+    border-color: var(--color-neutral-200);
+  }
 }
 
 body {
