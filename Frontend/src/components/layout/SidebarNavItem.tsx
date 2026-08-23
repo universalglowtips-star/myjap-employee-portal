@@ -52,6 +52,13 @@ export function SidebarNavItem({ to, label, icon: Icon, collapsed = false, onCli
       to={to}
       onClick={onClick}
       title={collapsed ? label : undefined}
+      // Diambil dari prop `label` YANG SAMA dipakai buat render teks
+      // di bawah - satu sumber data, gak di-hardcode terpisah. Selalu
+      // dipasang (bukan cuma pas collapsed) - paling kentara gunanya
+      // pas collapsed (teks label ke-hidden via lg:hidden), tapi gak
+      // ada ruginya tetap ada pas expanded juga (accessible name-nya
+      // sama persis kayak yang kebaca dari innerText).
+      aria-label={label}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
         // py-[6.5px] BUKAN nilai sembarang - dihitung presisi:

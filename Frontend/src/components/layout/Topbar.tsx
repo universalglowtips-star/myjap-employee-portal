@@ -7,6 +7,23 @@ import { Avatar } from '../ui/Avatar'
 interface TopbarProps {
   /** Toggle Sidebar - collapse/expand di desktop (>=lg), buka/tutup drawer di mobile (<lg). Satu handler aja - CSS `lg:` yang nentuin mode mana yang keliatan, gak perlu deteksi breakpoint via JS. */
   onToggleSidebar: () => void
+  /**
+   * Dipakai CUMA buat teks aria-label hamburger (dinamis "Buka"/"Tutup"
+   * sesuai state) - BUKAN buat styling apapun di Topbar sendiri.
+   *
+   * KETERBATASAN YANG SADAR DIAMBIL: `collapsed` (state desktop) dan
+   * `mobileOpen` (state drawer mobile) SECARA SEMANTIK punya arti
+   * "default" yang KEBALIK - collapsed=false berarti Sidebar
+   * TERBUKA/expanded (default desktop), tapi mobileOpen=false berarti
+   * drawer TERTUTUP (default mobile). Gak ada 1 boolean yang bisa
+   * merepresentasikan "lagi kebuka" yang benar buat KEDUA breakpoint
+   * sekaligus tanpa deteksi viewport via JS (yang sengaja dihindari di
+   * seluruh fitur ini). Dipilih `collapsed` sebagai sumber label -
+   * akurat buat pengguna desktop (termasuk screen reader+keyboard,
+   * audiens utama portal admin ini), technically kurang pas cuma di 1
+   * momen spesifik: mobile, sebelum interaksi pertama sama sekali.
+   */
+  collapsed: boolean
 }
 
 /**
@@ -30,7 +47,7 @@ interface TopbarProps {
  * TIDAK ADA referensi visual). Dropdown minimal: cuma 1 aksi
  * (Logout), gak ada elemen lain di luar itu.
  */
-export function Topbar({ onToggleSidebar }: TopbarProps) {
+export function Topbar({ onToggleSidebar, collapsed }: TopbarProps) {
   const navigate = useNavigate()
   const employee = useAuthStore((s) => s.employee)
   const logout = useAuthStore((s) => s.logout)
@@ -89,11 +106,16 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
           justify-self-start jaga-jaga box ini gak di-stretch grid
           kalau kolom 1fr-nya kebetulan lebih lebar dari 64px. */}
       <div className="flex w-16 shrink-0 items-center justify-center justify-self-start">
+        {/* h-11 w-11 (44x44px, WCAG 2.5.5 minimum touch target) - naik
+            dari h-9 w-9 (36px, kurang dari minimum). Ikon Menu TETAP
+            size={20} gak berubah - yang diperbesar cuma area klik
+            tombolnya, bukan ikonnya. Masih pas center di w-16 (64px)
+            rail (64-44=20px sisa, 10px tiap sisi). */}
         <button
           type="button"
           onClick={onToggleSidebar}
-          aria-label="Buka/tutup menu navigasi"
-          className="flex h-9 w-9 items-center justify-center rounded-sm text-neutral-600 hover:bg-neutral-50 focus:outline-none"
+          aria-label={collapsed ? 'Buka menu navigasi' : 'Tutup menu navigasi'}
+          className="flex h-11 w-11 items-center justify-center rounded-sm text-neutral-600 hover:bg-neutral-50 focus:outline-none"
         >
           <Menu size={20} strokeWidth={2} />
         </button>
@@ -113,8 +135,16 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
       </div>
 
       <div className="flex items-center justify-end gap-2 pr-4 sm:gap-4 sm:pr-6 lg:pr-8">
-        {/* Bell - visual statis, TANPA aria-live/count dinamis (bukan fitur fungsional) */}
-        <div className="relative shrink-0" aria-hidden="true">
+        {/* Bell - visual statis, TANPA aria-live/count dinamis (bukan
+            fitur fungsional, gak ada onClick). role="img" (BUKAN
+            role="status" - itu implies live-region yang bakal salah,
+            badge ini statis bukan update real-time) + aria-label
+            nyebutin badge-nya juga karena titik merah ITU SELALU ADA
+            di kode sekarang (unconditional, gak ada logic unread-count
+            beneran) - kalau nanti Fase F nambahin logic count asli,
+            aria-label ini WAJIB ikut jadi conditional ngikutin ada/
+            gaknya badge, bukan tetap statis kayak sekarang. */}
+        <div className="relative shrink-0" role="img" aria-label="Notifikasi, ada pemberitahuan baru">
           <Bell size={20} strokeWidth={2} className="text-neutral-600" />
           <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-status-rejected" />
         </div>

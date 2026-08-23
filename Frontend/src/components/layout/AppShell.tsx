@@ -70,7 +70,7 @@ export function AppShell({ title, actions, children }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Topbar onToggleSidebar={toggleSidebar} />
+      <Topbar onToggleSidebar={toggleSidebar} collapsed={collapsed} />
       <div className="flex min-w-0 flex-1">
         <Sidebar collapsed={collapsed} mobileOpen={mobileOpen} onClose={closeMobileSidebar} />
         <main className="min-w-0 flex-1 bg-neutral-50 p-8">
