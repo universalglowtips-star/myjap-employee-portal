@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, LogOut } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Menu } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { Avatar } from '../ui/Avatar'
 
@@ -9,6 +9,8 @@ interface TopbarProps {
   title: string
   /** Slot buat aksi kontekstual per halaman (mis. Approve/Reject di Payroll Period Detail nanti) - kosong buat Langkah 8. */
   actions?: ReactNode
+  /** Toggle Sidebar - collapse/expand di desktop (>=lg), buka/tutup drawer di mobile (<lg). Satu handler aja - CSS `lg:` yang nentuin mode mana yang keliatan, gak perlu deteksi breakpoint via JS. */
+  onToggleSidebar: () => void
 }
 
 /**
@@ -22,7 +24,7 @@ interface TopbarProps {
  * TIDAK ADA referensi visual). Dropdown minimal: cuma 1 aksi
  * (Logout), gak ada elemen lain di luar itu.
  */
-export function Topbar({ title, actions }: TopbarProps) {
+export function Topbar({ title, actions, onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate()
   const employee = useAuthStore((s) => s.employee)
   const logout = useAuthStore((s) => s.logout)
@@ -56,19 +58,48 @@ export function Topbar({ title, actions }: TopbarProps) {
   }
 
   return (
-    <header className="flex h-[72px] items-center justify-between border-b border-neutral-200 bg-white px-8">
-      <h1 className="font-display text-xl font-semibold text-neutral-900">{title}</h1>
+    // grid-cols-[1fr_auto_1fr]: kolom tengah (brand) auto-width dan
+    // BENERAN center relatif ke lebar Topbar, gak kegeser walau kolom
+    // kiri (title) atau kanan (avatar+nama) beda panjang - beda sama
+    // flex justify-between yang cuma nge-push ke ujung.
+    <header className="grid h-[72px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-neutral-200 bg-white px-4 sm:gap-4 sm:px-6 lg:px-8">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          aria-label="Buka/tutup menu navigasi"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-neutral-600 hover:bg-neutral-50 focus:outline-none"
+        >
+          <Menu size={20} strokeWidth={2} />
+        </button>
+        {/* Title disembunyikan di layar sempit (<md) - di 375px ruang
+            udah abis buat hamburger + brand tengah + avatar/nama kanan
+            yang WAJIB tetap ada, title paling gampang dikorbanin dulu. */}
+        <h1 className="hidden truncate font-display text-xl font-semibold text-neutral-900 md:block">
+          {title}
+        </h1>
+      </div>
 
-      <div className="flex items-center gap-4">
+      {/* Brand - pindah dari Sidebar ke sini (tengah), logo + teks
+          "MyJAP". Teks disembunyikan di bawah sm biar muat di 375px,
+          logo tetap keliatan sendirian. */}
+      <div className="flex items-center justify-center gap-2">
+        <img src="/logo.png" alt="MyJAP" className="h-7 w-auto shrink-0" />
+        <span className="hidden font-display text-lg font-bold text-primary-600 sm:inline">
+          MyJAP
+        </span>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 sm:gap-4">
         {actions}
 
         {/* Bell - visual statis, TANPA aria-live/count dinamis (bukan fitur fungsional) */}
-        <div className="relative" aria-hidden="true">
+        <div className="relative shrink-0" aria-hidden="true">
           <Bell size={20} strokeWidth={2} className="text-neutral-600" />
           <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-status-rejected" />
         </div>
 
-        <div ref={menuRef} className="relative">
+        <div ref={menuRef} className="relative shrink-0">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -78,8 +109,10 @@ export function Topbar({ title, actions }: TopbarProps) {
           >
             <Avatar name={employee?.full_name ?? '?'} size="default" />
             {/* Nama + jabatan 2 baris - jabatan dari employee.position.position_name
-                (relasi position sekarang di-load GET /me), BUKAN teks statis. */}
-            <div className="flex flex-col items-start leading-tight">
+                (relasi position sekarang di-load GET /me), BUKAN teks statis.
+                Disembunyikan di bawah sm (375px gak muat bareng brand tengah +
+                hamburger) - avatar+chevron tetap ada, dropdown/logout tetap jalan. */}
+            <div className="hidden flex-col items-start leading-tight sm:flex">
               <span className="font-body text-sm font-semibold text-neutral-900">
                 {employee?.full_name ?? '-'}
               </span>

@@ -6,6 +6,10 @@ interface SidebarNavItemProps {
   to: string
   label: string
   icon: LucideIcon
+  /** true = desktop collapsed (icon-only) - label disembunyikan via `lg:hidden`, native `title` dipasang sebagai tooltip pengganti (murah, gak butuh komponen tooltip custom). */
+  collapsed?: boolean
+  /** Dipanggil pas item diklik - dipakai buat nutup drawer mobile setelah navigasi. Gak ngaruh di desktop. */
+  onClick?: () => void
 }
 
 /**
@@ -24,13 +28,15 @@ interface SidebarNavItemProps {
  * tiap <SidebarNavItem> dengan <PermissionGate>" - gate di LUAR, item
  * ini presentational murni).
  */
-export function SidebarNavItem({ to, label, icon: Icon }: SidebarNavItemProps) {
+export function SidebarNavItem({ to, label, icon: Icon, collapsed = false, onClick }: SidebarNavItemProps) {
   const location = useLocation()
   const isActive = location.pathname === to
 
   return (
     <Link
       to={to}
+      onClick={onClick}
+      title={collapsed ? label : undefined}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
         // py-[6.5px] BUKAN nilai sembarang - dihitung presisi:
@@ -44,11 +50,12 @@ export function SidebarNavItem({ to, label, icon: Icon }: SidebarNavItemProps) {
         'flex items-center gap-2 rounded-sm border-l-[3px] px-[13px] py-[6.5px] font-body text-sm transition-colors',
         isActive
           ? 'border-primary-600 bg-primary-50 font-medium text-primary-600'
-          : 'border-transparent text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
+          : 'border-transparent text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900',
+        collapsed && 'lg:justify-center'
       )}
     >
-      <Icon size={16} strokeWidth={2} aria-hidden="true" />
-      {label}
+      <Icon size={16} strokeWidth={2} aria-hidden="true" className="shrink-0" />
+      <span className={cn(collapsed && 'lg:hidden')}>{label}</span>
     </Link>
   )
 }

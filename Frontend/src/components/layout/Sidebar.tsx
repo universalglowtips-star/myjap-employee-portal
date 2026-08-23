@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { SidebarNavItem } from './SidebarNavItem'
 import { PermissionGate } from '../forms/PermissionGate'
+import { cn } from '../../lib/cn'
 
 /**
  * Struktur grup+item: OVERVIEW (Dashboard), PEOPLE (Karyawan/Absensi/
@@ -56,6 +57,10 @@ import { PermissionGate } from '../forms/PermissionGate'
  * mengikuti pola item lain yang sudah lebih dulu ada di sidebar tanpa
  * route terdaftar di App.tsx (mis. /employees, /attendance) - BUKAN
  * halaman baru, cuma nav target yang nunggu giliran dibangun.
+ *
+ * Brand (logo + teks "MyJAP") SUDAH PINDAH ke Topbar (tengah) - Sidebar
+ * mulai langsung dari grup menu, gak ada header brand lagi di sini
+ * (biar gak duplikat di 2 tempat).
  */
 const navGroups = [
   {
@@ -99,36 +104,72 @@ const navGroups = [
   },
 ] as const
 
-export function Sidebar() {
-  return (
-    <nav
-      aria-label="Navigasi utama"
-      className="flex h-full w-[240px] flex-col gap-1 border-r border-neutral-200 bg-white px-4 pt-6"
-    >
-      <div className="flex items-center gap-2">
-        <img src="/logo.png" alt="MyJAP" className="h-7 w-auto" />
-        <span className="font-display text-lg font-bold text-primary-600">MyJAP</span>
-      </div>
+interface SidebarProps {
+  /** true = Sidebar ciut jadi 64px icon-only - HANYA berlaku di desktop (>=lg), lewat class `lg:`. Di mobile gak ngaruh, itu urusan drawer di bawah. */
+  collapsed: boolean
+  /** true = drawer mobile (<lg) kebuka. Gak ngaruh di desktop (>=lg, Sidebar statis & selalu keliatan di sana). */
+  mobileOpen: boolean
+  /** Dipanggil pas item nav diklik ATAU backdrop di-tap - nutup drawer mobile. Diteruskan ke tiap SidebarNavItem sebagai onClick. */
+  onClose: () => void
+}
 
-      {navGroups.map((group) => (
-        <div key={group.label} className="mt-4 flex flex-col gap-1">
-          <span className="px-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-400">
-            {group.label}
-          </span>
-          {group.items.map((item) => {
-            const navItem = <SidebarNavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
-            // Item tanpa permission spesifik (Notifikasi) TIDAK dibungkus
-            // PermissionGate sama sekali - render langsung.
-            return item.permission ? (
-              <PermissionGate key={item.to} code={item.permission}>
-                {navItem}
-              </PermissionGate>
-            ) : (
-              navItem
-            )
-          })}
-        </div>
-      ))}
-    </nav>
+export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
+  return (
+    <>
+      {/* Backdrop - cuma ada di mobile (<lg), dan cuma dirender pas drawer kebuka. lg:hidden jaga-jaga kalau mobileOpen kebawa nyampe ke desktop (gak seharusnya kejadian, tapi gak boleh nutupin apa-apa di sana). */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-neutral-900/50 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <nav
+        aria-label="Navigasi utama"
+        className={cn(
+          // fixed + translate-x buat slide drawer di mobile (default,
+          // <lg). lg:static ngembaliin ke flex layout normal Topbar+
+          // AppShell di desktop, lg:translate-x-0 mastiin gak ketinggalan
+          // ke-translate walau mobileOpen false.
+          'fixed inset-y-0 left-0 z-50 flex h-full w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white px-4 pt-6 transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          collapsed && 'lg:w-16 lg:px-2'
+        )}
+      >
+        {navGroups.map((group) => (
+          <div key={group.label} className="mt-4 flex flex-col gap-1">
+            <span
+              className={cn(
+                'px-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-400',
+                collapsed && 'lg:hidden'
+              )}
+            >
+              {group.label}
+            </span>
+            {group.items.map((item) => {
+              const navItem = (
+                <SidebarNavItem
+                  key={item.to}
+                  to={item.to}
+                  label={item.label}
+                  icon={item.icon}
+                  collapsed={collapsed}
+                  onClick={onClose}
+                />
+              )
+              // Item tanpa permission spesifik (Notifikasi) TIDAK dibungkus
+              // PermissionGate sama sekali - render langsung.
+              return item.permission ? (
+                <PermissionGate key={item.to} code={item.permission}>
+                  {navItem}
+                </PermissionGate>
+              ) : (
+                navItem
+              )
+            })}
+          </div>
+        ))}
+      </nav>
+    </>
   )
 }
