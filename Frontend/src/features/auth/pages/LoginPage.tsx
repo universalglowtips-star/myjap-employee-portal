@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../../../stores/authStore'
 import type { NormalizedApiError } from '../../../api/client'
 import { Input } from '../../../components/ui/Input'
@@ -28,6 +29,9 @@ export function LoginPage() {
 
   // Error 401 (gagal login) - pesan APA ADANYA dari backend, gak dikarang ulang.
   const [generalError, setGeneralError] = useState<string | null>(null)
+
+  // Toggle show/hide password - visual saja, tidak menyentuh cara value dikirim ke backend.
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -72,15 +76,18 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Brand Panel - 880/1600 dari frame Figma asli (55%), navy, teks brand */}
-      <div className="hidden w-[55%] flex-col justify-center gap-5 bg-sidebar px-24 lg:flex">
+      {/* Brand Panel - 880/1600 dari frame Figma asli (55%), primary blue, teks brand */}
+      <div className="hidden w-[55%] flex-col justify-center gap-5 bg-primary-600 px-24 lg:flex">
+        <div className="self-start rounded-lg bg-white p-3 shadow-sm">
+          <img src="/logo.png" alt="JAP Logistik" className="h-20 w-auto" />
+        </div>
         <div className="h-1.5 w-16 rounded-full bg-accent-500" />
         <h1 className="font-display text-[40px] font-extrabold leading-tight text-white">
           PT Jasa Angkutan
           <br />
           Publik Logistik
         </h1>
-        <p className="font-body text-[15px] text-neutral-400">
+        <p className="font-body text-[15px] text-primary-100">
           MyJAP Employee Portal — sistem HR, absensi, dan payroll terpadu untuk seluruh cabang
           Kalimantan Timur.
         </p>
@@ -89,6 +96,8 @@ export function LoginPage() {
       {/* Form Panel - putih, form di-center */}
       <div className="flex w-full flex-col items-center justify-center bg-white px-6 lg:w-[45%]">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex w-full max-w-[400px] flex-col gap-6">
+          <img src="/logo.png" alt="JAP Logistik" className="h-10 w-auto self-start lg:hidden" />
+
           <h2 className="font-display text-2xl font-semibold text-neutral-900">
             Masuk ke akun kamu
           </h2>
@@ -111,14 +120,26 @@ export function LoginPage() {
             <label htmlFor="password" className="font-body text-[13px] font-medium text-neutral-600">
               Kata Sandi
             </label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              error={errors.password?.message}
-              {...register('password')}
-            />
+            {/* Toggle show/hide - lapisan visual di atas Input yang sudah ada, tidak mengubah Input.tsx (dipakai halaman lain juga) */}
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                error={errors.password?.message}
+                className="pr-10"
+                {...register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                className="absolute right-3 top-[21px] -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={16} strokeWidth={2} /> : <Eye size={16} strokeWidth={2} />}
+              </button>
+            </div>
           </div>
 
           {generalError && (
