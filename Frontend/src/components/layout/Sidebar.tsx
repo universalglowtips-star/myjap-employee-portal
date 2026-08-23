@@ -145,14 +145,31 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
           collapsed && 'lg:w-16'
         )}
       >
-        {navGroups.map((group) => (
+        {navGroups.map((group, index) => (
           <div key={group.label} className="mt-4 flex flex-col gap-1">
+            {/* Divider - CUMA muncul di collapsed (lg:block di-gate
+                `collapsed`, bukan cuma breakpoint) DAN cuma di antara
+                grup (index>0, gak ada divider sebelum grup pertama).
+                Di expanded, `hidden` (default) tetap berlaku - label
+                grup di bawah ini yang jadi pemisah visual, JANGAN
+                dobel. mx-4+mb-2 kasih jarak dikit biar gak nempel ke
+                icon di atas/bawahnya. */}
+            {index > 0 && (
+              <div
+                aria-hidden="true"
+                className={cn('hidden', collapsed && 'lg:mx-4 lg:mb-2 lg:block lg:border-t lg:border-neutral-200')}
+              />
+            )}
             {/* pl-16 (BUKAN px-4 kayak sebelumnya) - nyamain sama posisi
                 mulainya teks label item di bawahnya (w-16 icon rail +
-                label), bukan sama posisi icon. */}
+                label), bukan sama posisi icon.
+                text-neutral-600 (BUKAN neutral-400 - kontras 2.94:1
+                terhadap putih, GAGAL WCAG AA. neutral-600 = 7.19:1,
+                lolos jauh di atas ambang 4.5:1, dihitung pakai formula
+                WCAG standar - lihat commit message buat detail angka). */}
             <span
               className={cn(
-                'pl-16 pr-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-400',
+                'pl-16 pr-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-600',
                 collapsed && 'lg:hidden'
               )}
             >
