@@ -62,7 +62,7 @@ $apiRoutes = function () {
 
     Route::get('/me', function (Request $request) {
 
-        $employee = $request->user()->load('role');
+        $employee = $request->user()->load(['role', 'position']);
 
         return response()->json([
             'success' => true,

@@ -1,4 +1,5 @@
 import type { Role } from './role'
+import type { Position } from './position'
 
 /**
  * Verifikasi: app/Models/Employee.php ($fillable + casts()) +
@@ -46,4 +47,5 @@ export interface Employee {
   updated_at: string
   deleted_at: string | null
   role?: Role
+  position?: Position
 }
