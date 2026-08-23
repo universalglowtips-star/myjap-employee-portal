@@ -23,9 +23,17 @@ interface TableProps<T> {
 /**
  * REFERENSI VISUAL (bukan component Figma resmi - Figma gak punya
  * "Table" sebagai component, ini pola yang diaudit dari tabel Payslip
- * di layar Payroll Period Detail): header 28px/padding 6/6/Inter
- * Medium 12px muted, row data 33px/padding 8/8/Inter Regular 13px
- * primary, border-bottom 1px color/border/default.
+ * di layar Payroll Period Detail): row data 33px/padding 8/8/Inter
+ * Regular 13px primary, border-bottom 1px color/border/default.
+ *
+ * Header: background solid bg-primary-600 (#0066FF) + teks putih -
+ * revisi dari header abu-abu polos sebelumnya, sesuai Arahan Visual
+ * Bagian 1 ("header background solid berwarna, bukan cuma teks abu-
+ * abu"). Kontras teks putih vs #0066FF = 4.83:1, dihitung pakai
+ * formula WCAG standar, lolos ambang AA normal text (4.5:1). px-3
+ * ditambahkan barengan (th & td) - sebelumnya 0 padding horizontal,
+ * aman waktu header cuma teks mengambang, begitu jadi bar warna solid
+ * teks bakal nempel tanpa jarak kalau gak dikasih padding.
  *
  * 5 state sesuai brief: Default (row biasa), Hover (:hover CSS
  * native, bukan React state), Selected (prop selectedRowKey, bg
@@ -52,7 +60,15 @@ export function Table<T>({
               key={col.key}
               scope="col"
               className={cn(
-                'pb-1.5 pt-1.5 font-body text-xs font-medium text-neutral-400',
+                // Header background solid biru (bg-primary-600) - teks
+                // putih, KONTRAS 4.83:1 terhadap #0066FF (dihitung
+                // pakai formula WCAG standar), lolos ambang AA normal
+                // text 4.5:1. px-3 ditambahkan bareng perubahan ini -
+                // sebelumnya th/td 0 padding horizontal (aman waktu
+                // header cuma teks abu mengambang, begitu jadi bar
+                // biru solid teks bakal nempel ke tepi/kolom sebelah
+                // tanpa jarak sama sekali).
+                'bg-primary-600 px-3 pb-1.5 pt-1.5 font-body text-xs font-medium text-white',
                 alignClass(col.align)
               )}
             >
@@ -66,7 +82,7 @@ export function Table<T>({
           Array.from({ length: 3 }).map((_, i) => (
             <tr key={`skeleton-${i}`} className="border-t border-neutral-200">
               {columns.map((col) => (
-                <td key={col.key} className="py-2">
+                <td key={col.key} className="px-3 py-2">
                   <div className="h-3.5 w-full max-w-[160px] animate-pulse rounded-sm bg-neutral-100" />
                 </td>
               ))}
@@ -74,7 +90,7 @@ export function Table<T>({
           ))
         ) : data.length === 0 ? (
           <tr>
-            <td colSpan={columns.length} className="py-8 text-center font-body text-sm text-neutral-400">
+            <td colSpan={columns.length} className="px-3 py-8 text-center font-body text-sm text-neutral-400">
               {emptyMessage}
             </td>
           </tr>
@@ -108,7 +124,7 @@ export function Table<T>({
                   <td
                     key={col.key}
                     className={cn(
-                      'py-2 font-body text-sm text-neutral-900',
+                      'px-3 py-2 font-body text-sm text-neutral-900',
                       col.mono && 'font-mono',
                       alignClass(col.align)
                     )}
