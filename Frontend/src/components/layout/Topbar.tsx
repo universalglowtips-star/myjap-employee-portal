@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, ChevronDown, LogOut, Menu } from 'lucide-react'
@@ -6,14 +5,21 @@ import { useAuthStore } from '../../stores/authStore'
 import { Avatar } from '../ui/Avatar'
 
 interface TopbarProps {
-  title: string
-  /** Slot buat aksi kontekstual per halaman (mis. Approve/Reject di Payroll Period Detail nanti) - kosong buat Langkah 8. */
-  actions?: ReactNode
   /** Toggle Sidebar - collapse/expand di desktop (>=lg), buka/tutup drawer di mobile (<lg). Satu handler aja - CSS `lg:` yang nentuin mode mana yang keliatan, gak perlu deteksi breakpoint via JS. */
   onToggleSidebar: () => void
 }
 
 /**
+ * Full-width, gak lagi berbagi baris sama Sidebar (restrukturisasi AppShell -
+ * Topbar sekarang di ATAS Sidebar, bukan di sebelahnya) - biar brand
+ * tengah BENERAN true-center relatif viewport, konsisten di kedua
+ * state Sidebar (collapsed 64px / expanded 240px).
+ *
+ * Isinya CUMA 3 hal: hamburger (kiri) - brand (tengah) - notif+avatar
+ * (kanan). Judul halaman & `actions` per-halaman PINDAH ke <main>
+ * (AppShell) - Topbar murni chrome global, gak nyisain slot konten
+ * per-halaman lagi.
+ *
  * Bell: VISUAL SAJA sesuai Figma (icon + badge merah statis) - TIDAK
  * ADA logic unread-count/dropdown notifikasi/API apapun. Itu Fase F,
  * bukan scope Langkah 8 (badge di sini cuma dekorasi tetap, BUKAN
@@ -24,7 +30,7 @@ interface TopbarProps {
  * TIDAK ADA referensi visual). Dropdown minimal: cuma 1 aksi
  * (Logout), gak ada elemen lain di luar itu.
  */
-export function Topbar({ title, actions, onToggleSidebar }: TopbarProps) {
+export function Topbar({ onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate()
   const employee = useAuthStore((s) => s.employee)
   const logout = useAuthStore((s) => s.logout)
@@ -59,11 +65,12 @@ export function Topbar({ title, actions, onToggleSidebar }: TopbarProps) {
 
   return (
     // grid-cols-[1fr_auto_1fr]: kolom tengah (brand) auto-width dan
-    // BENERAN center relatif ke lebar Topbar, gak kegeser walau kolom
-    // kiri (title) atau kanan (avatar+nama) beda panjang - beda sama
-    // flex justify-between yang cuma nge-push ke ujung.
-    <header className="grid h-[72px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-neutral-200 bg-white px-4 sm:gap-4 sm:px-6 lg:px-8">
-      <div className="flex min-w-0 items-center gap-3">
+    // BENERAN center relatif ke lebar Topbar (sekarang full-width
+    // viewport, gak lagi berbagi baris sama Sidebar) - gak kegeser
+    // walau kolom kiri/kanan beda lebar, beda sama flex justify-between
+    // yang cuma nge-push ke ujung.
+    <header className="grid h-[72px] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-neutral-200 bg-white px-4 sm:gap-4 sm:px-6 lg:px-8">
+      <div className="flex items-center">
         <button
           type="button"
           onClick={onToggleSidebar}
@@ -72,17 +79,10 @@ export function Topbar({ title, actions, onToggleSidebar }: TopbarProps) {
         >
           <Menu size={20} strokeWidth={2} />
         </button>
-        {/* Title disembunyikan di layar sempit (<md) - di 375px ruang
-            udah abis buat hamburger + brand tengah + avatar/nama kanan
-            yang WAJIB tetap ada, title paling gampang dikorbanin dulu. */}
-        <h1 className="hidden truncate font-display text-xl font-semibold text-neutral-900 md:block">
-          {title}
-        </h1>
       </div>
 
-      {/* Brand - pindah dari Sidebar ke sini (tengah), logo + teks
-          "MyJAP". Teks disembunyikan di bawah sm biar muat di 375px,
-          logo tetap keliatan sendirian. */}
+      {/* Brand - logo + teks "MyJAP", true-center. Teks disembunyikan
+          di bawah sm biar muat di 375px, logo tetap keliatan sendirian. */}
       <div className="flex items-center justify-center gap-2">
         <img src="/logo.png" alt="MyJAP" className="h-7 w-auto shrink-0" />
         <span className="hidden font-display text-lg font-bold text-primary-600 sm:inline">
@@ -91,8 +91,6 @@ export function Topbar({ title, actions, onToggleSidebar }: TopbarProps) {
       </div>
 
       <div className="flex items-center justify-end gap-2 sm:gap-4">
-        {actions}
-
         {/* Bell - visual statis, TANPA aria-live/count dinamis (bukan fitur fungsional) */}
         <div className="relative shrink-0" aria-hidden="true">
           <Bell size={20} strokeWidth={2} className="text-neutral-600" />

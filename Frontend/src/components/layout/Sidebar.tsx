@@ -116,10 +116,10 @@ interface SidebarProps {
 export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
   return (
     <>
-      {/* Backdrop - cuma ada di mobile (<lg), dan cuma dirender pas drawer kebuka. lg:hidden jaga-jaga kalau mobileOpen kebawa nyampe ke desktop (gak seharusnya kejadian, tapi gak boleh nutupin apa-apa di sana). */}
+      {/* Backdrop - cuma ada di mobile (<lg), dan cuma dirender pas drawer kebuka. top-[72px] (BUKAN inset-0/top-0) - Topbar sekarang full-width DI ATAS baris Sidebar+Main, jadi backdrop cuma perlu nutupin area di bawahnya, Topbar sendiri gak boleh ketutup. lg:hidden jaga-jaga kalau mobileOpen kebawa nyampe ke desktop (gak seharusnya kejadian, tapi gak boleh nutupin apa-apa di sana). */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-neutral-900/50 lg:hidden"
+          className="fixed inset-x-0 bottom-0 top-[72px] z-40 bg-neutral-900/50 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -128,10 +128,13 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
         aria-label="Navigasi utama"
         className={cn(
           // fixed + translate-x buat slide drawer di mobile (default,
-          // <lg). lg:static ngembaliin ke flex layout normal Topbar+
-          // AppShell di desktop, lg:translate-x-0 mastiin gak ketinggalan
-          // ke-translate walau mobileOpen false.
-          'fixed inset-y-0 left-0 z-50 flex h-full w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white px-4 pt-6 transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
+          // <lg), mulai dari top-[72px] (di bawah Topbar, BUKAN dari
+          // atas viewport) sampai bottom-0. lg:static ngembaliin ke flex
+          // layout normal (baris Sidebar+Main) di desktop, lg:h-full
+          // biar tetap ngisi tinggi baris itu (top/bottom diabaikan
+          // browser pas position:static), lg:translate-x-0 mastiin gak
+          // ketinggalan ke-translate walau mobileOpen false.
+          'fixed bottom-0 left-0 top-[72px] z-50 flex w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white px-4 pt-6 transition-transform duration-200 ease-in-out lg:static lg:h-full lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           collapsed && 'lg:w-16 lg:px-2'
         )}
