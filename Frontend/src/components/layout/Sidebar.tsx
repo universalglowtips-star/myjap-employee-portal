@@ -105,7 +105,10 @@ export function Sidebar() {
       aria-label="Navigasi utama"
       className="flex h-full w-[240px] flex-col gap-1 border-r border-neutral-200 bg-white px-4 pt-6"
     >
-      <span className="font-display text-lg font-bold text-primary-600">MyJAP</span>
+      <div className="flex items-center gap-2">
+        <img src="/logo.png" alt="MyJAP" className="h-7 w-auto" />
+        <span className="font-display text-lg font-bold text-primary-600">MyJAP</span>
+      </div>
 
       {navGroups.map((group) => (
         <div key={group.label} className="mt-4 flex flex-col gap-1">
