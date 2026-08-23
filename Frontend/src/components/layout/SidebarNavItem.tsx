@@ -27,6 +27,21 @@ interface SidebarNavItemProps {
  * (pemanggil), bukan SidebarNavItem sendiri (sesuai Contract: "Bungkus
  * tiap <SidebarNavItem> dengan <PermissionGate>" - gate di LUAR, item
  * ini presentational murni).
+ *
+ * Icon "rail" FIXED w-16 (64px, PERSIS lebar Sidebar collapsed) -
+ * ini yang bikin posisi icon IDENTIK di kedua state (collapsed 64px
+ * maupun expanded 240px) BY CONSTRUCTION, bukan hasil ngepasin
+ * padding manual yang gampang geser tiap ada perubahan lain. Di
+ * expanded, rail ini cuma kolom kiri, label lanjut di sebelah
+ * kanannya. Di collapsed, rail ini PAS ngisi seluruh lebar Sidebar -
+ * makanya rail ini juga yang dipakai buat nyamain posisi hamburger
+ * di Topbar (lihat Topbar.tsx, w-16 yang sama).
+ *
+ * Border aktif (accent kiri) dipasang ABSOLUTE, BUKAN border-l utility
+ * kayak sebelumnya - sengaja, karena border biasa "makan" 3px dari
+ * box width elemen yang sama, yang bakal geser itung-itungan rail
+ * icon di atas. Absolute positioning gak ikut mempengaruhi layout
+ * saudara-saudaranya sama sekali.
  */
 export function SidebarNavItem({ to, label, icon: Icon, collapsed = false, onClick }: SidebarNavItemProps) {
   const location = useLocation()
@@ -45,17 +60,20 @@ export function SidebarNavItem({ to, label, icon: Icon, collapsed = false, onCli
         // total item dari audit Figma = 33px. 33-20=13px padding
         // total, dibagi rata 6.5px atas-bawah. Icon 16px < 20px teks,
         // jadi gak pengaruh ke perhitungan tinggi (teks yang dominan).
-        // border-l-[3px] dipasang di KEDUA state (transparent kalau
-        // non-aktif) supaya lebar konten gak "loncat" pas item jadi aktif.
-        'flex items-center gap-2 rounded-sm border-l-[3px] px-[13px] py-[6.5px] font-body text-sm transition-colors',
+        'relative flex items-center rounded-sm py-[6.5px] font-body text-sm transition-colors',
         isActive
-          ? 'border-primary-600 bg-primary-50 font-medium text-primary-600'
-          : 'border-transparent text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900',
-        collapsed && 'lg:justify-center'
+          ? 'bg-primary-50 font-medium text-primary-600'
+          : 'text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
       )}
     >
-      <Icon size={16} strokeWidth={2} aria-hidden="true" className="shrink-0" />
-      <span className={cn(collapsed && 'lg:hidden')}>{label}</span>
+      <span
+        aria-hidden="true"
+        className={cn('absolute inset-y-0 left-0 w-[3px]', isActive ? 'bg-primary-600' : 'bg-transparent')}
+      />
+      <span className="flex w-16 shrink-0 items-center justify-center">
+        <Icon size={16} strokeWidth={2} aria-hidden="true" />
+      </span>
+      <span className={cn('pr-4', collapsed && 'lg:hidden')}>{label}</span>
     </Link>
   )
 }

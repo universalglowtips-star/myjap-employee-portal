@@ -134,16 +134,25 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
           // biar tetap ngisi tinggi baris itu (top/bottom diabaikan
           // browser pas position:static), lg:translate-x-0 mastiin gak
           // ketinggalan ke-translate walau mobileOpen false.
-          'fixed bottom-0 left-0 top-[72px] z-50 flex w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white px-4 pt-6 transition-transform duration-200 ease-in-out lg:static lg:h-full lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
+          //
+          // SENGAJA gak ada px-* di sini (beda dari sebelumnya) - nav
+          // padding bakal ikut nggeser posisi icon rail (lihat
+          // SidebarNavItem, w-16 fixed) kalau nilainya beda antara
+          // collapsed/expanded. Item mulai PERSIS dari left-0 di kedua
+          // state, biar icon rail-nya konsisten by construction.
+          'fixed bottom-0 left-0 top-[72px] z-50 flex w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white pt-6 transition-transform duration-200 ease-in-out lg:static lg:h-full lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          collapsed && 'lg:w-16 lg:px-2'
+          collapsed && 'lg:w-16'
         )}
       >
         {navGroups.map((group) => (
           <div key={group.label} className="mt-4 flex flex-col gap-1">
+            {/* pl-16 (BUKAN px-4 kayak sebelumnya) - nyamain sama posisi
+                mulainya teks label item di bawahnya (w-16 icon rail +
+                label), bukan sama posisi icon. */}
             <span
               className={cn(
-                'px-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-400',
+                'pl-16 pr-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-400',
                 collapsed && 'lg:hidden'
               )}
             >

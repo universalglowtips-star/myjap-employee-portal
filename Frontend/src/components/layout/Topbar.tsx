@@ -69,28 +69,50 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
     // viewport, gak lagi berbagi baris sama Sidebar) - gak kegeser
     // walau kolom kiri/kanan beda lebar, beda sama flex justify-between
     // yang cuma nge-push ke ujung.
-    <header className="grid h-[72px] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-neutral-200 bg-white px-4 sm:gap-4 sm:px-6 lg:px-8">
-      <div className="flex items-center">
+    //
+    // header SENGAJA NOL padding (bukan px-*/pr-* di level ini) - kalau
+    // padding kiri/kanan header gak SIMETRIS, grid ngebagi 1fr/auto/1fr
+    // dari content-box yang udah kegeser duluan (gak lagi = lebar
+    // viewport penuh), jadi kolom tengah ikut kegeser walau kolom
+    // kiri/kanannya tetep sama lebar satu sama lain (pernah kejadian
+    // pas nyoba naruh pr-* di sini buat breathing room avatar - brand
+    // langsung gak true-center lagi). Breathing room sisi kanan
+    // sekarang dipasang di DALAM kolom kanan sendiri (div terakhir di
+    // bawah), bukan di header - itu cuma makan ruang di dalam kolom
+    // 1fr-nya sendiri, gak ganggu kesetaraan lebar kolom kiri/kanan.
+    <header className="grid h-[72px] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-neutral-200 bg-white sm:gap-4">
+      {/* w-16 (64px) - PERSIS sama kayak icon rail SidebarNavItem (juga
+          w-16) dan lebar Sidebar collapsed (lg:w-16) - hamburger jadi
+          selalu align sama kolom icon Sidebar, di expanded/collapsed/
+          drawer mobile sekalipun, karena dihitung dari nilai yang
+          sama, bukan hasil ngepasin px header vs px Sidebar manual.
+          justify-self-start jaga-jaga box ini gak di-stretch grid
+          kalau kolom 1fr-nya kebetulan lebih lebar dari 64px. */}
+      <div className="flex w-16 shrink-0 items-center justify-center justify-self-start">
         <button
           type="button"
           onClick={onToggleSidebar}
           aria-label="Buka/tutup menu navigasi"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-neutral-600 hover:bg-neutral-50 focus:outline-none"
+          className="flex h-9 w-9 items-center justify-center rounded-sm text-neutral-600 hover:bg-neutral-50 focus:outline-none"
         >
           <Menu size={20} strokeWidth={2} />
         </button>
       </div>
 
-      {/* Brand - logo + teks "MyJAP", true-center. Teks disembunyikan
-          di bawah sm biar muat di 375px, logo tetap keliatan sendirian. */}
+      {/* Brand - logo + teks "MyJAP", true-center. h-10 (naik dari h-7 -
+          h-7 kekecilan, teks di dalam logo gak legible) dengan w-auto
+          biar rasio asli (290x177px) gak gepeng. Teks ikut naik ke
+          text-xl (dari text-lg) biar proporsi logo+teks tetap seimbang.
+          Teks disembunyikan di bawah sm biar muat di 375px, logo tetap
+          keliatan sendirian. */}
       <div className="flex items-center justify-center gap-2">
-        <img src="/logo.png" alt="MyJAP" className="h-7 w-auto shrink-0" />
-        <span className="hidden font-display text-lg font-bold text-primary-600 sm:inline">
+        <img src="/logo.png" alt="MyJAP" className="h-10 w-auto shrink-0" />
+        <span className="hidden font-display text-xl font-bold text-primary-600 sm:inline">
           MyJAP
         </span>
       </div>
 
-      <div className="flex items-center justify-end gap-2 sm:gap-4">
+      <div className="flex items-center justify-end gap-2 pr-4 sm:gap-4 sm:pr-6 lg:pr-8">
         {/* Bell - visual statis, TANPA aria-live/count dinamis (bukan fitur fungsional) */}
         <div className="relative shrink-0" aria-hidden="true">
           <Bell size={20} strokeWidth={2} className="text-neutral-600" />
