@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Position;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 
 class PositionController extends Controller
@@ -41,6 +42,15 @@ public function store(Request $request): JsonResponse
     ]);
 
     $position = Position::create($validated);
+
+    AuditLogService::log(
+        $position,
+        'created',
+        null,
+        $position->only(['department_id', 'position_code', 'position_name', 'allowance', 'description', 'is_active']),
+        $request->user()->id,
+        'Posisi baru dibuat'
+    );
 
     return response()->json([
         'success' => true,
@@ -93,7 +103,18 @@ public function update(Request $request, string $id): JsonResponse
         'is_active'     => 'required|boolean',
     ]);
 
+    $oldValues = $position->only(['department_id', 'position_code', 'position_name', 'allowance', 'description', 'is_active']);
+
     $position->update($validated);
+
+    AuditLogService::log(
+        $position,
+        'updated',
+        $oldValues,
+        $position->only(['department_id', 'position_code', 'position_name', 'allowance', 'description', 'is_active']),
+        $request->user()->id,
+        'Update posisi'
+    );
 
     return response()->json([
         'success' => true,
@@ -105,7 +126,7 @@ public function update(Request $request, string $id): JsonResponse
     /**
      * Remove the specified resource from storage.
      */
-public function destroy(string $id): JsonResponse
+public function destroy(Request $request, string $id): JsonResponse
 {
     $position = Position::find($id);
 
@@ -116,7 +137,18 @@ public function destroy(string $id): JsonResponse
         ], 404);
     }
 
+    $oldValues = $position->only(['department_id', 'position_code', 'position_name', 'allowance', 'description', 'is_active']);
+
     $position->delete();
+
+    AuditLogService::log(
+        $position,
+        'deleted',
+        $oldValues,
+        null,
+        $request->user()->id,
+        'Hapus posisi'
+    );
 
     return response()->json([
         'success' => true,

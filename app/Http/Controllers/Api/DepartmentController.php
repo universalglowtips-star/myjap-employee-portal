@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Department;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 
 class DepartmentController extends Controller
@@ -43,6 +44,15 @@ public function store(Request $request): JsonResponse
         'description'     => $validated['description'] ?? null,
         'is_active'       => $validated['is_active'] ?? true,
     ]);
+
+    AuditLogService::log(
+        $department,
+        'created',
+        null,
+        $department->only(['department_code', 'department_name', 'description', 'is_active']),
+        $request->user()->id,
+        'Departemen baru dibuat'
+    );
 
     // Response
     return response()->json([
@@ -97,6 +107,8 @@ public function update(Request $request, string $id): JsonResponse
         'is_active'       => 'nullable|boolean',
     ]);
 
+    $oldValues = $department->only(['department_code', 'department_name', 'description', 'is_active']);
+
     // Update data
     $department->update([
         'department_code' => $validated['department_code'],
@@ -104,6 +116,15 @@ public function update(Request $request, string $id): JsonResponse
         'description'     => $validated['description'] ?? null,
         'is_active'       => $validated['is_active'] ?? true,
     ]);
+
+    AuditLogService::log(
+        $department,
+        'updated',
+        $oldValues,
+        $department->only(['department_code', 'department_name', 'description', 'is_active']),
+        $request->user()->id,
+        'Update departemen'
+    );
 
     // Response
     return response()->json([
@@ -116,7 +137,7 @@ public function update(Request $request, string $id): JsonResponse
     /**
  * Remove the specified resource from storage.
  */
-public function destroy(string $id): JsonResponse
+public function destroy(Request $request, string $id): JsonResponse
 {
     // Cari data department
     $department = Department::find($id);
@@ -128,8 +149,19 @@ public function destroy(string $id): JsonResponse
         ], 404);
     }
 
+    $oldValues = $department->only(['department_code', 'department_name', 'description', 'is_active']);
+
     // Hapus data
     $department->delete();
+
+    AuditLogService::log(
+        $department,
+        'deleted',
+        $oldValues,
+        null,
+        $request->user()->id,
+        'Hapus departemen'
+    );
 
     // Response
     return response()->json([
