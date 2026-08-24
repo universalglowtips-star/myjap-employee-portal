@@ -7,13 +7,14 @@ import { AppShell } from './components/layout/AppShell'
 import { DepartmentListPage } from './features/master-data/pages/DepartmentListPage'
 import { PositionListPage } from './features/master-data/pages/PositionListPage'
 import { RoleListPage } from './features/master-data/pages/RoleListPage'
+import { PermissionMatrixPage } from './features/master-data/pages/PermissionMatrixPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
  * Route '/login' dan '/' final (Langkah 6 + 8). '/departments' (Fase B
  * - pola percontohan), '/positions' (Tugas 2, ngikutin pola Departemen
- * persis), '/roles' (Tugas 3, List Role - Matrix Permission-nya nyusul
- * di /roles/:id/permissions), dan '/audit-log' (viewer read-only) sudah ada.
+ * persis), '/roles' + '/roles/:id/permissions' (Tugas 3, List Role +
+ * Permission Matrix), dan '/audit-log' (viewer read-only) sudah ada.
  * Route Master Data lain (/employees, /attendance, dst - yang sudah
  * dirujuk Sidebar) MASIH belum dibuat, nunggu giliran masing-masing.
  */
@@ -58,6 +59,14 @@ function App() {
         element={
           <ProtectedRoute>
             <RoleListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roles/:id/permissions"
+        element={
+          <ProtectedRoute>
+            <PermissionMatrixPage />
           </ProtectedRoute>
         }
       />
