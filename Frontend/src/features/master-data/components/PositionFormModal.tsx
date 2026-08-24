@@ -147,19 +147,55 @@ export function PositionFormModal({
         </>
       }
     >
-      <form id="position-form" onSubmit={handleSubmit(handleFormSubmit)} noValidate className="flex flex-col gap-4">
+      {/* Grid 2 kolom (1 kolom di bawah sm - collapse otomatis, gap-y
+          TETAP ketat di kedua breakpoint, bukan balik lega di mobile)
+          - field pendek berpasangan (Kode Posisi+Tunjangan, Departemen+
+          Status), field yang isinya bisa panjang (Nama Posisi, Deskripsi)
+          tetap col-span-2 penuh. Padding vertikal Input/Select di-override
+          py-2 (dari default py-2.5 di komponennya) VIA className di
+          tiap pemakaian di sini - BUKAN ubah Input.tsx/Select.tsx
+          langsung, biar Login & Modal Departemen (form sederhana, gak
+          butuh dipadatkan) gak ikut kesenggol. py-2 + text-sm (line-height
+          20px) + border 2px = tinggi total ~38px, masih dalam batas
+          wajar buat tap target (di bawah 44px WCAG AAA ideal, tapi
+          umum dipakai admin panel padat data - bukan tombol icon-only
+          kecil kayak hamburger yang emang wajib 44px).
+          gap-y-3 (12px, turun dari gap-4/16px sebelumnya) - satu step
+          di spacing scale, "dipadatkan" tanpa jadi mepet. */}
+      <form
+        id="position-form"
+        onSubmit={handleSubmit(handleFormSubmit)}
+        noValidate
+        className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
+      >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="position_code" className="font-body text-[13px] font-medium text-neutral-600">
             Kode Posisi
           </label>
-          <Input id="position_code" error={errors.position_code?.message} {...register('position_code')} />
+          <Input id="position_code" className="py-2" error={errors.position_code?.message} {...register('position_code')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
+          <label htmlFor="allowance" className="font-body text-[13px] font-medium text-neutral-600">
+            Tunjangan
+          </label>
+          <Input
+            id="allowance"
+            type="number"
+            min={0}
+            step="0.01"
+            inputMode="decimal"
+            className="py-2"
+            error={errors.allowance?.message}
+            {...register('allowance')}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label htmlFor="position_name" className="font-body text-[13px] font-medium text-neutral-600">
             Nama Posisi
           </label>
-          <Input id="position_name" error={errors.position_name?.message} {...register('position_name')} />
+          <Input id="position_name" className="py-2" error={errors.position_name?.message} {...register('position_name')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -172,6 +208,7 @@ export function PositionFormModal({
               BUKAN dibiarkan kosong tanpa keterangan kalau fetch gagal. */}
           <Select
             id="department_id"
+            className="py-2"
             options={departmentOptions}
             placeholder={isDepartmentsLoading ? 'Memuat departemen...' : 'Pilih Departemen'}
             disabled={isDepartmentsLoading || isDepartmentsError}
@@ -186,35 +223,26 @@ export function PositionFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="allowance" className="font-body text-[13px] font-medium text-neutral-600">
-            Tunjangan
-          </label>
-          <Input
-            id="allowance"
-            type="number"
-            min={0}
-            step="0.01"
-            inputMode="decimal"
-            error={errors.allowance?.message}
-            {...register('allowance')}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
-            Deskripsi
-          </label>
-          <Input id="description" error={errors.description?.message} {...register('description')} />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
           <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
             Status
           </label>
           {/* BEDA dari Department - is_active WAJIB dikirim backend
               (required|boolean), jadi field ini HARUS ada di form
               (bukan disembunyikan/dipertahankan diam-diam kayak Department). */}
-          <Select id="is_active" options={statusOptions} error={errors.is_active?.message} {...register('is_active')} />
+          <Select
+            id="is_active"
+            className="py-2"
+            options={statusOptions}
+            error={errors.is_active?.message}
+            {...register('is_active')}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
+            Deskripsi
+          </label>
+          <Input id="description" className="py-2" error={errors.description?.message} {...register('description')} />
         </div>
       </form>
     </Modal>
