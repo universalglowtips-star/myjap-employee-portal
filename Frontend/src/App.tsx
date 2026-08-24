@@ -5,10 +5,12 @@ import { ProtectedRoute } from './routes/ProtectedRoute'
 import { LoginPage } from './features/auth/pages/LoginPage'
 import { AppShell } from './components/layout/AppShell'
 import { DepartmentListPage } from './features/master-data/pages/DepartmentListPage'
+import { PositionListPage } from './features/master-data/pages/PositionListPage'
 
 /**
- * Route '/login' dan '/' final (Langkah 6 + 8). '/departments' BARU
- * (Fase B - pola percontohan). Route Master Data lain (/employees,
+ * Route '/login' dan '/' final (Langkah 6 + 8). '/departments' (Fase B
+ * - pola percontohan) dan '/positions' (Tugas 2, ngikutin pola
+ * Departemen persis) sudah ada. Route Master Data lain (/employees,
  * /attendance, dst - yang sudah dirujuk Sidebar) MASIH belum dibuat,
  * nunggu giliran masing-masing.
  */
@@ -37,6 +39,14 @@ function App() {
         element={
           <ProtectedRoute>
             <DepartmentListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/positions"
+        element={
+          <ProtectedRoute>
+            <PositionListPage />
           </ProtectedRoute>
         }
       />
