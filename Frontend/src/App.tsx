@@ -6,13 +6,14 @@ import { LoginPage } from './features/auth/pages/LoginPage'
 import { AppShell } from './components/layout/AppShell'
 import { DepartmentListPage } from './features/master-data/pages/DepartmentListPage'
 import { PositionListPage } from './features/master-data/pages/PositionListPage'
+import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
  * Route '/login' dan '/' final (Langkah 6 + 8). '/departments' (Fase B
- * - pola percontohan) dan '/positions' (Tugas 2, ngikutin pola
- * Departemen persis) sudah ada. Route Master Data lain (/employees,
- * /attendance, dst - yang sudah dirujuk Sidebar) MASIH belum dibuat,
- * nunggu giliran masing-masing.
+ * - pola percontohan), '/positions' (Tugas 2, ngikutin pola Departemen
+ * persis), dan '/audit-log' (viewer read-only) sudah ada. Route Master
+ * Data lain (/employees, /attendance, dst - yang sudah dirujuk
+ * Sidebar) MASIH belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -47,6 +48,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PositionListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audit-log"
+        element={
+          <ProtectedRoute>
+            <AuditLogListPage />
           </ProtectedRoute>
         }
       />
