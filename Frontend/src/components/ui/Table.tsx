@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
 export interface TableColumn<T> {
@@ -10,6 +11,12 @@ export interface TableColumn<T> {
   render: (row: T) => ReactNode
 }
 
+export interface TablePagination {
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
 interface TableProps<T> {
   columns: TableColumn<T>[]
   data: T[]
@@ -18,6 +25,8 @@ interface TableProps<T> {
   selectedRowKey?: string | number
   isLoading?: boolean
   emptyMessage?: string
+  /** OPSIONAL - kalau gak dipassing, gak ada kontrol pagination yang dirender sama sekali (perilaku Table PERSIS sama kayak sebelum prop ini ada - dipakai Departemen/Posisi tanpa perubahan apapun). Cuma prev/next + "Halaman X dari Y", bukan daftar nomor halaman - parent yang nentuin page/totalPages/handler, Table murni presentational. */
+  pagination?: TablePagination
 }
 
 /**
@@ -47,12 +56,20 @@ export function Table<T>({
   selectedRowKey,
   isLoading = false,
   emptyMessage = 'Tidak ada data.',
+  pagination,
 }: TableProps<T>) {
   const alignClass = (align?: 'left' | 'right' | 'center') =>
     align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
 
   return (
-    <table className="w-full border-collapse">
+    // Fragment (BUKAN div wrapper) - table.tsx cuma nambah <div> pagination
+    // sebagai SIBLING pas prop `pagination` diisi, gak pernah bungkus
+    // <table> dalam elemen tambahan apapun. Jadi pas pagination gak
+    // dipassing (Departemen/Posisi sekarang), output DOM PERSIS sama
+    // kayak sebelum prop ini ada - nol elemen extra, nol perubahan CSS
+    // cascade ke parent manapun.
+    <>
+      <table className="w-full border-collapse">
       <thead>
         <tr>
           {columns.map((col) => (
@@ -138,5 +155,33 @@ export function Table<T>({
         )}
       </tbody>
     </table>
+    {pagination && (
+      <div className="flex items-center justify-between border-t border-neutral-200 px-3 py-3">
+        <p className="font-body text-xs text-neutral-500">
+          Halaman {pagination.page} dari {pagination.totalPages}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => pagination.onPageChange(pagination.page - 1)}
+            disabled={pagination.page <= 1}
+            aria-label="Halaman sebelumnya"
+            className="flex h-8 w-8 items-center justify-center rounded-sm border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            <ChevronLeft size={16} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => pagination.onPageChange(pagination.page + 1)}
+            disabled={pagination.page >= pagination.totalPages}
+            aria-label="Halaman berikutnya"
+            className="flex h-8 w-8 items-center justify-center rounded-sm border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            <ChevronRight size={16} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
