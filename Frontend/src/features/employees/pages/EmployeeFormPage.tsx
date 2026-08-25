@@ -127,6 +127,20 @@ export function EmployeeFormPage() {
     employeeId ?? 0,
     canAccess && isEditMode
   )
+
+  // Kasus lanjutan dari temuan dropdown SUPER_ADMIN: kalau yang lagi
+  // diedit itu SENDIRI SUPER_ADMIN, dan yang login BUKAN SUPER_ADMIN,
+  // field Role dikunci total jadi teks read-only - bukan cuma soal opsi
+  // dropdown gak lengkap, tapi RISIKO NYATA: kalau dropdown nampilin
+  // value yang gak match opsi manapun (SUPER_ADMIN gak ada di daftar),
+  // browser bisa nge-reset ke opsi pertama yang KELIATAN, dan submit
+  // form buat ubah field lain (mis. telepon) bisa gak sengaja
+  // nurunin/ganti role SUPER_ADMIN. Dikunci di 2 lapis: UI (read-only,
+  // bukan Select) DAN submit (role_id gak pernah di-append ke FormData
+  // sama sekali kalau locked - backend 'sometimes' berarti field yang
+  // gak dikirim TIDAK PERNAH disentuh, jaminan paling kuat, bukan
+  // sekadar "kirim balik value yang sama").
+  const isLockedSuperAdminRole = isEditMode && !isCurrentUserSuperAdmin && employee?.role?.role_code === 'SUPER_ADMIN'
   const { data: departments } = useDepartments(canAccess)
   const { data: positions } = usePositions(canAccess)
   const { data: workShifts } = useWorkShifts(canAccess)
@@ -259,7 +273,14 @@ export function EmployeeFormPage() {
       fd.append('position_id', values.position_id)
       fd.append('work_shift_id', values.work_shift_id)
       fd.append('office_location_id', values.office_location_id)
-      fd.append('role_id', values.role_id)
+      // role_id SENGAJA gak pernah di-append kalau isLockedSuperAdminRole -
+      // backend UpdateEmployeeRequest pakai 'sometimes', field yang gak
+      // ada di body TIDAK PERNAH disentuh sama sekali (bukan cuma
+      // "dikirim balik sama"), jaminan paling kuat biar role SUPER_ADMIN
+      // gak mungkin ke-ubah lewat form ini oleh non-SUPER_ADMIN.
+      if (!isLockedSuperAdminRole) {
+        fd.append('role_id', values.role_id)
+      }
       fd.append('gender', values.gender)
       if (values.birth_date) fd.append('birth_date', values.birth_date)
       if (values.address) fd.append('address', values.address)
@@ -443,14 +464,26 @@ export function EmployeeFormPage() {
                 <label htmlFor="role_id" className="font-body text-[13px] font-medium text-neutral-600">
                   Role
                 </label>
-                <Select
-                  id="role_id"
-                  className="py-2"
-                  options={roleOptions}
-                  placeholder="Pilih Role"
-                  error={errors.role_id?.message}
-                  {...register('role_id')}
-                />
+                {isLockedSuperAdminRole ? (
+                  <>
+                    <p className="rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 font-body text-sm text-neutral-900">
+                      Super Administrator
+                    </p>
+                    <p className="flex items-center gap-1 font-body text-xs text-neutral-500">
+                      <Lock size={11} strokeWidth={2} />
+                      Role ini hanya bisa diubah oleh SUPER_ADMIN.
+                    </p>
+                  </>
+                ) : (
+                  <Select
+                    id="role_id"
+                    className="py-2"
+                    options={roleOptions}
+                    placeholder="Pilih Role"
+                    error={errors.role_id?.message}
+                    {...register('role_id')}
+                  />
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
