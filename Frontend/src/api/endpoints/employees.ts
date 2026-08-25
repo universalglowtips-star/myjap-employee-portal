@@ -18,3 +18,16 @@ export async function fetchEmployeesForFilter(): Promise<Employee[]> {
   const res = await apiClient.get<EmployeeListResponse>('/employees', { params: { per_page: 100 } })
   return res.data.data
 }
+
+/**
+ * GET /employees - dipakai buat daftar kandidat karyawan di Tab
+ * Supervisor (Lokasi Kantor). Permission employee.view - independen
+ * dari office-location.* maupun attendance-location-policy.* yang
+ * dipakai tab Supervisor itu sendiri (3 permission code berbeda total
+ * buat fitur Supervisor berfungsi penuh). per_page digedein sama seperti
+ * fetchEmployeesForFilter - alasan sama, jangan sampai diam2 kepotong.
+ */
+export async function fetchEmployeesForSupervisorSelection(): Promise<Employee[]> {
+  const res = await apiClient.get<EmployeeListResponse>('/employees', { params: { per_page: 100 } })
+  return res.data.data
+}
