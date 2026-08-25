@@ -12,6 +12,7 @@ import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Toast } from '../../../components/ui/Toast'
 import { usePermission } from '../../../lib/permissions'
+import { useIsSuperAdmin } from '../../../stores/authStore'
 import { getStorageUrl } from '../../../lib/storageUrl'
 import { useDepartments } from '../../master-data/hooks/useDepartments'
 import { usePositions } from '../../master-data/hooks/usePositions'
@@ -113,6 +114,14 @@ export function EmployeeFormPage() {
   const employeeId = id ? Number(id) : undefined
   const permissionCode = isEditMode ? 'employee.update' : 'employee.create'
   const canAccess = usePermission(permissionCode)
+  // Gate opsi SUPER_ADMIN di dropdown Role - pola sama persis Permission
+  // Matrix (useIsSuperAdmin(), cek role_code eksplisit dari akun yang
+  // LOGIN, bukan permission code employee.create/update). Tanpa ini,
+  // siapa pun yang boleh bikin/edit karyawan bisa kasih role SUPER_ADMIN
+  // ke orang lain lewat form ini, di luar jalur proteksi Permission
+  // Matrix - celah keamanan nyata, bukan cuma UX. Opsi-nya DIHILANGKAN
+  // TOTAL dari daftar (bukan didisable) buat non-SUPER_ADMIN.
+  const isCurrentUserSuperAdmin = useIsSuperAdmin()
 
   const { data: employee, isLoading: isEmployeeLoading, isError: isEmployeeError } = useEmployee(
     employeeId ?? 0,
@@ -235,7 +244,9 @@ export function EmployeeFormPage() {
   const positionOptions = filteredPositions.map((p) => ({ value: String(p.id), label: p.position_name }))
   const workShiftOptions = (workShifts ?? []).map((w) => ({ value: String(w.id), label: w.shift_name }))
   const officeLocationOptions = (officeLocations ?? []).map((o) => ({ value: String(o.id), label: o.office_name }))
-  const roleOptions = (roles ?? []).map((r) => ({ value: String(r.id), label: r.role_name }))
+  const roleOptions = (roles ?? [])
+    .filter((r) => isCurrentUserSuperAdmin || r.role_code !== 'SUPER_ADMIN')
+    .map((r) => ({ value: String(r.id), label: r.role_name }))
 
   async function handleFormSubmit(values: EmployeeFormValues) {
     try {
