@@ -12,8 +12,6 @@ class WorkShift extends Model
 
     protected $fillable = [
 
-        'work_shift_id',
-
         'shift_code',
 
         'shift_name',
