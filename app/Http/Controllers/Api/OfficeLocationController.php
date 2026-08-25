@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\OfficeLocation;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -41,6 +42,15 @@ public function store(Request $request): JsonResponse
 
     $officeLocation = OfficeLocation::create($validated);
 
+    AuditLogService::log(
+        $officeLocation,
+        'created',
+        null,
+        $officeLocation->only(['office_code', 'office_name', 'latitude', 'longitude', 'radius_meter', 'check_in_start', 'check_in_end', 'check_out_start', 'check_out_end', 'description', 'is_active']),
+        $request->user()->id,
+        'Lokasi kantor baru dibuat'
+    );
+
     return response()->json([
         'success' => true,
         'message' => 'Data lokasi kantor berhasil ditambahkan.',
@@ -77,7 +87,18 @@ public function update(Request $request, string $id): JsonResponse
         'is_active'        => 'required|boolean',
     ]);
 
+    $oldValues = $officeLocation->only(['office_code', 'office_name', 'latitude', 'longitude', 'radius_meter', 'check_in_start', 'check_in_end', 'check_out_start', 'check_out_end', 'description', 'is_active']);
+
     $officeLocation->update($validated);
+
+    AuditLogService::log(
+        $officeLocation,
+        'updated',
+        $oldValues,
+        $officeLocation->only(['office_code', 'office_name', 'latitude', 'longitude', 'radius_meter', 'check_in_start', 'check_in_end', 'check_out_start', 'check_out_end', 'description', 'is_active']),
+        $request->user()->id,
+        'Update lokasi kantor'
+    );
 
     return response()->json([
         'success' => true,
@@ -86,11 +107,22 @@ public function update(Request $request, string $id): JsonResponse
     ], 200);
 }
 
-public function destroy(string $id): JsonResponse
+public function destroy(Request $request, string $id): JsonResponse
 {
     $officeLocation = OfficeLocation::findOrFail($id);
 
+    $oldValues = $officeLocation->only(['office_code', 'office_name', 'latitude', 'longitude', 'radius_meter', 'check_in_start', 'check_in_end', 'check_out_start', 'check_out_end', 'description', 'is_active']);
+
     $officeLocation->delete();
+
+    AuditLogService::log(
+        $officeLocation,
+        'deleted',
+        $oldValues,
+        null,
+        $request->user()->id,
+        'Hapus lokasi kantor'
+    );
 
     return response()->json([
         'success' => true,
