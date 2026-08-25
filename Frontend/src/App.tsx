@@ -10,6 +10,7 @@ import { RoleListPage } from './features/master-data/pages/RoleListPage'
 import { PermissionMatrixPage } from './features/master-data/pages/PermissionMatrixPage'
 import { WorkShiftListPage } from './features/master-data/pages/WorkShiftListPage'
 import { OfficeLocationListPage } from './features/master-data/pages/OfficeLocationListPage'
+import { SalaryComponentListPage } from './features/master-data/pages/SalaryComponentListPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
@@ -18,9 +19,11 @@ import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
  * persis), '/roles' + '/roles/:id/permissions' (Tugas 3, List Role +
  * Permission Matrix), '/work-shifts' (Tugas 4, ngikutin pola Departemen/
  * Posisi persis), '/office-locations' (Tugas 5, List + Modal Tab Info/
- * Supervisor), dan '/audit-log' (viewer read-only) sudah ada. Route
- * Master Data lain (/employees, /attendance, dst - yang sudah dirujuk
- * Sidebar) MASIH belum dibuat, nunggu giliran masing-masing.
+ * Supervisor), '/payroll/salary-components' (Tugas 6 - path SENGAJA
+ * tetap di bawah /payroll/ sesuai Sidebar, meski modulnya "Master Data"),
+ * dan '/audit-log' (viewer read-only) sudah ada. Route Master Data lain
+ * (/employees, /attendance, dst - yang sudah dirujuk Sidebar) MASIH
+ * belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -87,6 +90,14 @@ function App() {
         element={
           <ProtectedRoute>
             <OfficeLocationListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/salary-components"
+        element={
+          <ProtectedRoute>
+            <SalaryComponentListPage />
           </ProtectedRoute>
         }
       />
