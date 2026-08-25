@@ -8,15 +8,17 @@ import { DepartmentListPage } from './features/master-data/pages/DepartmentListP
 import { PositionListPage } from './features/master-data/pages/PositionListPage'
 import { RoleListPage } from './features/master-data/pages/RoleListPage'
 import { PermissionMatrixPage } from './features/master-data/pages/PermissionMatrixPage'
+import { WorkShiftListPage } from './features/master-data/pages/WorkShiftListPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
  * Route '/login' dan '/' final (Langkah 6 + 8). '/departments' (Fase B
  * - pola percontohan), '/positions' (Tugas 2, ngikutin pola Departemen
  * persis), '/roles' + '/roles/:id/permissions' (Tugas 3, List Role +
- * Permission Matrix), dan '/audit-log' (viewer read-only) sudah ada.
- * Route Master Data lain (/employees, /attendance, dst - yang sudah
- * dirujuk Sidebar) MASIH belum dibuat, nunggu giliran masing-masing.
+ * Permission Matrix), '/work-shifts' (Tugas 4, ngikutin pola Departemen/
+ * Posisi persis), dan '/audit-log' (viewer read-only) sudah ada. Route
+ * Master Data lain (/employees, /attendance, dst - yang sudah dirujuk
+ * Sidebar) MASIH belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -67,6 +69,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PermissionMatrixPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/work-shifts"
+        element={
+          <ProtectedRoute>
+            <WorkShiftListPage />
           </ProtectedRoute>
         }
       />
