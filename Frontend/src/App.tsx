@@ -11,6 +11,8 @@ import { PermissionMatrixPage } from './features/master-data/pages/PermissionMat
 import { WorkShiftListPage } from './features/master-data/pages/WorkShiftListPage'
 import { OfficeLocationListPage } from './features/master-data/pages/OfficeLocationListPage'
 import { SalaryComponentListPage } from './features/master-data/pages/SalaryComponentListPage'
+import { EmployeeListPage } from './features/employees/pages/EmployeeListPage'
+import { EmployeeFormPlaceholderPage } from './features/employees/pages/EmployeeFormPlaceholderPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
@@ -21,9 +23,12 @@ import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
  * Posisi persis), '/office-locations' (Tugas 5, List + Modal Tab Info/
  * Supervisor), '/payroll/salary-components' (Tugas 6 - path SENGAJA
  * tetap di bawah /payroll/ sesuai Sidebar, meski modulnya "Master Data"),
- * dan '/audit-log' (viewer read-only) sudah ada. Route Master Data lain
- * (/employees, /attendance, dst - yang sudah dirujuk Sidebar) MASIH
- * belum dibuat, nunggu giliran masing-masing.
+ * '/employees' (Fase 8b, List utama - folder `features/employees/`,
+ * BUKAN `features/master-data/`, ngikutin grup "People" di Sidebar) +
+ * '/employees/new' & '/employees/:id/edit' (placeholder, form aslinya
+ * Fase 8c), dan '/audit-log' (viewer read-only) sudah ada. '/employees/
+ * archive' nyusul di commit terpisah (List Arsip + restore). Route lain
+ * (/attendance, dst) MASIH belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -98,6 +103,30 @@ function App() {
         element={
           <ProtectedRoute>
             <SalaryComponentListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employees"
+        element={
+          <ProtectedRoute>
+            <EmployeeListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employees/new"
+        element={
+          <ProtectedRoute>
+            <EmployeeFormPlaceholderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employees/:id/edit"
+        element={
+          <ProtectedRoute>
+            <EmployeeFormPlaceholderPage />
           </ProtectedRoute>
         }
       />

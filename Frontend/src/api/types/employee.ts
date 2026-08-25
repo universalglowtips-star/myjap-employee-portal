@@ -1,5 +1,8 @@
 import type { Role } from './role'
 import type { Position } from './position'
+import type { Department } from './department'
+import type { WorkShift } from './workShift'
+import type { OfficeLocation } from './officeLocation'
 
 /**
  * Verifikasi: app/Models/Employee.php ($fillable + casts()) +
@@ -24,6 +27,15 @@ import type { Position } from './position'
  *   BUKAN `null`. Beda arti: undefined = gak di-load endpoint ini,
  *   null = kalau nanti ada endpoint yang eksplisit load tapi
  *   employee memang belum punya role (role_id null).
+ * - `work_shift`/`office_location` (SNAKE_CASE, bukan `workShift`/
+ *   `officeLocation` seperti nama method relasi di model) - dicek
+ *   LANGSUNG ke response API asli (curl GET /employees), bukan
+ *   diasumsikan dari nama method Eloquent. Laravel otomatis
+ *   snake_case-in nama relasi pas serialize ke JSON regardless
+ *   nama string yang dikirim ke with(), jadi `department`/`position`/
+ *   `role` kebetulan sama (udah snake_case dari asalnya), tapi
+ *   `workShift`/`officeLocation` berubah jadi `work_shift`/
+ *   `office_location`.
  */
 export interface Employee {
   id: number
@@ -48,4 +60,36 @@ export interface Employee {
   deleted_at: string | null
   role?: Role
   position?: Position
+  department?: Department
+  work_shift?: WorkShift
+  office_location?: OfficeLocation
+}
+
+/**
+ * GET /employees (index, paginated) - verifikasi EmployeeController::index().
+ * Bentuk response SAMA PERSIS AuditLogListResponse (total+data+pagination
+ * di luar `data`, bukan ApiSuccessResponse<T> generic biasa).
+ */
+export interface EmployeeListResponse {
+  success: true
+  message: string
+  total: number
+  data: Employee[]
+  pagination: {
+    current_page: number
+    per_page: number
+    last_page: number
+  }
+}
+
+/**
+ * Query params GET /employees - TERKONFIRMASI cuma `per_page` yang
+ * dibaca controller (dicek langsung ke kode, bukan diasumsikan).
+ * TIDAK ADA filter department_id/position_id/is_active sama sekali -
+ * kalau dikirim, bakal diabaikan diam-diam oleh backend. `page`
+ * didukung implisit lewat Laravel paginate(), pola sama AuditLog.
+ */
+export interface EmployeeQueryParams {
+  per_page?: number
+  page?: number
 }
