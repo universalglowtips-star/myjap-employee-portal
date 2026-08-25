@@ -68,8 +68,15 @@ export function SidebarNavItem({ to, label, icon: Icon, collapsed = false, onCli
         // total, dibagi rata 6.5px atas-bawah. Icon 16px < 20px teks,
         // jadi gak pengaruh ke perhitungan tinggi (teks yang dominan).
         'relative flex items-center rounded-sm py-[6.5px] font-body text-sm transition-colors',
+        // text-primary-700 (BUKAN -600) - primary-600 (#0066FF) di atas
+        // bg-primary-50 (#E6F0FF) cuma 4.2:1, gagal WCAG AA teks (4.5:1).
+        // primary-700 (#0052CC, token EXISTING - bukan hex custom baru)
+        // di kombinasi yang sama = 5.9:1, lolos dengan margin. Scope
+        // SENGAJA cuma di sini (active-state Sidebar), bukan ubah token
+        // primary-600 global - primary-600 masih dipakai aman di
+        // konteks lain (mis. di atas putih polos, kontras jauh lebih tinggi).
         isActive
-          ? 'bg-primary-50 font-medium text-primary-600'
+          ? 'bg-primary-50 font-medium text-primary-700'
           : 'text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
       )}
     >

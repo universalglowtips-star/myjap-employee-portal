@@ -37,7 +37,14 @@
 
   --color-status-draft: #6B7280;
   --color-status-submitted: #2563EB;
-  --color-status-approved: #2F855A;
+  /* #2F855A asli gagal WCAG AA (4.2:1) buat teks di atas bg-neutral-50
+     (#F7F6F3) - dipakai gak cuma di StatusBadge (background tint 24%
+     alpha, kontras aman di sana) tapi juga sebagai teks polos
+     (text-status-approved) di badge "Aktif" boolean sederhana di semua
+     List modul (Karyawan, Departemen, Posisi, dst) - konteks INI yang
+     gagal. Digelapin dikit (scale ~90%, hue sama persis) jadi 5.0:1,
+     lolos AA dengan margin wajar, BUKAN ganti skema warna. */
+  --color-status-approved: #2A7851;
   --color-status-published: #0D9488;
   --color-status-rejected: #C53030;
   --color-status-pending: #DD6B20;
