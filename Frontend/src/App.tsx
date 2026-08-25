@@ -12,6 +12,7 @@ import { WorkShiftListPage } from './features/master-data/pages/WorkShiftListPag
 import { OfficeLocationListPage } from './features/master-data/pages/OfficeLocationListPage'
 import { SalaryComponentListPage } from './features/master-data/pages/SalaryComponentListPage'
 import { EmployeeListPage } from './features/employees/pages/EmployeeListPage'
+import { EmployeeArchiveListPage } from './features/employees/pages/EmployeeArchiveListPage'
 import { EmployeeFormPlaceholderPage } from './features/employees/pages/EmployeeFormPlaceholderPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
@@ -23,12 +24,12 @@ import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
  * Posisi persis), '/office-locations' (Tugas 5, List + Modal Tab Info/
  * Supervisor), '/payroll/salary-components' (Tugas 6 - path SENGAJA
  * tetap di bawah /payroll/ sesuai Sidebar, meski modulnya "Master Data"),
- * '/employees' (Fase 8b, List utama - folder `features/employees/`,
- * BUKAN `features/master-data/`, ngikutin grup "People" di Sidebar) +
- * '/employees/new' & '/employees/:id/edit' (placeholder, form aslinya
- * Fase 8c), dan '/audit-log' (viewer read-only) sudah ada. '/employees/
- * archive' nyusul di commit terpisah (List Arsip + restore). Route lain
- * (/attendance, dst) MASIH belum dibuat, nunggu giliran masing-masing.
+ * '/employees' + '/employees/archive' (Fase 8b, List utama + Arsip -
+ * folder `features/employees/`, BUKAN `features/master-data/`, ngikutin
+ * grup "People" di Sidebar) + '/employees/new' & '/employees/:id/edit'
+ * (placeholder, form aslinya Fase 8c), dan '/audit-log' (viewer
+ * read-only) sudah ada. Route lain (/attendance, dst) MASIH belum
+ * dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -111,6 +112,14 @@ function App() {
         element={
           <ProtectedRoute>
             <EmployeeListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employees/archive"
+        element={
+          <ProtectedRoute>
+            <EmployeeArchiveListPage />
           </ProtectedRoute>
         }
       />
