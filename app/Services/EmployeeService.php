@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Models\Employee;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -68,6 +69,25 @@ class EmployeeService
                 'is_active'          => $request->boolean('is_active', true),
 
             ]);
+
+            // Field yang di-log SENGAJA gak pernah include 'password'
+            // (hash maupun plaintext) - sama seperti update(), $hidden
+            // di model itu buat response JSON API, bukan buat audit
+            // log manual lewat ->only(), jadi harus dijaga eksplisit
+            // di sini juga.
+            AuditLogService::log(
+                $employee,
+                'created',
+                null,
+                $employee->only([
+                    'employee_code', 'full_name', 'email', 'phone', 'gender',
+                    'birth_date', 'address', 'department_id', 'position_id',
+                    'role_id', 'work_shift_id', 'office_location_id',
+                    'join_date', 'basic_salary', 'photo', 'is_active',
+                ]),
+                $request->user()?->id,
+                'Karyawan baru dibuat'
+            );
 
             DB::commit();
 

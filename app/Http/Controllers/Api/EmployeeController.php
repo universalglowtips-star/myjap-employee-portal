@@ -99,7 +99,31 @@ class EmployeeController extends Controller
             unset($validated['password']);
         }
 
+        // Snapshot SEBELUM update - field yang di-log SENGAJA gak
+        // pernah include 'password' sama sekali (baik hash maupun
+        // plaintext), gak peduli apa isi $validated. Ini bukan cuma
+        // ngandelin $hidden di model (itu buat response JSON API,
+        // bukan buat data yang disimpan ke audit_logs.old_values/
+        // new_values - dua hal beda, $hidden gak otomatis nyaring
+        // apa yang di-log manual lewat ->only()).
+        $auditFields = [
+            'employee_code', 'full_name', 'email', 'phone', 'gender',
+            'birth_date', 'address', 'department_id', 'position_id',
+            'role_id', 'work_shift_id', 'office_location_id',
+            'join_date', 'basic_salary', 'photo', 'is_active',
+        ];
+        $oldValues = $employee->only($auditFields);
+
         $employee->update($validated);
+
+        AuditLogService::log(
+            $employee,
+            'updated',
+            $oldValues,
+            $employee->only($auditFields),
+            $request->user()?->id,
+            "Update data karyawan: {$employee->full_name}"
+        );
 
         return response()->json([
             'success' => true,
