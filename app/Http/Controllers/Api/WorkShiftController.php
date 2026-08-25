@@ -6,6 +6,7 @@ use App\Models\WorkShift;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
 
 class WorkShiftController extends Controller
 {
@@ -42,6 +43,15 @@ class WorkShiftController extends Controller
 
         $workShift = WorkShift::create($validated);
 
+        AuditLogService::log(
+            $workShift,
+            'created',
+            null,
+            $workShift->only(['shift_code', 'shift_name', 'check_in_time', 'check_out_time', 'break_start', 'break_end', 'late_tolerance', 'is_active']),
+            $request->user()->id,
+            'Shift kerja baru dibuat'
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Data shift kerja berhasil ditambahkan.',
@@ -77,7 +87,18 @@ class WorkShiftController extends Controller
             'is_active'       => 'required|boolean',
         ]);
 
+        $oldValues = $workShift->only(['shift_code', 'shift_name', 'check_in_time', 'check_out_time', 'break_start', 'break_end', 'late_tolerance', 'is_active']);
+
         $workShift->update($validated);
+
+        AuditLogService::log(
+            $workShift,
+            'updated',
+            $oldValues,
+            $workShift->only(['shift_code', 'shift_name', 'check_in_time', 'check_out_time', 'break_start', 'break_end', 'late_tolerance', 'is_active']),
+            $request->user()->id,
+            'Update shift kerja'
+        );
 
         return response()->json([
             'success' => true,
@@ -89,9 +110,20 @@ class WorkShiftController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(WorkShift $workShift): JsonResponse
+    public function destroy(Request $request, WorkShift $workShift): JsonResponse
     {
+        $oldValues = $workShift->only(['shift_code', 'shift_name', 'check_in_time', 'check_out_time', 'break_start', 'break_end', 'late_tolerance', 'is_active']);
+
         $workShift->delete();
+
+        AuditLogService::log(
+            $workShift,
+            'deleted',
+            $oldValues,
+            null,
+            $request->user()->id,
+            'Hapus shift kerja'
+        );
 
         return response()->json([
             'success' => true,
