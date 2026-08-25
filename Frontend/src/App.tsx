@@ -13,7 +13,7 @@ import { OfficeLocationListPage } from './features/master-data/pages/OfficeLocat
 import { SalaryComponentListPage } from './features/master-data/pages/SalaryComponentListPage'
 import { EmployeeListPage } from './features/employees/pages/EmployeeListPage'
 import { EmployeeArchiveListPage } from './features/employees/pages/EmployeeArchiveListPage'
-import { EmployeeFormPlaceholderPage } from './features/employees/pages/EmployeeFormPlaceholderPage'
+import { EmployeeFormPage } from './features/employees/pages/EmployeeFormPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
@@ -27,9 +27,10 @@ import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
  * '/employees' + '/employees/archive' (Fase 8b, List utama + Arsip -
  * folder `features/employees/`, BUKAN `features/master-data/`, ngikutin
  * grup "People" di Sidebar) + '/employees/new' & '/employees/:id/edit'
- * (placeholder, form aslinya Fase 8c), dan '/audit-log' (viewer
- * read-only) sudah ada. Route lain (/attendance, dst) MASIH belum
- * dibuat, nunggu giliran masing-masing.
+ * (Fase 8c, Form Tambah/Edit - 1 komponen shared, FormData/multipart
+ * karena ada upload foto), dan '/audit-log' (viewer read-only) sudah
+ * ada. Route lain (/attendance, dst) MASIH belum dibuat, nunggu giliran
+ * masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -127,7 +128,7 @@ function App() {
         path="/employees/new"
         element={
           <ProtectedRoute>
-            <EmployeeFormPlaceholderPage />
+            <EmployeeFormPage />
           </ProtectedRoute>
         }
       />
@@ -135,7 +136,7 @@ function App() {
         path="/employees/:id/edit"
         element={
           <ProtectedRoute>
-            <EmployeeFormPlaceholderPage />
+            <EmployeeFormPage />
           </ProtectedRoute>
         }
       />

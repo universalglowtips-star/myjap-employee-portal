@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios'
 import type { ApiErrorResponse, LaravelValidationError, LaravelUnauthenticated } from './types/common'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
+/** Exported (bukan cuma dipakai internal) - dibutuhkan lib/storageUrl.ts buat nurunkan base URL file publik (foto karyawan dst) dari base URL API yang sama, tanpa duplikasi logic env var. */
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

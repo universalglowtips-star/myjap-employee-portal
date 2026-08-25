@@ -56,3 +56,35 @@ export async function restoreEmployee(id: number): Promise<Employee> {
   const res = await apiClient.post<ApiSuccessResponse<Employee>>(`/employees/${id}/restore`)
   return res.data.data
 }
+
+/** GET /employees/{id} - buat pre-fill Form Edit (Fase 8c). Response show() TIDAK punya field `message` (dicek ke kode, beda dari endpoint lain) - dipakai type lokal, bukan ApiSuccessResponse<T> generic yang mewajibkan message. */
+export async function fetchEmployee(id: number): Promise<Employee> {
+  const res = await apiClient.get<{ success: true; data: Employee }>(`/employees/${id}`)
+  return res.data.data
+}
+
+/**
+ * POST /employees - Form Tambah Karyawan (Fase 8c). WAJIB FormData
+ * (bukan JSON) - backend nerima field `photo` sebagai
+ * $request->file('photo')->store(...), butuh body multipart/form-data
+ * asli. axios otomatis set Content-Type+boundary yang benar kalau body-nya
+ * instance FormData, gak perlu header manual.
+ */
+export async function createEmployee(formData: FormData): Promise<Employee> {
+  const res = await apiClient.post<ApiSuccessResponse<Employee>>('/employees', formData)
+  return res.data.data
+}
+
+/**
+ * PUT /employees/{id} - Form Edit Karyawan (Fase 8c). TEMUAN KRITIS
+ * (dikonfirmasi via curl, bukan dugaan): HTTP PUT asli dengan body
+ * multipart/form-data TIDAK PERNAH kebaca PHP sama sekali - SEMUA field
+ * (bukan cuma foto) diam-diam diabaikan. Satu-satunya cara yang beneran
+ * jalan: kirim sebagai POST + field `_method=PUT` (method spoofing
+ * standar Laravel, dibaca sebelum routing nge-dispatch ke controller).
+ */
+export async function updateEmployee(id: number, formData: FormData): Promise<Employee> {
+  formData.append('_method', 'PUT')
+  const res = await apiClient.post<ApiSuccessResponse<Employee>>(`/employees/${id}`, formData)
+  return res.data.data
+}
