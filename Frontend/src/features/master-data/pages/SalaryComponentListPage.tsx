@@ -157,6 +157,16 @@ export function SalaryComponentListPage() {
                 ),
               },
               {
+                key: 'is_required',
+                header: 'Komponen Wajib?',
+                // Pola sama persis kolom Wajib Pajak? - inline text+warna, BUKAN badge/komponen baru.
+                render: (row) => (
+                  <span className={row.is_required ? 'text-status-approved' : 'text-neutral-400'}>
+                    {row.is_required ? 'Ya' : 'Tidak'}
+                  </span>
+                ),
+              },
+              {
                 key: 'status',
                 header: 'Status',
                 render: (row) => (
