@@ -11,6 +11,7 @@ use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeController extends Controller
 {
@@ -97,6 +98,21 @@ class EmployeeController extends Controller
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
+        }
+
+        // Upload foto baru (kalau ada) - $request->validated() buat field
+        // file cuma balikin objek UploadedFile MENTAH (path temp PHP),
+        // BUKAN path tersimpan - beda dari field lain, harus di-handle
+        // manual sama seperti EmployeeService::store(), gak otomatis
+        // ke-handle $employee->update() biasa. Tanpa ini, $validated['photo']
+        // bakal berisi path temp file yang otomatis kehapus PHP begitu
+        // request selesai - bug nyata yang kekonfirmasi lewat testing.
+        // Foto lama (kalau ada) dihapus dulu biar gak numpuk file yatim.
+        if ($request->hasFile('photo')) {
+            if ($employee->photo) {
+                Storage::disk('public')->delete($employee->photo);
+            }
+            $validated['photo'] = $request->file('photo')->store('employees', 'public');
         }
 
         // Snapshot SEBELUM update - field yang di-log SENGAJA gak
