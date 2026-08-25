@@ -245,11 +245,11 @@ export function OfficeLocationFormModal({
       footer={footer}
     >
       {isEditMode && (
-        <div className="mb-4 flex gap-4 border-b border-neutral-200">
+        <div className="mb-3 flex gap-4 border-b border-neutral-200">
           <button
             type="button"
             onClick={() => setActiveTab('info')}
-            className={`font-body text-sm font-medium pb-2 -mb-px border-b-2 ${
+            className={`font-body text-sm font-medium pb-1.5 -mb-px border-b-2 ${
               activeTab === 'info'
                 ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-neutral-400 hover:text-neutral-600'
@@ -260,7 +260,7 @@ export function OfficeLocationFormModal({
           <button
             type="button"
             onClick={() => setActiveTab('supervisor')}
-            className={`font-body text-sm font-medium pb-2 -mb-px border-b-2 ${
+            className={`font-body text-sm font-medium pb-1.5 -mb-px border-b-2 ${
               activeTab === 'supervisor'
                 ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-neutral-400 hover:text-neutral-600'
@@ -271,29 +271,42 @@ export function OfficeLocationFormModal({
         </div>
       )}
 
+      {/* Tab switcher SENGAJA di luar area scroll ini (tetap keliatan
+          tanpa perlu scroll ke atas dulu buat pindah tab) - cuma isi
+          tab yang dibatasi tinggi + scroll internal. max-h-[60vh]
+          dipilih dari perhitungan: konten Tab Info penuh (7 baris field
+          dipadatkan) ~440px - di layar >=800px tinggi gak pernah kepotong
+          (60vh minimal 480px), di layar pendek (~700px, 60vh=420px)
+          scroll internal otomatis aktif. Judul Modal & footer Batal/
+          Simpan TETAP di luar div ini (dirender Modal.tsx sendiri di
+          luar `children`), jadi selalu fixed kelihatan gak ikut scroll. */}
+      <div className="max-h-[60vh] overflow-y-auto pr-1">
       {/* Kedua tab TETAP ter-mount, disembunyikan via CSS (bukan
           conditional unmount) - biar pindah tab gak bikin hilang input
           yang belum disimpan di form manapun (keputusan dikonfirmasi user). */}
       <div className={!isEditMode || activeTab === 'info' ? '' : 'hidden'}>
-        {/* Grid 2 kolom dipadatkan - replikasi manual pola PositionFormModal
-            (py-2 override + gap-y-3). Kode+Radius sejajar, Nama Lokasi
-            col-span-2, Latitude+Longitude sejajar, Jam Masuk Mulai+Selesai
-            sejajar, Jam Pulang Mulai+Selesai sejajar, Status col-span-2,
+        {/* Grid 2 kolom dipadatkan - LEBIH PADAT dari PositionFormModal
+            (gap-y-2 bukan gap-y-3, gap-1 bukan gap-1.5, py-1.5 bukan py-2
+            di tiap Input/Select) - modal ini punya 7 baris field (hampir
+            2x lipat Position yang cuma 4), jadi didorong lebih padat lagi biar
+            total tinggi gak mbengkak. Susunan field TIDAK berubah:
+            Kode+Radius sejajar, Nama Lokasi col-span-2, Latitude+Longitude
+            sejajar, 4 field jam terpisah (2x2), Status col-span-2,
             Catatan col-span-2. */}
         <form
           id="office-location-form"
           onSubmit={handleSubmit(handleFormSubmit)}
           noValidate
-          className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2"
         >
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="office_code" className="font-body text-[13px] font-medium text-neutral-600">
               Kode Lokasi
             </label>
-            <Input id="office_code" className="py-2" error={errors.office_code?.message} {...register('office_code')} />
+            <Input id="office_code" className="py-1.5" error={errors.office_code?.message} {...register('office_code')} />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="radius_meter" className="font-body text-[13px] font-medium text-neutral-600">
               Radius (meter)
             </label>
@@ -303,20 +316,20 @@ export function OfficeLocationFormModal({
               min={1}
               step="1"
               inputMode="numeric"
-              className="py-2"
+              className="py-1.5"
               error={errors.radius_meter?.message}
               {...register('radius_meter')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <div className="flex flex-col gap-1 sm:col-span-2">
             <label htmlFor="office_name" className="font-body text-[13px] font-medium text-neutral-600">
               Nama Lokasi
             </label>
-            <Input id="office_name" className="py-2" error={errors.office_name?.message} {...register('office_name')} />
+            <Input id="office_name" className="py-1.5" error={errors.office_name?.message} {...register('office_name')} />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="latitude" className="font-body text-[13px] font-medium text-neutral-600">
               Latitude
             </label>
@@ -324,13 +337,13 @@ export function OfficeLocationFormModal({
               id="latitude"
               type="number"
               step="any"
-              className="py-2"
+              className="py-1.5"
               error={errors.latitude?.message}
               {...register('latitude')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="longitude" className="font-body text-[13px] font-medium text-neutral-600">
               Longitude
             </label>
@@ -338,82 +351,82 @@ export function OfficeLocationFormModal({
               id="longitude"
               type="number"
               step="any"
-              className="py-2"
+              className="py-1.5"
               error={errors.longitude?.message}
               {...register('longitude')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="check_in_start" className="font-body text-[13px] font-medium text-neutral-600">
               Jam Masuk Mulai
             </label>
             <Input
               id="check_in_start"
               type="time"
-              className="py-2"
+              className="py-1.5"
               error={errors.check_in_start?.message}
               {...register('check_in_start')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="check_in_end" className="font-body text-[13px] font-medium text-neutral-600">
               Jam Masuk Selesai
             </label>
             <Input
               id="check_in_end"
               type="time"
-              className="py-2"
+              className="py-1.5"
               error={errors.check_in_end?.message}
               {...register('check_in_end')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="check_out_start" className="font-body text-[13px] font-medium text-neutral-600">
               Jam Pulang Mulai
             </label>
             <Input
               id="check_out_start"
               type="time"
-              className="py-2"
+              className="py-1.5"
               error={errors.check_out_start?.message}
               {...register('check_out_start')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="check_out_end" className="font-body text-[13px] font-medium text-neutral-600">
               Jam Pulang Selesai
             </label>
             <Input
               id="check_out_end"
               type="time"
-              className="py-2"
+              className="py-1.5"
               error={errors.check_out_end?.message}
               {...register('check_out_end')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <div className="flex flex-col gap-1 sm:col-span-2">
             <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
               Status
             </label>
             <Select
               id="is_active"
-              className="py-2"
+              className="py-1.5"
               options={statusOptions}
               error={errors.is_active?.message}
               {...register('is_active')}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <div className="flex flex-col gap-1 sm:col-span-2">
             <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
               Catatan <span className="font-normal text-neutral-400">(opsional)</span>
             </label>
-            <Input id="description" className="py-2" error={errors.description?.message} {...register('description')} />
+            <Input id="description" className="py-1.5" error={errors.description?.message} {...register('description')} />
           </div>
         </form>
       </div>
@@ -480,6 +493,7 @@ export function OfficeLocationFormModal({
           )}
         </div>
       )}
+      </div>
     </Modal>
 
     {/* z-[60] (BUKAN z-50 kayak Toast Page biasa) - Modal di-portal ke
