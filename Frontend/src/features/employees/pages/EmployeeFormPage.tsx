@@ -380,14 +380,27 @@ export function EmployeeFormPage() {
                 <label htmlFor="email" className="font-body text-[13px] font-medium text-neutral-600">
                   Email
                 </label>
-                <Input id="email" type="email" className="py-2" error={errors.email?.message} {...register('email')} />
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  className="py-2"
+                  error={errors.email?.message}
+                  {...register('email')}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="phone" className="font-body text-[13px] font-medium text-neutral-600">
                   Telepon <span className="font-normal text-neutral-400">(opsional)</span>
                 </label>
-                <Input id="phone" className="py-2" error={errors.phone?.message} {...register('phone')} />
+                <Input
+                  id="phone"
+                  autoComplete="tel"
+                  className="py-2"
+                  error={errors.phone?.message}
+                  {...register('phone')}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -397,6 +410,7 @@ export function EmployeeFormPage() {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="new-password"
                   className="py-2"
                   placeholder={isEditMode ? 'Kosongkan jika tidak ingin mengubah password' : undefined}
                   error={errors.password?.message}
