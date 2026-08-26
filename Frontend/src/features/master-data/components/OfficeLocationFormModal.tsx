@@ -481,12 +481,12 @@ export function OfficeLocationFormModal({
                       <span className="min-w-0 flex-1 truncate font-body text-sm text-neutral-900">
                         {emp.full_name}
                       </span>
-                      <span className="shrink-0 font-body text-xs text-neutral-400">{emp.email}</span>
+                      <span className="shrink-0 font-body text-xs text-neutral-600">{emp.email}</span>
                     </label>
                   )
                 })}
                 {(employees ?? []).length === 0 && (
-                  <p className="p-3 text-center font-body text-sm text-neutral-400">Belum ada karyawan.</p>
+                  <p className="p-3 text-center font-body text-sm text-neutral-600">Belum ada karyawan.</p>
                 )}
               </div>
             </div>

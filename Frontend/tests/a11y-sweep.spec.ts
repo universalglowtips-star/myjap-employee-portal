@@ -233,7 +233,29 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     await safeStep('Lokasi Kantor - Modal Edit (Tab Supervisor)', '/office-locations', async () => {
       const dialog = page.locator('[role="dialog"]')
       await dialog.getByText('Supervisor', { exact: true }).click()
-      await page.waitForTimeout(500)
+      // Klik tab men-trigger fetch async (useOfficeLocationSupervisors +
+      // daftar karyawan) - waitForTimeout tetap TIDAK CUKUP di sini
+      // (race condition nyata: axe pernah kescan pas UI masih nampilin
+      // "Memuat data supervisor..." - warna beda, LOLOS kontras - bukan
+      // daftar kandidat asli yang punya span email text-neutral-400 yang
+      // GAGAL kontras. Ini persis kenapa violation email kelewatan di
+      // baseline sweep sebelumnya). Tunggu render nyata: minimal 1 baris
+      // kandidat (<label>) ATAU pesan "Belum ada karyawan" - salah satu
+      // PASTI muncul begitu data beneran selesai di-load, race keduanya
+      // biar gak hang kalau daftar kandidatnya kosong.
+      //
+      // `label:visible` (BUKAN `label` polos) - tab "Info Lokasi" TETAP di
+      // DOM waktu tab "Supervisor" aktif (cuma disembunyikan via class
+      // 'hidden', bukan unmount), dan tab Info itu sendiri punya banyak
+      // <label> form (mis. "Kode Lokasi"). `label` polos bakal nangkep
+      // label form itu duluan (element pertama di DOM) yang PERMANEN
+      // hidden selama tab Supervisor aktif -> waitFor 'visible' timeout
+      // selamanya walau kandidat supervisor beneran udah kerender.
+      await Promise.race([
+        dialog.locator('label:visible').first().waitFor({ state: 'visible', timeout: 15000 }),
+        dialog.getByText('Belum ada karyawan.').waitFor({ state: 'visible', timeout: 15000 }),
+      ])
+      await page.waitForTimeout(300)
       await runAxe(page, 'Lokasi Kantor - Modal Edit (Tab Supervisor)', '/office-locations', '[role="dialog"]')
       // Tutup modal - state bersih buat halaman berikutnya.
       await page.getByRole('button', { name: 'Batal' }).click()
