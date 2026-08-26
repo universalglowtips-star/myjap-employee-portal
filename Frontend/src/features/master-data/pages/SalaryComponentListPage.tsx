@@ -151,7 +151,7 @@ export function SalaryComponentListPage() {
                 header: 'Wajib Pajak?',
                 // Boolean sederhana - pola inline text+warna persis Status, BUKAN badge/komponen baru.
                 render: (row) => (
-                  <span className={row.is_taxable ? 'text-status-approved' : 'text-neutral-400'}>
+                  <span className={row.is_taxable ? 'text-status-approved' : 'text-neutral-600'}>
                     {row.is_taxable ? 'Ya' : 'Tidak'}
                   </span>
                 ),
@@ -161,7 +161,7 @@ export function SalaryComponentListPage() {
                 header: 'Komponen Wajib?',
                 // Pola sama persis kolom Wajib Pajak? - inline text+warna, BUKAN badge/komponen baru.
                 render: (row) => (
-                  <span className={row.is_required ? 'text-status-approved' : 'text-neutral-400'}>
+                  <span className={row.is_required ? 'text-status-approved' : 'text-neutral-600'}>
                     {row.is_required ? 'Ya' : 'Tidak'}
                   </span>
                 ),
@@ -170,7 +170,7 @@ export function SalaryComponentListPage() {
                 key: 'status',
                 header: 'Status',
                 render: (row) => (
-                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-400'}>
+                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-600'}>
                     {row.is_active ? 'Aktif' : 'Nonaktif'}
                   </span>
                 ),

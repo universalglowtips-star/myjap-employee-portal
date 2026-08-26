@@ -1,26 +1,12 @@
 {
-  "generatedAt": "2026-08-26T02:18:53.474Z",
-  "totalViolations": 40,
+  "generatedAt": "2026-08-26T02:41:31.066Z",
+  "totalViolations": 14,
   "pages": [
     {
       "label": "Login",
       "path": "/login",
       "status": "scanned",
-      "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": "p",
-          "html": "<p class=\"font-body text-[15px] text-primary-100\">MyJAP Employee Portal — sistem HR, absensi, dan payroll terpadu untuk seluruh cabang Kalimantan Timur.</p>",
-          "fgColor": "#cce1ff",
-          "bgColor": "#0066ff",
-          "contrastRatio": 3.63,
-          "fontSize": "11.3pt (15px)",
-          "fontWeight": "normal"
-        }
-      ]
+      "violations": []
     },
     {
       "label": "Dashboard",
@@ -51,21 +37,7 @@
       "label": "Karyawan - Arsip",
       "path": "/employees/archive",
       "status": "scanned",
-      "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": "td",
-          "html": "<td colspan=\"4\" class=\"px-3 py-8 text-center font-body text-sm text-neutral-400\">Belum ada karyawan yang diarsipkan.</td>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        }
-      ]
+      "violations": []
     },
     {
       "label": "Departemen",
@@ -107,340 +79,25 @@
       "label": "Lokasi Kantor - Modal Edit (Tab Info)",
       "path": "/office-locations",
       "status": "scanned",
-      "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-transparent",
-          "html": "<button type=\"button\" class=\"font-body text-sm font-medium pb-1.5 -mb-px border-b-2 border-transparent text-neutral-400 hover:text-neutral-600\">Supervisor</button>",
-          "fgColor": "#9c9689",
-          "bgColor": "#ffffff",
-          "contrastRatio": 2.94,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        }
-      ]
+      "violations": []
     },
     {
       "label": "Lokasi Kantor - Modal Edit (Tab Supervisor)",
       "path": "/office-locations",
       "status": "scanned",
-      "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-transparent",
-          "html": "<button type=\"button\" class=\"font-body text-sm font-medium pb-1.5 -mb-px border-b-2 border-transparent text-neutral-400 hover:text-neutral-600\">Info Lokasi</button>",
-          "fgColor": "#9c9689",
-          "bgColor": "#ffffff",
-          "contrastRatio": 2.94,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        }
-      ]
+      "violations": []
     },
     {
       "label": "Komponen Gaji",
       "path": "/payroll/salary-components",
       "status": "scanned",
-      "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(1) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(3) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(4) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(4) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(5) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(6) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(6) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(7) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(7) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(8) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(8) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(9) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(9) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(10) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(10) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(11) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(11) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(12) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(12) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(13) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".border-t:nth-child(13) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>",
-          "fgColor": "#9c9689",
-          "bgColor": "#f7f6f3",
-          "contrastRatio": 2.72,
-          "fontSize": "10.5pt (14px)",
-          "fontWeight": "normal"
-        }
-      ]
+      "violations": []
     },
     {
       "label": "Audit Log - List",
       "path": "/audit-log",
       "status": "scanned",
       "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>",
-          "fgColor": "#2563eb",
-          "bgColor": "#e2e7f2",
-          "contrastRatio": 4.17,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
         {
           "ruleId": "color-contrast",
           "impact": "serious",
@@ -459,7 +116,7 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>",
           "fgColor": "#2563eb",
           "bgColor": "#e2e7f2",
@@ -472,11 +129,11 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>",
+          "fgColor": "#2563eb",
+          "bgColor": "#e2e7f2",
+          "contrastRatio": 4.17,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -498,20 +155,7 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>",
-          "fgColor": "#2563eb",
-          "bgColor": "#e2e7f2",
-          "contrastRatio": 4.17,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(11) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
           "fgColor": "#2a7851",
           "bgColor": "#e3e9e3",
@@ -524,11 +168,24 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(11) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>",
           "fgColor": "#2563eb",
           "bgColor": "#e2e7f2",
           "contrastRatio": 4.17,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "normal"
+        },
+        {
+          "ruleId": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
+          "fgColor": "#2a7851",
+          "bgColor": "#e3e9e3",
+          "contrastRatio": 4.36,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -550,7 +207,20 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>",
+          "fgColor": "#2563eb",
+          "bgColor": "#e2e7f2",
+          "contrastRatio": 4.17,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "normal"
+        },
+        {
+          "ruleId": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
           "fgColor": "#2a7851",
           "bgColor": "#e3e9e3",
@@ -568,19 +238,6 @@
           "fgColor": "#c53030",
           "bgColor": "#f2e2df",
           "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -634,151 +291,6 @@
   ],
   "groupedByRootCause": [
     {
-      "signature": "color-contrast|#9c9689|#f7f6f3",
-      "ruleId": "color-contrast",
-      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-      "fgColor": "#9c9689",
-      "bgColor": "#f7f6f3",
-      "contrastRatio": 2.72,
-      "occurrenceCount": 22,
-      "occurrences": [
-        {
-          "label": "Karyawan - Arsip",
-          "path": "/employees/archive",
-          "selector": "td",
-          "html": "<td colspan=\"4\" class=\"px-3 py-8 text-center font-body text-sm text-neutral-400\">Belum ada karyawan yang diarsipkan.</td>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(1) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(3) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(4) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(4) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(5) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(6) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(6) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(7) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(7) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(8) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(8) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(9) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(9) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(10) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(10) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(11) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(11) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(12) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(12) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(13) > .text-left:nth-child(5) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        },
-        {
-          "label": "Komponen Gaji",
-          "path": "/payroll/salary-components",
-          "selector": ".border-t:nth-child(13) > .text-left:nth-child(6) > .text-neutral-400",
-          "html": "<span class=\"text-neutral-400\">Tidak</span>"
-        }
-      ]
-    },
-    {
       "signature": "color-contrast|#2a7851|#e3e9e3",
       "ruleId": "color-contrast",
       "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
@@ -787,14 +299,8 @@
       "fgColor": "#2a7851",
       "bgColor": "#e3e9e3",
       "contrastRatio": 4.36,
-      "occurrenceCount": 8,
+      "occurrenceCount": 7,
       "occurrences": [
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
@@ -804,19 +310,19 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(11) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         },
         {
@@ -853,31 +359,25 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
           "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(11) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
         },
         {
@@ -885,50 +385,12 @@
           "path": "/audit-log",
           "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
-        }
-      ]
-    },
-    {
-      "signature": "color-contrast|#9c9689|#ffffff",
-      "ruleId": "color-contrast",
-      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-      "fgColor": "#9c9689",
-      "bgColor": "#ffffff",
-      "contrastRatio": 2.94,
-      "occurrenceCount": 2,
-      "occurrences": [
-        {
-          "label": "Lokasi Kantor - Modal Edit (Tab Info)",
-          "path": "/office-locations",
-          "selector": ".border-transparent",
-          "html": "<button type=\"button\" class=\"font-body text-sm font-medium pb-1.5 -mb-px border-b-2 border-transparent text-neutral-400 hover:text-neutral-600\">Supervisor</button>"
         },
         {
-          "label": "Lokasi Kantor - Modal Edit (Tab Supervisor)",
-          "path": "/office-locations",
-          "selector": ".border-transparent",
-          "html": "<button type=\"button\" class=\"font-body text-sm font-medium pb-1.5 -mb-px border-b-2 border-transparent text-neutral-400 hover:text-neutral-600\">Info Lokasi</button>"
-        }
-      ]
-    },
-    {
-      "signature": "color-contrast|#cce1ff|#0066ff",
-      "ruleId": "color-contrast",
-      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-      "fgColor": "#cce1ff",
-      "bgColor": "#0066ff",
-      "contrastRatio": 3.63,
-      "occurrenceCount": 1,
-      "occurrences": [
-        {
-          "label": "Login",
-          "path": "/login",
-          "selector": "p",
-          "html": "<p class=\"font-body text-[15px] text-primary-100\">MyJAP Employee Portal — sistem HR, absensi, dan payroll terpadu untuk seluruh cabang Kalimantan Timur.</p>"
+          "label": "Audit Log - List",
+          "path": "/audit-log",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diperbarui</span>"
         }
       ]
     },

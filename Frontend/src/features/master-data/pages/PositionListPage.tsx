@@ -155,7 +155,7 @@ export function PositionListPage() {
                 // sederhana, BUKAN status workflow, StatusBadge sengaja
                 // TIDAK dipakai di sini.
                 render: (row) => (
-                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-400'}>
+                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-600'}>
                     {row.is_active ? 'Aktif' : 'Nonaktif'}
                   </span>
                 ),

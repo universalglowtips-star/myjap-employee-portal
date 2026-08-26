@@ -127,7 +127,7 @@ export function RoleListPage() {
                 header: 'Status',
                 // is_active boolean sederhana, BUKAN status workflow - pola persis Departemen/Posisi.
                 render: (row) => (
-                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-400'}>
+                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-600'}>
                     {row.is_active ? 'Aktif' : 'Nonaktif'}
                   </span>
                 ),

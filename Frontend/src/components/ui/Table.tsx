@@ -107,7 +107,7 @@ export function Table<T>({
           ))
         ) : data.length === 0 ? (
           <tr>
-            <td colSpan={columns.length} className="px-3 py-8 text-center font-body text-sm text-neutral-400">
+            <td colSpan={columns.length} className="px-3 py-8 text-center font-body text-sm text-neutral-600">
               {emptyMessage}
             </td>
           </tr>

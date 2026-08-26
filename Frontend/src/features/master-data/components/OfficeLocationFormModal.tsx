@@ -252,7 +252,7 @@ export function OfficeLocationFormModal({
             className={`font-body text-sm font-medium pb-1.5 -mb-px border-b-2 ${
               activeTab === 'info'
                 ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-400 hover:text-neutral-600'
+                : 'border-transparent text-neutral-600 hover:text-neutral-800'
             }`}
           >
             Info Lokasi
@@ -263,7 +263,7 @@ export function OfficeLocationFormModal({
             className={`font-body text-sm font-medium pb-1.5 -mb-px border-b-2 ${
               activeTab === 'supervisor'
                 ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-400 hover:text-neutral-600'
+                : 'border-transparent text-neutral-600 hover:text-neutral-800'
             }`}
           >
             Supervisor

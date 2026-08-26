@@ -87,7 +87,7 @@ export function LoginPage() {
           <br />
           Publik Logistik
         </h1>
-        <p className="font-body text-[15px] text-primary-100">
+        <p className="font-body text-[15px] text-white">
           MyJAP Employee Portal — sistem HR, absensi, dan payroll terpadu untuk seluruh cabang
           Kalimantan Timur.
         </p>

@@ -124,7 +124,7 @@ export function DepartmentListPage() {
                 // is_active itu boolean sederhana, BUKAN status workflow (Draft/Submitted/dst) -
                 // StatusBadge sengaja TIDAK dipaksa dipakai di sini, itu didesain khusus 6 status backend tertentu.
                 render: (row) => (
-                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-400'}>
+                  <span className={row.is_active ? 'text-status-approved' : 'text-neutral-600'}>
                     {row.is_active ? 'Aktif' : 'Nonaktif'}
                   </span>
                 ),
