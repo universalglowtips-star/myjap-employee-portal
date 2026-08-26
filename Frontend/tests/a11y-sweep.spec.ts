@@ -117,7 +117,11 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    test.setTimeout(300_000)
+    // 600s (bukan 300s lagi) - sweep udah nyampe 27 state (Task 8d/8e
+    // nambah 11 state baru sendiri), run terakhir kena 5.4m, mepet ke
+    // limit lama. Semua state TETAP 0 violation waktu kena timeout -
+    // ini murni budget waktu test-nya, bukan bug aksesibilitas.
+    test.setTimeout(600_000)
 
     // === /login (SEBELUM login - context browser baru, otomatis logged-out) ===
     await safeStep('Login', '/login', async () => {
@@ -241,6 +245,77 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       // ngecek & bersihin dulu di awal).
       await page.getByRole('button', { name: 'Ya, Hapus' }).click()
       await page.getByText('belum memiliki pengecualian lokasi absensi').waitFor({ state: 'visible', timeout: 15000 })
+    })
+
+    // === Tab "Wewenang Cabang" (Task 8e) - state kosong ===
+    // Dibersihkan dulu (persis pola Tab Pengecualian di atas) SUPAYA
+    // state "kosong" yang di-scan beneran deterministik.
+    await safeStep('Detail Karyawan - Wewenang Cabang (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.getByRole('button', { name: 'Wewenang Cabang' }).click()
+      await page.getByText('Memuat data wewenang cabang...').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+      await Promise.race([
+        page.getByText('belum memiliki wewenang cabang apa pun').waitFor({ state: 'visible', timeout: 15000 }),
+        page.locator('button[aria-label^="Cabut wewenang"]').first().waitFor({ state: 'visible', timeout: 15000 }),
+      ])
+
+      const removeButtons = page.locator('button[aria-label^="Cabut wewenang"]')
+      while ((await removeButtons.count()) > 0) {
+        await removeButtons.first().click()
+        const dlg = page.getByRole('alertdialog')
+        await dlg.waitFor({ state: 'visible', timeout: 10000 })
+        await Promise.all([
+          page.waitForResponse((res) => res.url().includes('/office-scopes') && res.request().method() === 'GET', { timeout: 10000 }),
+          page.getByRole('button', { name: 'Ya, Cabut' }).click(),
+        ])
+      }
+      await page.getByText('belum memiliki wewenang cabang apa pun').waitFor({ state: 'visible', timeout: 15000 })
+
+      await runAxe(page, 'Detail Karyawan - Wewenang Cabang (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Dropdown "Tambah Cabang" - state fokus ===
+    // CATATAN: ini <select> NATIVE (bukan MultiSelect custom kayak
+    // office_location_ids Task 8d) - popup opsi native <select> dirender
+    // browser di LUAR DOM (OS-level widget), axe-core (yang scan DOM)
+    // gak bisa "lihat" state itu sama sekali beda dari state tertutup.
+    // Yang di-scan di sini state FOKUS (:focus-visible beneran beda
+    // secara DOM/CSS) - proxy paling dekat yang beneran bisa di-scan.
+    await safeStep('Detail Karyawan - Dropdown Tambah Cabang (fokus)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#add_office_scope').focus()
+      await runAxe(page, 'Detail Karyawan - Dropdown Tambah Cabang (fokus)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Tambah 1 cabang -> Dialog Konfirmasi Tambah ===
+    await safeStep('Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Tambah', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#add_office_scope').selectOption({ index: 1 })
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Tambah', `/employees/${EMPLOYEE_EDIT_ID}`, '[role="alertdialog"]')
+      await Promise.all([
+        page.waitForResponse((res) => res.url().includes('/office-scopes') && res.request().method() === 'GET', { timeout: 10000 }),
+        page.getByRole('button', { name: 'Ya, Tambahkan' }).click(),
+      ])
+      await page.locator('button[aria-label^="Cabut wewenang"]').first().waitFor({ state: 'visible', timeout: 10000 })
+    })
+
+    // === Wewenang Cabang - state terisi ===
+    await safeStep('Detail Karyawan - Wewenang Cabang (terisi)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await runAxe(page, 'Detail Karyawan - Wewenang Cabang (terisi)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Dialog Konfirmasi Hapus wewenang + bersihin data test ===
+    await safeStep('Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Hapus', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('button[aria-label^="Cabut wewenang"]').first().click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Hapus', `/employees/${EMPLOYEE_EDIT_ID}`, '[role="alertdialog"]')
+      // Konfirmasi beneran - balikin employee QA ke state kosong lagi
+      // setelah sweep, pola sama persis Tab Pengecualian di atas.
+      await Promise.all([
+        page.waitForResponse((res) => res.url().includes('/office-scopes') && res.request().method() === 'GET', { timeout: 10000 }),
+        page.getByRole('button', { name: 'Ya, Cabut' }).click(),
+      ])
+      await page.getByText('belum memiliki wewenang cabang apa pun').waitFor({ state: 'visible', timeout: 15000 })
     })
 
     // === /departments ===

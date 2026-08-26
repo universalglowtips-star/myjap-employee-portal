@@ -9,22 +9,21 @@ import { cn } from '../../../lib/cn'
 import { useEmployee } from '../hooks/useEmployee'
 import { EmployeeInfoTab } from '../components/EmployeeInfoTab'
 import { EmployeeAttendanceOverrideTab } from '../components/EmployeeAttendanceOverrideTab'
+import { EmployeeOfficeScopeTab } from '../components/EmployeeOfficeScopeTab'
 
 /**
  * Route BARU /employees/:id (Task 8d) - view-only, BEDA dari
  * /employees/:id/edit yang sudah ada (Fase 8c, form bisa diedit).
  *
- * Struktur tab DRIVEN BY ARRAY (bukan JSX if/else berjejer) - biar
- * gampang nambah tab baru nanti (Task 8e "Wewenang Cabang"). SENGAJA
- * belum ditambahkan tab ke-3 di sini sama sekali (bukan cuma
- * di-disable/placeholder) - sesuai instruksi eksplisit tugas ini:
- * cukup pastikan strukturnya reusable, gak perlu bikin UI apapun buat
- * tab itu sekarang. Nambah tab baru nanti tinggal 1 entry baru di
- * array TABS + 1 branch render kondisi, gak perlu ubah tab switcher.
+ * Struktur tab DRIVEN BY ARRAY (bukan JSX if/else berjejer). Tab
+ * ke-3 "Wewenang Cabang" (Task 8e) diisi di sini - slotnya sengaja
+ * disiapkan kosong di Task 8d, tinggal 1 entry baru + 1 branch render,
+ * gak perlu ubah tab switcher sama sekali.
  */
 const TABS = [
   { key: 'info', label: 'Info' },
   { key: 'override', label: 'Pengecualian Lokasi Absensi' },
+  { key: 'office-scope', label: 'Wewenang Cabang' },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -96,6 +95,7 @@ export function EmployeeDetailPage() {
 
         {activeTab === 'info' && <EmployeeInfoTab employee={employee} isLoading={isLoading} isError={isError} />}
         {activeTab === 'override' && <EmployeeAttendanceOverrideTab employeeId={employeeId} />}
+        {activeTab === 'office-scope' && <EmployeeOfficeScopeTab employeeId={employeeId} />}
       </PermissionGate>
     </AppShell>
   )
