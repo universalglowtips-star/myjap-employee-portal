@@ -424,7 +424,7 @@ export function OfficeLocationFormModal({
 
           <div className="flex flex-col gap-1 sm:col-span-2">
             <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
-              Catatan <span className="font-normal text-neutral-400">(opsional)</span>
+              Catatan <span className="font-normal text-neutral-600">(opsional)</span>
             </label>
             <Input id="description" className="py-1.5" error={errors.description?.message} {...register('description')} />
           </div>

@@ -237,7 +237,7 @@ export function SalaryComponentFormModal({
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
-            Deskripsi <span className="font-normal text-neutral-400">(opsional)</span>
+            Deskripsi <span className="font-normal text-neutral-600">(opsional)</span>
           </label>
           <Input id="description" className="py-2" error={errors.description?.message} {...register('description')} />
         </div>

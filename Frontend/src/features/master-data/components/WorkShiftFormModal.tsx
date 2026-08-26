@@ -203,7 +203,7 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="break_start" className="font-body text-[13px] font-medium text-neutral-600">
-            Jam Istirahat Mulai <span className="font-normal text-neutral-400">(opsional)</span>
+            Jam Istirahat Mulai <span className="font-normal text-neutral-600">(opsional)</span>
           </label>
           <Input
             id="break_start"
@@ -216,7 +216,7 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="break_end" className="font-body text-[13px] font-medium text-neutral-600">
-            Jam Istirahat Selesai <span className="font-normal text-neutral-400">(opsional)</span>
+            Jam Istirahat Selesai <span className="font-normal text-neutral-600">(opsional)</span>
           </label>
           <Input
             id="break_end"

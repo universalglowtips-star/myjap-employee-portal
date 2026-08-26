@@ -392,7 +392,16 @@ export function EmployeeFormPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="phone" className="font-body text-[13px] font-medium text-neutral-600">
-                  Telepon <span className="font-normal text-neutral-400">(opsional)</span>
+                  {/* text-neutral-600 (BUKAN neutral-400 - #9C9689 di atas
+                      putih cuma 2.94:1, gagal WCAG AA). Sama seperti fix
+                      label grup Sidebar sebelumnya: token --color-neutral-400
+                      SENGAJA gak diubah global (dipakai luas buat konteks
+                      yang memang exempt dari aturan kontras teks - icon,
+                      placeholder, disabled state - bukan cuma di sini),
+                      jadi override per-elemen kayak ini, bukan ubah definisi
+                      token. neutral-600 = token existing, sudah dipakai
+                      Sidebar & LoginPage, konsisten. */}
+                  Telepon <span className="font-normal text-neutral-600">(opsional)</span>
                 </label>
                 <Input
                   id="phone"
@@ -516,7 +525,7 @@ export function EmployeeFormPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="birth_date" className="font-body text-[13px] font-medium text-neutral-600">
-                  Tanggal Lahir <span className="font-normal text-neutral-400">(opsional)</span>
+                  Tanggal Lahir <span className="font-normal text-neutral-600">(opsional)</span>
                 </label>
                 <Input
                   id="birth_date"
@@ -571,14 +580,14 @@ export function EmployeeFormPage() {
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <label htmlFor="address" className="font-body text-[13px] font-medium text-neutral-600">
-                  Alamat <span className="font-normal text-neutral-400">(opsional)</span>
+                  Alamat <span className="font-normal text-neutral-600">(opsional)</span>
                 </label>
                 <Input id="address" className="py-2" error={errors.address?.message} {...register('address')} />
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <label htmlFor="photo" className="font-body text-[13px] font-medium text-neutral-600">
-                  Foto <span className="font-normal text-neutral-400">(opsional, JPG/PNG, maks 2MB)</span>
+                  Foto <span className="font-normal text-neutral-600">(opsional, JPG/PNG, maks 2MB)</span>
                 </label>
                 <div className="flex items-center gap-3">
                   {currentPhotoUrl ? (
