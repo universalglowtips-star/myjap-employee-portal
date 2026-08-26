@@ -165,6 +165,24 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await runAxe(page, 'Karyawan - Arsip', '/employees/archive')
     })
 
+    // === Dialog Konfirmasi Pulihkan Karyawan (Task 8f) ===
+    // Butuh minimal 1 baris arsip buat klik tombol Pulihkan - employee
+    // id=26 ("QA Archive Test") sengaja dibuat & diarsipkan permanen
+    // khusus buat state ini (pola sama persis QA_A11Y_SWEEP/QA Director
+    // Test). Dialog di-BATALKAN (bukan dikonfirmasi) di akhir step -
+    // employee ini harus TETAP di arsip biar run berikutnya juga bisa
+    // klik Pulihkan lagi, deterministik, gak butuh setup ulang tiap run.
+    await safeStep('Karyawan - Arsip - Dialog Konfirmasi Pulihkan', '/employees/archive', async () => {
+      const pulihkanButton = page.locator('button[aria-label^="Pulihkan "]').first()
+      await pulihkanButton.waitFor({ state: 'visible', timeout: 15000 })
+      await pulihkanButton.click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Karyawan - Arsip - Dialog Konfirmasi Pulihkan', '/employees/archive', '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Batal' }).click()
+      await dialog.waitFor({ state: 'hidden', timeout: 5000 })
+    })
+
     // === /employees/{id} (Detail Karyawan, Task 8d) - Tab Info ===
     await safeStep('Detail Karyawan - Tab Info', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
       await gotoAndSettle(page, `/employees/${EMPLOYEE_EDIT_ID}`)

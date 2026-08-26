@@ -1,18 +1,11 @@
 {
-  "generatedAt": "2026-08-26T11:47:03.641Z",
-  "totalViolations": 12,
+  "generatedAt": "2026-08-26T18:31:04.724Z",
+  "totalViolations": 10,
   "pages": [
     {
       "label": "Login",
       "path": "/login",
       "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Login (proses submit)",
-      "path": "/login",
-      "status": "error",
-      "note": "page.waitForURL: Timeout 15000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================",
       "violations": []
     },
     {
@@ -42,6 +35,12 @@
     },
     {
       "label": "Karyawan - Arsip",
+      "path": "/employees/archive",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Karyawan - Arsip - Dialog Konfirmasi Pulihkan",
       "path": "/employees/archive",
       "status": "scanned",
       "violations": []
@@ -267,33 +266,7 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
-          "fgColor": "#c53030",
-          "bgColor": "#f2e2df",
-          "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
           "fgColor": "#2a7851",
           "bgColor": "#e3e9e3",
@@ -346,7 +319,7 @@
       "fgColor": "#c53030",
       "bgColor": "#f2e2df",
       "contrastRatio": 4.35,
-      "occurrenceCount": 6,
+      "occurrenceCount": 5,
       "occurrences": [
         {
           "label": "Audit Log - List",
@@ -375,12 +348,6 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
           "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
         }
@@ -395,7 +362,7 @@
       "fgColor": "#2a7851",
       "bgColor": "#e3e9e3",
       "contrastRatio": 4.36,
-      "occurrenceCount": 6,
+      "occurrenceCount": 5,
       "occurrences": [
         {
           "label": "Audit Log - List",
@@ -418,13 +385,7 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         },
         {
