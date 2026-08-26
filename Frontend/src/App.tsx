@@ -14,6 +14,7 @@ import { SalaryComponentListPage } from './features/master-data/pages/SalaryComp
 import { EmployeeListPage } from './features/employees/pages/EmployeeListPage'
 import { EmployeeArchiveListPage } from './features/employees/pages/EmployeeArchiveListPage'
 import { EmployeeFormPage } from './features/employees/pages/EmployeeFormPage'
+import { EmployeeDetailPage } from './features/employees/pages/EmployeeDetailPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 
 /**
@@ -137,6 +138,14 @@ function App() {
         element={
           <ProtectedRoute>
             <EmployeeFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employees/:id"
+        element={
+          <ProtectedRoute>
+            <EmployeeDetailPage />
           </ProtectedRoute>
         }
       />

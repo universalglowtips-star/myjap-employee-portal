@@ -161,6 +161,88 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await runAxe(page, 'Karyawan - Arsip', '/employees/archive')
     })
 
+    // === /employees/{id} (Detail Karyawan, Task 8d) - Tab Info ===
+    await safeStep('Detail Karyawan - Tab Info', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await gotoAndSettle(page, `/employees/${EMPLOYEE_EDIT_ID}`)
+      await runAxe(page, 'Detail Karyawan - Tab Info', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Tab "Pengecualian Lokasi Absensi" - state kosong ===
+    // Dibersihkan dulu (klik Hapus Override kalau ada sisa dari run
+    // sebelumnya) SUPAYA state "kosong" yang di-scan beneran deterministik,
+    // gak nebak-nebak state basi dari run lain.
+    await safeStep('Detail Karyawan - Tab Pengecualian (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.getByRole('button', { name: 'Pengecualian Lokasi Absensi' }).click()
+      await page.getByText('Memuat data pengecualian lokasi absensi...').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+      // Race: baik pesan empty state MAUPUN badge status (kalau kebetulan
+      // masih ada sisa override) valid sebagai sinyal "data selesai
+      // di-load" - BUKAN waitForTimeout tetap (pelajaran bug Supervisor
+      // tab sebelumnya: axe pernah kescan pas UI masih di state loading).
+      await Promise.race([
+        page.getByText('belum memiliki pengecualian lokasi absensi').waitFor({ state: 'visible', timeout: 15000 }),
+        page.getByRole('button', { name: 'Hapus Override' }).waitFor({ state: 'visible', timeout: 15000 }),
+      ])
+
+      const hapusButton = page.getByRole('button', { name: 'Hapus Override' })
+      if (await hapusButton.isVisible().catch(() => false)) {
+        await hapusButton.click()
+        const dialog = page.getByRole('alertdialog')
+        await dialog.waitFor({ state: 'visible', timeout: 10000 })
+        await page.getByRole('button', { name: 'Ya, Hapus' }).click()
+        await page.getByText('belum memiliki pengecualian lokasi absensi').waitFor({ state: 'visible', timeout: 15000 })
+      }
+
+      await runAxe(page, 'Detail Karyawan - Tab Pengecualian (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Isi form (scope ALL_BRANCHES, gak butuh MultiSelect) -> Dialog Konfirmasi Submit ===
+    await safeStep('Detail Karyawan - Dialog Konfirmasi Submit', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#scope_type').selectOption('ALL_BRANCHES')
+      await page.locator('#reason').fill('a11y sweep - state terisi buat scan aksesibilitas')
+      await page.getByRole('button', { name: 'Simpan' }).click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Dialog Konfirmasi Submit', `/employees/${EMPLOYEE_EDIT_ID}`, '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Ya, Simpan' }).click()
+      await page.getByText('berhasil disimpan').waitFor({ state: 'visible', timeout: 15000 })
+    })
+
+    // === Tab "Pengecualian Lokasi Absensi" - state terisi (ada override aktif) ===
+    await safeStep('Detail Karyawan - Tab Pengecualian (terisi)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.getByText('Aktif Sekarang').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Detail Karyawan - Tab Pengecualian (terisi)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === MultiSelect office_location_ids - state dropdown terbuka ===
+    await safeStep('Detail Karyawan - MultiSelect Cabang (terbuka)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#scope_type').selectOption('SPECIFIC_BRANCHES')
+      const trigger = page.locator('#office_location_ids')
+      await trigger.waitFor({ state: 'visible', timeout: 10000 })
+      await trigger.click()
+      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - MultiSelect Cabang (terbuka)', `/employees/${EMPLOYEE_EDIT_ID}`)
+      await page.getByRole('button', { name: 'Selesai' }).click()
+      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'hidden', timeout: 5000 })
+      // Balik ke ALL_BRANCHES - override yang mau dihapus di step berikut
+      // masih yang tersimpan (ALL_BRANCHES), bukan SPECIFIC_BRANCHES yang
+      // belum disimpan di step ini.
+      await page.locator('#scope_type').selectOption('ALL_BRANCHES')
+    })
+
+    // === Dialog Konfirmasi Hapus + bersihin data test ===
+    await safeStep('Detail Karyawan - Dialog Konfirmasi Hapus', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.getByRole('button', { name: 'Hapus Override' }).click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Dialog Konfirmasi Hapus', `/employees/${EMPLOYEE_EDIT_ID}`, '[role="alertdialog"]')
+      // Konfirmasi beneran (bukan cancel) - balikin employee QA ke state
+      // kosong lagi setelah sweep, biar run berikutnya mulai dari state
+      // yang deterministik juga (persis alasan step "kosong" di atas
+      // ngecek & bersihin dulu di awal).
+      await page.getByRole('button', { name: 'Ya, Hapus' }).click()
+      await page.getByText('belum memiliki pengecualian lokasi absensi').waitFor({ state: 'visible', timeout: 15000 })
+    })
+
     // === /departments ===
     await safeStep('Departemen', '/departments', async () => {
       await gotoAndSettle(page, '/departments')

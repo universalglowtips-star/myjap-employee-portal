@@ -128,7 +128,29 @@ export function EmployeeListPage() {
             }
             columns={[
               { key: 'code', header: 'Kode Karyawan', mono: true, render: (row) => row.employee_code },
-              { key: 'name', header: 'Nama Lengkap', render: (row) => row.full_name },
+              {
+                key: 'name',
+                header: 'Nama Lengkap',
+                // Nama klik -> /employees/:id (Detail, view-only, Task 8d).
+                // text-primary-600 - konvensi "teks biru buat item yang bisa
+                // diklik" (Arahan Visual). Tombol pensil Edit TETAP ada,
+                // gak dihilangkan - dua jalur akses independen.
+                render: (row) => (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/employees/${row.id}`)}
+                    // text-primary-700 (BUKAN primary-600 default) - baris
+                    // tabel ini duduk di atas bg-neutral-50 (AppShell main),
+                    // BUKAN kartu putih. primary-600 di atas neutral-50 cuma
+                    // 4.47:1, GAGAL AA (dikonfirmasi axe) - beda dari
+                    // primary-600 di atas putih murni yang 4.83:1, lolos.
+                    // Pola sama persis fix SidebarNavItem sebelumnya.
+                    className="font-body text-sm text-primary-700 hover:underline focus:outline-none focus:underline"
+                  >
+                    {row.full_name}
+                  </button>
+                ),
+              },
               { key: 'email', header: 'Email', render: (row) => row.email },
               { key: 'department', header: 'Departemen', render: (row) => row.department?.department_name ?? '—' },
               { key: 'position', header: 'Posisi', render: (row) => row.position?.position_name ?? '—' },
