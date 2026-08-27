@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { LoginPage } from './features/auth/pages/LoginPage'
-import { AppShell } from './components/layout/AppShell'
 import { DepartmentListPage } from './features/master-data/pages/DepartmentListPage'
 import { PositionListPage } from './features/master-data/pages/PositionListPage'
 import { RoleListPage } from './features/master-data/pages/RoleListPage'
@@ -16,9 +15,13 @@ import { EmployeeArchiveListPage } from './features/employees/pages/EmployeeArch
 import { EmployeeFormPage } from './features/employees/pages/EmployeeFormPage'
 import { EmployeeDetailPage } from './features/employees/pages/EmployeeDetailPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
+import { DashboardPage } from './features/dashboard/pages/DashboardPage'
 
 /**
- * Route '/login' dan '/' final (Langkah 6 + 8). '/departments' (Fase B
+ * Route '/login' final (Langkah 6). '/' (Task 7 - Dashboard nyata,
+ * KPI cards + chart tren kehadiran, AppShell-nya dirender DI DALAM
+ * DashboardPage sendiri, bukan di sini lagi - beda dari waktu masih
+ * placeholder verifikasi AppShell Langkah 8). '/departments' (Fase B
  * - pola percontohan), '/positions' (Tugas 2, ngikutin pola Departemen
  * persis), '/roles' + '/roles/:id/permissions' (Tugas 3, List Role +
  * Permission Matrix), '/work-shifts' (Tugas 4, ngikutin pola Departemen/
@@ -47,9 +50,7 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <AppShell title="Dashboard">
-              <DashboardPlaceholder />
-            </AppShell>
+            <DashboardPage />
           </ProtectedRoute>
         }
       />
@@ -158,15 +159,6 @@ function App() {
         }
       />
     </Routes>
-  )
-}
-
-/** Placeholder konten - halaman Dashboard beneran itu Fase C, belum dikerjakan. Cuma buat verifikasi AppShell jalan. */
-function DashboardPlaceholder() {
-  return (
-    <p className="font-body text-sm text-neutral-600">
-      Konten Dashboard akan dibangun di Fase C. Halaman ini cuma verifikasi AppShell (Langkah 8).
-    </p>
   )
 }
 

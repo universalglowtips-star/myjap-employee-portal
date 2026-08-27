@@ -89,11 +89,6 @@ async function runAxe(page: Page, label: string, pathname: string, scopeSelector
   console.log(`  [scan] ${label} (${pathname}) -> ${violations.length} violation(s)`)
 }
 
-function skipPage(label: string, pathname: string, reason: string): void {
-  allResults.push({ label, path: pathname, status: 'skipped', note: reason, violations: [] })
-  console.log(`  [skip] ${label} (${pathname}) -> ${reason}`)
-}
-
 function recordError(label: string, pathname: string, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err)
   allResults.push({ label, path: pathname, status: 'error', note: message, violations: [] })
@@ -138,8 +133,44 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 })
     })
 
-    // === / (Dashboard) - masih placeholder, SKIP sesuai instruksi ===
-    skipPage('Dashboard', '/', 'Halaman masih placeholder (DashboardPlaceholder di App.tsx) - belum diimplementasi, di-skip.')
+    // === / (Dashboard, Task 7) - state awal load (KPI cards + chart default 7 hari) ===
+    await safeStep('Dashboard - Awal Load', '/', async () => {
+      await gotoAndSettle(page, '/')
+      // Tunggu skeleton loading BENERAN hilang (bukan waitForTimeout
+      // blind) - KpiCard render label duluan, angka baru muncul begitu
+      // isLoading false. `.animate-pulse` = kelas skeleton di KpiCard.tsx
+      // & AttendanceTrendChart.tsx.
+      await page.locator('.animate-pulse').first().waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+      await page.getByText('Tren Kehadiran Harian').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Dashboard - Awal Load', '/')
+    })
+
+    // === Dashboard - date picker "Kehadiran Hari Ini" ===
+    // CATATAN: <input type="date"> NATIVE - popup kalendernya dirender
+    // browser di LUAR DOM (OS-level widget), sama persis kasus <select>
+    // native di Task 8e (Dropdown Tambah Cabang) - axe gak bisa scan
+    // beda dari state tertutup. Yang di-scan proxy terdekat yang
+    // beneran DOM-scannable: state fokus pada input-nya.
+    await safeStep('Dashboard - Date Picker Kehadiran (fokus)', '/', async () => {
+      await page.locator('#attendance-today-date').focus()
+      await runAxe(page, 'Dashboard - Date Picker Kehadiran (fokus)', '/')
+    })
+
+    // === Dashboard - selector hari diubah ke 30 hari ===
+    await safeStep('Dashboard - Tren Kehadiran (30 hari)', '/', async () => {
+      const button30 = page.getByRole('button', { name: '30 Hari' })
+      await button30.click()
+      // Tunggu tombol beneran keganti aria-pressed (state React commit),
+      // bukan waitForTimeout blind - sinyal DOM nyata bahwa re-render
+      // (dan refetch data 30 hari) sudah kejadian.
+      await page.waitForFunction(
+        () => document.querySelector('button[aria-pressed="true"]')?.textContent === '30 Hari',
+        null,
+        { timeout: 10000 }
+      )
+      await page.waitForTimeout(300)
+      await runAxe(page, 'Dashboard - Tren Kehadiran (30 hari)', '/')
+    })
 
     // === /employees ===
     await safeStep('Karyawan - List', '/employees', async () => {
