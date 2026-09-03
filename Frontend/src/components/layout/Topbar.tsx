@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, LogOut, Menu } from 'lucide-react'
+import { ChevronDown, LogOut, Menu } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { Avatar } from '../ui/Avatar'
+import { NotificationBell } from '../../features/notifications/components/NotificationBell'
 
 interface TopbarProps {
   /** Toggle Sidebar - collapse/expand di desktop (>=lg), buka/tutup drawer di mobile (<lg). Satu handler aja - CSS `lg:` yang nentuin mode mana yang keliatan, gak perlu deteksi breakpoint via JS. */
@@ -135,19 +136,11 @@ export function Topbar({ onToggleSidebar, collapsed }: TopbarProps) {
       </div>
 
       <div className="flex items-center justify-end gap-2 pr-4 sm:gap-4 sm:pr-6 lg:pr-8">
-        {/* Bell - visual statis, TANPA aria-live/count dinamis (bukan
-            fitur fungsional, gak ada onClick). role="img" (BUKAN
-            role="status" - itu implies live-region yang bakal salah,
-            badge ini statis bukan update real-time) + aria-label
-            nyebutin badge-nya juga karena titik merah ITU SELALU ADA
-            di kode sekarang (unconditional, gak ada logic unread-count
-            beneran) - kalau nanti Fase F nambahin logic count asli,
-            aria-label ini WAJIB ikut jadi conditional ngikutin ada/
-            gaknya badge, bukan tetap statis kayak sekarang. */}
-        <div className="relative shrink-0" role="img" aria-label="Notifikasi, ada pemberitahuan baru">
-          <Bell size={20} strokeWidth={2} className="text-neutral-600" />
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-status-rejected" />
-        </div>
+        {/* Task 9 - dulu visual statis (badge merah hardcoded, nol
+            logic, "Fase F"). Sekarang komponen fungsional penuh
+            (unread-count poll 30s, dropdown notifikasi asli) - lihat
+            features/notifications/components/NotificationBell.tsx. */}
+        <NotificationBell />
 
         <div ref={menuRef} className="relative shrink-0">
           <button

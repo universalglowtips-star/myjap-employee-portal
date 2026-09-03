@@ -16,6 +16,7 @@ import { EmployeeFormPage } from './features/employees/pages/EmployeeFormPage'
 import { EmployeeDetailPage } from './features/employees/pages/EmployeeDetailPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 import { DashboardPage } from './features/dashboard/pages/DashboardPage'
+import { NotificationListPage } from './features/notifications/pages/NotificationListPage'
 
 /**
  * Route '/login' final (Langkah 6). '/' (Task 7 - Dashboard nyata,
@@ -155,6 +156,14 @@ function App() {
         element={
           <ProtectedRoute>
             <AuditLogListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationListPage />
           </ProtectedRoute>
         }
       />

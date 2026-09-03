@@ -112,11 +112,11 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 600s (bukan 300s lagi) - sweep udah nyampe 27 state (Task 8d/8e
-    // nambah 11 state baru sendiri), run terakhir kena 5.4m, mepet ke
-    // limit lama. Semua state TETAP 0 violation waktu kena timeout -
-    // ini murni budget waktu test-nya, bukan bug aksesibilitas.
-    test.setTimeout(600_000)
+    // 900s (bukan 600s lagi) - sweep terus nambah (Task 7 Dashboard +3,
+    // Task 9 Notifikasi +4 state baru), run terakhir kena 10-11 menit,
+    // mepet/lewatin limit lama. Semua state TETAP 0 violation waktu kena
+    // timeout - ini murni budget waktu test-nya, bukan bug aksesibilitas.
+    test.setTimeout(900_000)
 
     // === /login (SEBELUM login - context browser baru, otomatis logged-out) ===
     await safeStep('Login', '/login', async () => {
@@ -170,6 +170,64 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       )
       await page.waitForTimeout(300)
       await runAxe(page, 'Dashboard - Tren Kehadiran (30 hari)', '/')
+    })
+
+    // === Notifikasi (Task 9) - Dropdown Topbar (terbuka) ===
+    // Butuh data asli (bukan kosong) - employee QA_A11Y_SWEEP (id=25)
+    // punya 5 notifikasi persisten yang sengaja di-seed permanen khusus
+    // buat state ini (pola sama persis QA Archive Test/QA A11y Sweep
+    // Test) - mencakup ke-3 kategori sentiment (positif/negatif/netral)
+    // PLUS 1 type yang gak dikenal frontend (uji fallback defensif).
+    // Selector bell PRESISI via aria-haspopup="true" (unik, BUKAN cari
+    // teks "Notifikasi" polos - itu bisa nabrak tombol hapus notifikasi
+    // lain yang judulnya kebetulan mengandung kata sama).
+    await safeStep('Notifikasi - Dropdown Topbar (terbuka)', '/', async () => {
+      const bell = page.locator('button[aria-haspopup="true"]')
+      await bell.waitFor({ state: 'visible', timeout: 15000 })
+      await bell.click()
+      await page.getByText('Lihat Semua').waitFor({ state: 'visible', timeout: 15000 })
+      await page.locator('header .animate-pulse').first().waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+      await page.getByText('Pengajuan Cuti Disetujui').waitFor({ state: 'visible', timeout: 15000 })
+      // Full-page scan (BUKAN scoped ke satu selector) - dropdown ini
+      // panel biasa nempel di DOM, bukan role="dialog"/portal - pola
+      // sama persis MultiSelect Cabang (Task 8d) yang juga di-scan full
+      // page pas terbuka.
+      await runAxe(page, 'Notifikasi - Dropdown Topbar (terbuka)', '/')
+    })
+
+    // === Notifikasi - Halaman Penuh (terisi) ===
+    await safeStep('Notifikasi - Halaman Penuh (terisi)', '/notifications', async () => {
+      await gotoAndSettle(page, '/notifications')
+      await page.getByText('Pengajuan Cuti Disetujui').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Notifikasi - Halaman Penuh (terisi)', '/notifications')
+    })
+
+    // === Notifikasi - Halaman Penuh (kosong) ===
+    // TRIK non-destruktif: page=2 dari 5 notifikasi (per_page=15) PASTI
+    // kosong TANPA perlu hapus data seed beneran - Table.tsx render
+    // emptyMessage bawaan begitu `data` kosong, seed 5 notifikasi
+    // persisten tetap utuh di page=1 buat run berikutnya.
+    await safeStep('Notifikasi - Halaman Penuh (kosong)', '/notifications?page=2', async () => {
+      await gotoAndSettle(page, '/notifications?page=2')
+      await page.getByText('Tidak ada notifikasi.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Notifikasi - Halaman Penuh (kosong)', '/notifications?page=2')
+    })
+
+    // === Notifikasi - Dialog Konfirmasi Hapus ===
+    // Dialog DIBATALKAN (bukan dikonfirmasi) di akhir step - seed 5
+    // notifikasi persisten harus TETAP utuh buat run berikutnya, pola
+    // sama persis kenapa "kosong" di atas pakai trik pagination
+    // ketimbang hapus data beneran.
+    await safeStep('Notifikasi - Dialog Konfirmasi Hapus', '/notifications', async () => {
+      await gotoAndSettle(page, '/notifications')
+      const deleteButton = page.locator('button[aria-label^="Hapus notifikasi"]').first()
+      await deleteButton.waitFor({ state: 'visible', timeout: 10000 })
+      await deleteButton.click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Notifikasi - Dialog Konfirmasi Hapus', '/notifications', '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Batal' }).click()
+      await dialog.waitFor({ state: 'hidden', timeout: 5000 })
     })
 
     // === /employees ===
