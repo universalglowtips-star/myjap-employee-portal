@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Lock, AlertTriangle } from 'lucide-react'
 import { PermissionGate } from '../../../components/forms/PermissionGate'
 import { Select } from '../../../components/ui/Select'
+import { Label } from '../../../components/ui/Label'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { Toast } from '../../../components/ui/Toast'
 import { useOfficeLocations } from '../../master-data/hooks/useOfficeLocations'
@@ -134,9 +135,9 @@ export function EmployeeOfficeScopeTab({ employeeId }: EmployeeOfficeScopeTabPro
           )}
 
           <div className="flex flex-col gap-1.5 sm:max-w-xs">
-            <label htmlFor="add_office_scope" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="add_office_scope">
               Tambah Cabang
-            </label>
+            </Label>
             <Select
               id="add_office_scope"
               className="py-2"

@@ -8,6 +8,7 @@ import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Toast } from '../../../components/ui/Toast'
+import { Label } from '../../../components/ui/Label'
 import { usePermission } from '../../../lib/permissions'
 import { useOfficeLocationSupervisors, useUpdateOfficeLocationSupervisors } from '../hooks/useOfficeLocationSupervisors'
 import type { OfficeLocation, OfficeLocationCreateRequest } from '../../../api/types/officeLocation'
@@ -300,16 +301,16 @@ export function OfficeLocationFormModal({
           className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2"
         >
           <div className="flex flex-col gap-1">
-            <label htmlFor="office_code" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="office_code">
               Kode Lokasi
-            </label>
+            </Label>
             <Input id="office_code" className="py-1.5" error={errors.office_code?.message} {...register('office_code')} />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="radius_meter" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="radius_meter">
               Radius (meter)
-            </label>
+            </Label>
             <Input
               id="radius_meter"
               type="number"
@@ -323,16 +324,16 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1 sm:col-span-2">
-            <label htmlFor="office_name" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="office_name">
               Nama Lokasi
-            </label>
+            </Label>
             <Input id="office_name" className="py-1.5" error={errors.office_name?.message} {...register('office_name')} />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="latitude" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="latitude">
               Latitude
-            </label>
+            </Label>
             <Input
               id="latitude"
               type="number"
@@ -344,9 +345,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="longitude" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="longitude">
               Longitude
-            </label>
+            </Label>
             <Input
               id="longitude"
               type="number"
@@ -358,9 +359,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="check_in_start" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="check_in_start">
               Jam Masuk Mulai
-            </label>
+            </Label>
             <Input
               id="check_in_start"
               type="time"
@@ -371,9 +372,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="check_in_end" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="check_in_end">
               Jam Masuk Selesai
-            </label>
+            </Label>
             <Input
               id="check_in_end"
               type="time"
@@ -384,9 +385,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="check_out_start" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="check_out_start">
               Jam Pulang Mulai
-            </label>
+            </Label>
             <Input
               id="check_out_start"
               type="time"
@@ -397,9 +398,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="check_out_end" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="check_out_end">
               Jam Pulang Selesai
-            </label>
+            </Label>
             <Input
               id="check_out_end"
               type="time"
@@ -410,9 +411,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1 sm:col-span-2">
-            <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="is_active">
               Status
-            </label>
+            </Label>
             <Select
               id="is_active"
               className="py-1.5"
@@ -423,9 +424,9 @@ export function OfficeLocationFormModal({
           </div>
 
           <div className="flex flex-col gap-1 sm:col-span-2">
-            <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="description">
               Catatan <span className="font-normal text-neutral-600">(opsional)</span>
-            </label>
+            </Label>
             <Input id="description" className="py-1.5" error={errors.description?.message} {...register('description')} />
           </div>
         </form>

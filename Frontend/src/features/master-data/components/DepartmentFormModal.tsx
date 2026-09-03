@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
+import { Label } from '../../../components/ui/Label'
 import type { Department, DepartmentCreateRequest } from '../../../api/types/department'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -87,23 +88,23 @@ export function DepartmentFormModal({
     >
       <form id="department-form" onSubmit={handleSubmit(handleFormSubmit)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="department_code" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="department_code">
             Kode Departemen
-          </label>
+          </Label>
           <Input id="department_code" error={errors.department_code?.message} {...register('department_code')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="department_name" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="department_name">
             Nama Departemen
-          </label>
+          </Label>
           <Input id="department_name" error={errors.department_name?.message} {...register('department_name')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="description">
             Deskripsi
-          </label>
+          </Label>
           <Input id="description" error={errors.description?.message} {...register('description')} />
         </div>
       </form>

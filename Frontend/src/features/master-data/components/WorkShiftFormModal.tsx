@@ -6,6 +6,7 @@ import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
+import { Label } from '../../../components/ui/Label'
 import type { WorkShift, WorkShiftCreateRequest } from '../../../api/types/workShift'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -146,16 +147,16 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
         className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
       >
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="shift_code" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="shift_code">
             Kode Shift
-          </label>
+          </Label>
           <Input id="shift_code" className="py-2" error={errors.shift_code?.message} {...register('shift_code')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="late_tolerance" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="late_tolerance">
             Toleransi Telat (menit)
-          </label>
+          </Label>
           <Input
             id="late_tolerance"
             type="number"
@@ -169,16 +170,16 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="shift_name" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="shift_name">
             Nama Shift
-          </label>
+          </Label>
           <Input id="shift_name" className="py-2" error={errors.shift_name?.message} {...register('shift_name')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="check_in_time" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="check_in_time">
             Jam Masuk
-          </label>
+          </Label>
           <Input
             id="check_in_time"
             type="time"
@@ -189,9 +190,9 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="check_out_time" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="check_out_time">
             Jam Pulang
-          </label>
+          </Label>
           <Input
             id="check_out_time"
             type="time"
@@ -202,9 +203,9 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="break_start" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="break_start">
             Jam Istirahat Mulai <span className="font-normal text-neutral-600">(opsional)</span>
-          </label>
+          </Label>
           <Input
             id="break_start"
             type="time"
@@ -215,9 +216,9 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="break_end" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="break_end">
             Jam Istirahat Selesai <span className="font-normal text-neutral-600">(opsional)</span>
-          </label>
+          </Label>
           <Input
             id="break_end"
             type="time"
@@ -228,9 +229,9 @@ export function WorkShiftFormModal({ open, onClose, workShift, onSubmit, isSubmi
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="is_active">
             Status
-          </label>
+          </Label>
           <Select
             id="is_active"
             className="py-2"

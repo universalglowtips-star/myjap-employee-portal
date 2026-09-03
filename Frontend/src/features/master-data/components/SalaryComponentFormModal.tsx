@@ -6,6 +6,7 @@ import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
+import { Label } from '../../../components/ui/Label'
 import type { SalaryComponent, SalaryComponentCreateRequest } from '../../../api/types/salaryComponent'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -153,16 +154,16 @@ export function SalaryComponentFormModal({
         className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
       >
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="code" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="code">
             Kode
-          </label>
+          </Label>
           <Input id="code" className="py-2" error={errors.code?.message} {...register('code')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="default_amount" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="default_amount">
             Jumlah Default
-          </label>
+          </Label>
           <Input
             id="default_amount"
             type="number"
@@ -176,16 +177,16 @@ export function SalaryComponentFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="name" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="name">
             Nama Komponen
-          </label>
+          </Label>
           <Input id="name" className="py-2" error={errors.name?.message} {...register('name')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="type" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="type">
             Tipe
-          </label>
+          </Label>
           <Select
             id="type"
             className="py-2"
@@ -197,9 +198,9 @@ export function SalaryComponentFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="is_active">
             Status
-          </label>
+          </Label>
           <Select
             id="is_active"
             className="py-2"
@@ -210,9 +211,9 @@ export function SalaryComponentFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="is_taxable" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="is_taxable">
             Wajib Pajak?
-          </label>
+          </Label>
           <Select
             id="is_taxable"
             className="py-2"
@@ -223,9 +224,9 @@ export function SalaryComponentFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="is_required" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="is_required">
             Komponen Wajib?
-          </label>
+          </Label>
           <Select
             id="is_required"
             className="py-2"
@@ -236,9 +237,9 @@ export function SalaryComponentFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="description">
             Deskripsi <span className="font-normal text-neutral-600">(opsional)</span>
-          </label>
+          </Label>
           <Input id="description" className="py-2" error={errors.description?.message} {...register('description')} />
         </div>
       </form>

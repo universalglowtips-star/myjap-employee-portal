@@ -1,4 +1,5 @@
 import { User } from 'lucide-react'
+import { Label } from '../../../components/ui/Label'
 import { getStorageUrl } from '../../../lib/storageUrl'
 import type { Employee } from '../../../api/types/employee'
 
@@ -18,7 +19,7 @@ interface ReadOnlyFieldProps {
 function ReadOnlyField({ label, value, span2 }: ReadOnlyFieldProps) {
   return (
     <div className={`flex flex-col gap-1.5 ${span2 ? 'sm:col-span-2' : ''}`}>
-      <p className="font-body text-[13px] font-medium text-neutral-600">{label}</p>
+      <Label as="p">{label}</Label>
       <p className="font-body text-sm text-neutral-900">{value}</p>
     </div>
   )
@@ -64,7 +65,7 @@ export function EmployeeInfoTab({ employee, isLoading, isError }: EmployeeInfoTa
         <ReadOnlyField label="Alamat" value={employee.address ?? '—'} span2 />
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <p className="font-body text-[13px] font-medium text-neutral-600">Foto</p>
+          <Label as="p">Foto</Label>
           {photoUrl ? (
             <img src={photoUrl} alt={`Foto ${employee.full_name}`} className="h-16 w-16 rounded-full object-cover" />
           ) : (

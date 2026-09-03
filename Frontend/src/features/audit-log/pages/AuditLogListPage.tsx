@@ -8,6 +8,7 @@ import { Table } from '../../../components/ui/Table'
 import { Button } from '../../../components/ui/Button'
 import { Select } from '../../../components/ui/Select'
 import { Input } from '../../../components/ui/Input'
+import { Label } from '../../../components/ui/Label'
 import { formatDate } from '../../../lib/formatDate'
 import { ActionBadge } from '../components/ActionBadge'
 import { AuditLogDetailModal } from '../components/AuditLogDetailModal'
@@ -127,9 +128,9 @@ export function AuditLogListPage() {
         <div className="mb-4 flex flex-col gap-3 rounded-md bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-module" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="filter-module">
                 Modul
-              </label>
+              </Label>
               <Select
                 id="filter-module"
                 options={moduleOptions}
@@ -139,9 +140,9 @@ export function AuditLogListPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-action" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="filter-action">
                 Aksi
-              </label>
+              </Label>
               <Select
                 id="filter-action"
                 options={actionOptions}
@@ -151,9 +152,9 @@ export function AuditLogListPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-changed-by" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="filter-changed-by">
                 Dilakukan oleh
-              </label>
+              </Label>
               <Select
                 id="filter-changed-by"
                 options={employeeOptions}
@@ -167,9 +168,9 @@ export function AuditLogListPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-start-date" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="filter-start-date">
                 Dari Tanggal
-              </label>
+              </Label>
               <Input
                 id="filter-start-date"
                 type="date"
@@ -179,9 +180,9 @@ export function AuditLogListPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-end-date" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="filter-end-date">
                 Sampai Tanggal
-              </label>
+              </Label>
               <Input
                 id="filter-end-date"
                 type="date"

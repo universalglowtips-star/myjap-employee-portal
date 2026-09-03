@@ -11,6 +11,7 @@ import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Toast } from '../../../components/ui/Toast'
+import { Label } from '../../../components/ui/Label'
 import { usePermission } from '../../../lib/permissions'
 import { useIsSuperAdmin } from '../../../stores/authStore'
 import { getStorageUrl } from '../../../lib/storageUrl'
@@ -370,16 +371,16 @@ export function EmployeeFormPage() {
               className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
             >
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label htmlFor="full_name" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="full_name">
                   Nama Lengkap
-                </label>
+                </Label>
                 <Input id="full_name" className="py-2" error={errors.full_name?.message} {...register('full_name')} />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="email" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="email">
                   Email
-                </label>
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -391,18 +392,14 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="phone" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="phone">
                   {/* text-neutral-600 (BUKAN neutral-400 - #9C9689 di atas
-                      putih cuma 2.94:1, gagal WCAG AA). Sama seperti fix
-                      label grup Sidebar sebelumnya: token --color-neutral-400
-                      SENGAJA gak diubah global (dipakai luas buat konteks
-                      yang memang exempt dari aturan kontras teks - icon,
-                      placeholder, disabled state - bukan cuma di sini),
-                      jadi override per-elemen kayak ini, bukan ubah definisi
-                      token. neutral-600 = token existing, sudah dipakai
-                      Sidebar & LoginPage, konsisten. */}
+                      putih cuma 2.94:1, gagal WCAG AA) SUDAH built-in di
+                      komponen Label ini sendiri (lihat components/ui/Label.tsx) -
+                      komentar riwayat keputusan ini dipertahankan di sini
+                      biar konteksnya gak hilang. */}
                   Telepon <span className="font-normal text-neutral-600">(opsional)</span>
-                </label>
+                </Label>
                 <Input
                   id="phone"
                   autoComplete="tel"
@@ -413,9 +410,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label htmlFor="password" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="password">
                   Password
-                </label>
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -428,9 +425,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="department_id" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="department_id">
                   Departemen
-                </label>
+                </Label>
                 <Select
                   id="department_id"
                   className="py-2"
@@ -442,9 +439,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="position_id" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="position_id">
                   Posisi
-                </label>
+                </Label>
                 <Select
                   id="position_id"
                   className="py-2"
@@ -456,9 +453,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="work_shift_id" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="work_shift_id">
                   Shift Kerja
-                </label>
+                </Label>
                 <Select
                   id="work_shift_id"
                   className="py-2"
@@ -470,9 +467,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="office_location_id" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="office_location_id">
                   Lokasi Kantor
-                </label>
+                </Label>
                 <Select
                   id="office_location_id"
                   className="py-2"
@@ -484,9 +481,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="role_id" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="role_id">
                   Role
-                </label>
+                </Label>
                 {isLockedSuperAdminRole ? (
                   <>
                     <p className="rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 font-body text-sm text-neutral-900">
@@ -510,9 +507,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="gender" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="gender">
                   Jenis Kelamin
-                </label>
+                </Label>
                 <Select
                   id="gender"
                   className="py-2"
@@ -524,9 +521,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="birth_date" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="birth_date">
                   Tanggal Lahir <span className="font-normal text-neutral-600">(opsional)</span>
-                </label>
+                </Label>
                 <Input
                   id="birth_date"
                   type="date"
@@ -537,9 +534,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="join_date" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="join_date">
                   Tanggal Join
-                </label>
+                </Label>
                 <Input
                   id="join_date"
                   type="date"
@@ -550,9 +547,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="basic_salary" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="basic_salary">
                   Gaji Pokok
-                </label>
+                </Label>
                 <Input
                   id="basic_salary"
                   type="number"
@@ -566,9 +563,9 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="is_active">
                   Status
-                </label>
+                </Label>
                 <Select
                   id="is_active"
                   className="py-2"
@@ -579,16 +576,16 @@ export function EmployeeFormPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label htmlFor="address" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="address">
                   Alamat <span className="font-normal text-neutral-600">(opsional)</span>
-                </label>
+                </Label>
                 <Input id="address" className="py-2" error={errors.address?.message} {...register('address')} />
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label htmlFor="photo" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="photo">
                   Foto <span className="font-normal text-neutral-600">(opsional, JPG/PNG, maks 2MB)</span>
-                </label>
+                </Label>
                 <div className="flex items-center gap-3">
                   {currentPhotoUrl ? (
                     <img

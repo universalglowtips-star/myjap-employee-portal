@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Card } from '../../../components/ui/Card'
+import { Label } from '../../../components/ui/Label'
 
 interface KpiCardProps {
   title: string
@@ -18,7 +19,7 @@ interface KpiCardProps {
 export function KpiCard({ title, isLoading, isError, errorMessage, children }: KpiCardProps) {
   return (
     <Card>
-      <p className="font-body text-[13px] font-medium text-neutral-600">{title}</p>
+      <Label as="p">{title}</Label>
       <div className="mt-2">
         {isLoading ? (
           <div className="h-8 w-24 animate-pulse rounded-sm bg-neutral-100" aria-hidden="true" />

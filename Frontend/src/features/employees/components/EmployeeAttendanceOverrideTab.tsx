@@ -8,6 +8,7 @@ import { Select } from '../../../components/ui/Select'
 import { MultiSelect } from '../../../components/ui/MultiSelect'
 import { Input } from '../../../components/ui/Input'
 import { Textarea } from '../../../components/ui/Textarea'
+import { Label } from '../../../components/ui/Label'
 import { Button } from '../../../components/ui/Button'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { Toast } from '../../../components/ui/Toast'
@@ -261,9 +262,9 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
             className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
           >
             <div className={cn('flex flex-col gap-1.5', scopeType !== 'SPECIFIC_BRANCHES' && 'sm:col-span-2')}>
-              <label htmlFor="scope_type" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="scope_type">
                 Cakupan
-              </label>
+              </Label>
               <Select
                 id="scope_type"
                 className="py-2"
@@ -277,9 +278,9 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
 
             {scopeType === 'SPECIFIC_BRANCHES' && (
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="office_location_ids" className="font-body text-[13px] font-medium text-neutral-600">
+                <Label htmlFor="office_location_ids">
                   Cabang
-                </label>
+                </Label>
                 <MultiSelect
                   id="office_location_ids"
                   options={officeLocationOptions}
@@ -293,9 +294,9 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="effective_start_date" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="effective_start_date">
                 Berlaku Mulai <span className="font-normal text-neutral-600">(opsional)</span>
-              </label>
+              </Label>
               <Input
                 id="effective_start_date"
                 type="date"
@@ -307,9 +308,9 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="effective_end_date" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="effective_end_date">
                 Berlaku Sampai <span className="font-normal text-neutral-600">(opsional)</span>
-              </label>
+              </Label>
               <Input
                 id="effective_end_date"
                 type="date"
@@ -325,9 +326,9 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
             </p>
 
             <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <label htmlFor="reason" className="font-body text-[13px] font-medium text-neutral-600">
+              <Label htmlFor="reason">
                 Alasan
-              </label>
+              </Label>
               <Textarea
                 id="reason"
                 rows={3}

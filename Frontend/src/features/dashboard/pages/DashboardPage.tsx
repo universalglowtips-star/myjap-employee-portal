@@ -51,7 +51,14 @@ export function DashboardPage() {
           </KpiCard>
 
           <KpiCard title="Payroll Bulan Ini" isLoading={isLoading} isError={isError}>
-            <p className="font-display text-xl font-semibold text-neutral-900">
+            {/* text-2xl SAMA kayak card 1-angka lain (Task Rapikan Typography -
+                sebelumnya sengaja text-xl lebih kecil biar Rupiah gak
+                wrapping aneh, sekarang disatukan). tracking-tight + gak ada
+                whitespace-nowrap - penyesuaian biar angka Rupiah panjang
+                (puluhan juta ke atas) tetap muat, wrap ke 2 baris kalau
+                perlu daripada kepotong/nabrak card lain - BUKAN mengubah
+                presisi formatCurrency sama sekali, cuma CSS. */}
+            <p className="font-display text-2xl font-semibold tracking-tight text-neutral-900">
               {summary ? formatCurrency(summary.payroll_this_month.total_net_salary) : '-'}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-body text-xs text-neutral-600">

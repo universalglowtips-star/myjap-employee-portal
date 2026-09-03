@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../stores/authStore'
 import type { NormalizedApiError } from '../../../api/client'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
+import { Label } from '../../../components/ui/Label'
 
 /**
  * Validasi RINGAN - cuma pastikan field wajib terisi (sesuai instruksi
@@ -103,9 +104,9 @@ export function LoginPage() {
           </h2>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="email">
               Email
-            </label>
+            </Label>
             <Input
               id="email"
               type="email"
@@ -117,9 +118,9 @@ export function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="font-body text-[13px] font-medium text-neutral-600">
+            <Label htmlFor="password">
               Kata Sandi
-            </label>
+            </Label>
             {/* Toggle show/hide - lapisan visual di atas Input yang sudah ada, tidak mengubah Input.tsx (dipakai halaman lain juga) */}
             <div className="relative">
               <Input

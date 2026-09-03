@@ -6,6 +6,7 @@ import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
+import { Label } from '../../../components/ui/Label'
 import type { Position, PositionCreateRequest } from '../../../api/types/position'
 import type { Department } from '../../../api/types/department'
 import type { NormalizedApiError } from '../../../api/client'
@@ -169,16 +170,16 @@ export function PositionFormModal({
         className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
       >
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="position_code" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="position_code">
             Kode Posisi
-          </label>
+          </Label>
           <Input id="position_code" className="py-2" error={errors.position_code?.message} {...register('position_code')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="allowance" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="allowance">
             Tunjangan
-          </label>
+          </Label>
           <Input
             id="allowance"
             type="number"
@@ -192,16 +193,16 @@ export function PositionFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="position_name" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="position_name">
             Nama Posisi
-          </label>
+          </Label>
           <Input id="position_name" className="py-2" error={errors.position_name?.message} {...register('position_name')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="department_id" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="department_id">
             Departemen
-          </label>
+          </Label>
           {/* WAJIB dropdown, bukan teks bebas - data dari GET /departments
               yang udah terbukti jalan (Tugas 1). Loading/error state
               ditangani eksplisit (disabled + placeholder/pesan berubah),
@@ -223,9 +224,9 @@ export function PositionFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="is_active">
             Status
-          </label>
+          </Label>
           {/* BEDA dari Department - is_active WAJIB dikirim backend
               (required|boolean), jadi field ini HARUS ada di form
               (bukan disembunyikan/dipertahankan diam-diam kayak Department). */}
@@ -239,9 +240,9 @@ export function PositionFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="description">
             Deskripsi
-          </label>
+          </Label>
           <Input id="description" className="py-2" error={errors.description?.message} {...register('description')} />
         </div>
       </form>

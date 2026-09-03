@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Card } from '../../../components/ui/Card'
+import { Label } from '../../../components/ui/Label'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
 
 /** UTC-based (bukan timezone lokal browser) - konsisten sama pola computeOverrideStatus (Task 8d) dan app.timezone backend yang UTC. */
@@ -22,7 +23,7 @@ export function AttendanceTodayCard() {
 
   return (
     <Card>
-      <p className="font-body text-[13px] font-medium text-neutral-600">Kehadiran Hari Ini</p>
+      <Label as="p">Kehadiran Hari Ini</Label>
 
       <div className="mt-2 flex flex-col gap-1">
         <label htmlFor="attendance-today-date" className="font-body text-xs text-neutral-600">

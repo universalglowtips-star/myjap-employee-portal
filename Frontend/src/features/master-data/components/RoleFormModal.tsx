@@ -6,6 +6,7 @@ import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
+import { Label } from '../../../components/ui/Label'
 import type { Role, RoleCreateRequest } from '../../../api/types/role'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -105,30 +106,30 @@ export function RoleFormModal({ open, onClose, role, onSubmit, isSubmitting }: R
     >
       <form id="role-form" onSubmit={handleSubmit(handleFormSubmit)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="role_code" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="role_code">
             Kode Role
-          </label>
+          </Label>
           <Input id="role_code" error={errors.role_code?.message} {...register('role_code')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="role_name" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="role_name">
             Nama Role
-          </label>
+          </Label>
           <Input id="role_name" error={errors.role_name?.message} {...register('role_name')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="description" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="description">
             Deskripsi
-          </label>
+          </Label>
           <Input id="description" error={errors.description?.message} {...register('description')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="is_active" className="font-body text-[13px] font-medium text-neutral-600">
+          <Label htmlFor="is_active">
             Status
-          </label>
+          </Label>
           <Select
             id="is_active"
             options={statusOptions}
