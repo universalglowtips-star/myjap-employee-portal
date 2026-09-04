@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { SidebarNavItem } from './SidebarNavItem'
 import { PermissionGate } from '../forms/PermissionGate'
+import { useAuthStore } from '../../stores/authStore'
+import { evaluatePermission } from '../../permissions/evaluatePermission'
 import { cn } from '../../lib/cn'
 
 /**
@@ -114,6 +116,24 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
+  // Fix bug: grup yang SEMUA item-nya tersembunyi (user gak punya
+  // permission satupun di grup itu) sebelumnya tetap nampilin LABEL
+  // grup kosong (PermissionGate cuma nyembunyiin item di dalamnya,
+  // bukan grup pembungkusnya). Filter di sini SEBELUM render, pakai
+  // evaluatePermission() murni yang sama dipakai PermissionGate/
+  // usePermission - bukan logic baru, biar hasilnya konsisten 1:1
+  // sama item yang beneran kerender. Subscribe reaktif ke permissions/
+  // role (BUKAN hasPermission() non-reaktif dari lib/permissions.ts)
+  // supaya Sidebar re-render begitu GET /me kelar pas login/refresh.
+  const permissions = useAuthStore((s) => s.permissions)
+  const isSuperAdmin = useAuthStore((s) => s.employee?.role?.role_code === 'SUPER_ADMIN')
+
+  const visibleGroups = navGroups.filter((group) =>
+    group.items.some(
+      (item) => item.permission === null || evaluatePermission(permissions, isSuperAdmin, item.permission)
+    )
+  )
+
   return (
     <>
       {/* Backdrop - cuma ada di mobile (<lg), dan cuma dirender pas drawer kebuka. top-[72px] (BUKAN inset-0/top-0) - Topbar sekarang full-width DI ATAS baris Sidebar+Main, jadi backdrop cuma perlu nutupin area di bawahnya, Topbar sendiri gak boleh ketutup. lg:hidden jaga-jaga kalau mobileOpen kebawa nyampe ke desktop (gak seharusnya kejadian, tapi gak boleh nutupin apa-apa di sana). */}
@@ -145,11 +165,14 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
           collapsed && 'lg:w-16'
         )}
       >
-        {navGroups.map((group, index) => (
+        {visibleGroups.map((group, index) => (
           <div key={group.label} className="mt-4 flex flex-col gap-1">
             {/* Divider - CUMA muncul di collapsed (lg:block di-gate
                 `collapsed`, bukan cuma breakpoint) DAN cuma di antara
-                grup (index>0, gak ada divider sebelum grup pertama).
+                grup (index>0, gak ada divider sebelum grup pertama -
+                index di sini udah dihitung dari visibleGroups, jadi
+                "grup pertama" berarti pertama yang BENERAN kerender,
+                bukan posisi asli di navGroups).
                 Di expanded, `hidden` (default) tetap berlaku - label
                 grup di bawah ini yang jadi pemisah visual, JANGAN
                 dobel. mx-4+mb-2 kasih jarak dikit biar gak nempel ke
