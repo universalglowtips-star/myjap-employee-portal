@@ -27,6 +27,18 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Fake video device (BUKAN kamera asli mesin ini) - dibutuhkan buat
+    // scan a11y state "Absen Masuk" (Task 9.5) yang genuinely manggil
+    // getUserMedia(). Tanpa flag ini, Chromium headless auto-deny
+    // permission kamera (gak ada UI buat approve), jadi state "foto
+    // sudah diambil" gak akan pernah tercapai sama sekali di sweep ini.
+    // --use-fake-ui-for-media-stream = auto-grant prompt permission,
+    // --use-fake-device-for-media-stream = video sintetis (bukan hardware
+    // asli) - deterministik & jalan di mesin mana pun (gak butuh webcam
+    // fisik), yang penting buat CI/mesin lain yang mungkin gak punya kamera.
+    launchOptions: {
+      args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+    },
   },
   webServer: [
     {

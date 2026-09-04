@@ -28,6 +28,12 @@ const QA_PASSWORD = 'A11ySweepTest123!'
 /** Employee id=25 = akun QA a11y sweep sendiri (dibuat khusus tugas ini, dijamin selalu ada). */
 const EMPLOYEE_EDIT_ID = 25
 
+/** Employee id=27 = akun QA Employee Test, role EMPLOYEE (dibuat khusus Task 9.5 - Employee Home, dijamin selalu ada). */
+const EMPLOYEE_EMAIL = 'qa-employee-test@myjap.com'
+const EMPLOYEE_PASSWORD = 'QaEmployeeTest123!'
+const EMPLOYEE_TEST_ID = 27
+const API_BASE = 'http://127.0.0.1:8000/api'
+
 const REPORT_JSON_PATH = path.resolve(__dirname, '..', 'a11y-report.json')
 const REPORT_MD_PATH = path.resolve(__dirname, '..', 'a11y-report.md')
 
@@ -545,6 +551,98 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await dialog.waitFor({ state: 'visible', timeout: 15000 })
       await page.waitForTimeout(300)
       await runAxe(page, 'Audit Log - Detail Modal', '/audit-log', '[role="dialog"]')
+    })
+
+    // === Employee Home (Task 9.5) - login sebagai EMPLOYEE ===
+    // Employee Home cuma bisa diakses role TANPA dashboard.view - beda
+    // dari SEMUA state di atas yang pakai akun SUPER_ADMIN (QA_A11Y_SWEEP).
+    // SENGAJA ditaruh PALING AKHIR sweep - ganti akun cuma sekali di sini,
+    // gak perlu login balik ke SUPER_ADMIN lagi (gak ada state SUPER_ADMIN
+    // lain sesudah section ini).
+    await safeStep('Employee Home - Bersihkan absensi hari ini (persiapan)', '/', async () => {
+      // Reset absensi HARI INI milik QA_EMPLOYEE_TEST via API langsung
+      // (BUKAN klik UI - gak ada tombol hapus absensi buat role EMPLOYEE
+      // sama sekali) pakai token SUPER_ADMIN yang MASIH aktif di
+      // localStorage dari login paling awal skrip ini - biar scan "state
+      // awal" (belum absen) di bawah selalu deterministik walau skrip ini
+      // dijalankan berkali-kali di hari yang sama (constraint unique
+      // employee_id+attendance_date bikin baris lama nyangkut kalau gak
+      // dibersihkan dulu). Step berikutnya di section ini SELALU batalkan
+      // dialog konfirmasi (bukan submit beneran), jadi section ini sendiri
+      // TIDAK menciptakan baris baru yang perlu dibersihkan lagi setelahnya.
+      const token = await page.evaluate(() => {
+        const raw = localStorage.getItem('myjap-auth')
+        return raw ? (JSON.parse(raw)?.state?.token ?? null) : null
+      })
+      const today = new Date().toISOString().slice(0, 10)
+      const listRes = await page.request.get(
+        `${API_BASE}/attendances?employee_id=${EMPLOYEE_TEST_ID}&start_date=${today}&end_date=${today}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      const listBody = await listRes.json()
+      const existing = listBody.data?.[0]
+      if (existing) {
+        await page.request.delete(`${API_BASE}/attendances/${existing.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      }
+    })
+
+    await safeStep('Employee Home - State Awal', '/', async () => {
+      await page.goto('/login')
+      await page.locator('#email').fill(EMPLOYEE_EMAIL)
+      await page.locator('#password').fill(EMPLOYEE_PASSWORD)
+      await page.getByRole('button', { name: 'Masuk' }).click()
+      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 })
+      await page.getByRole('main').getByText('Absensi Hari Ini').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByRole('button', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Employee Home - State Awal', '/')
+    })
+
+    // === Employee Home - Form Absen Masuk (dropdown kantor + peringatan radius) ===
+    // Geolocation di-mock ke Jakarta (jauh dari SEMUA 5 kantor asli di
+    // Kalimantan Timur) - SENGAJA, biar peringatan "di luar radius"
+    // beneran kepicu dan ikut kescan (elemen ini gak pernah muncul di
+    // state manapun sebelumnya di seluruh sweep ini kalau gak dipaksa).
+    // Kamera pakai fake device dari playwright.config.ts (launchOptions).
+    await safeStep('Employee Home - Form Absen Masuk (dropdown + radius)', '/', async () => {
+      await page.context().grantPermissions(['camera', 'geolocation'])
+      await page.context().setGeolocation({ latitude: -6.2, longitude: 106.8167 })
+
+      await page.getByRole('button', { name: 'Absen Masuk' }).click()
+      await page.getByRole('heading', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 5000 })
+      await page.locator('#attendance-office').waitFor({ state: 'visible', timeout: 10000 })
+      await page.getByText(/di luar radius kantor ini/).waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByRole('button', { name: 'Ambil Foto' }).waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Employee Home - Form Absen Masuk (dropdown + radius)', '/')
+    })
+
+    // === Employee Home - state setelah foto diambil ===
+    await safeStep('Employee Home - Setelah Foto Diambil', '/', async () => {
+      await page.getByRole('button', { name: 'Ambil Foto' }).click()
+      await page.getByAltText('Foto absen yang sudah diambil').waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Employee Home - Setelah Foto Diambil', '/')
+    })
+
+    // === Employee Home - Dialog Konfirmasi Absen Masuk ===
+    await safeStep('Employee Home - Dialog Konfirmasi Absen Masuk', '/', async () => {
+      const submitBtn = page.getByRole('button', { name: 'Absen Masuk' }).last()
+      await submitBtn.click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Employee Home - Dialog Konfirmasi Absen Masuk', '/', '[role="alertdialog"]')
+      // Batalkan (BUKAN konfirmasi beneran) - pola sama persis Dialog
+      // Konfirmasi Hapus Notifikasi/Pulihkan Karyawan di atas: cukup scan
+      // dialog-nya, jangan commit baris attendance permanen tiap sweep
+      // dijalankan (submit lengkap sudah diverifikasi manual terpisah).
+      // Locator "Batal" DI-SCOPE ke `dialog` (BUKAN `page.getByRole` polos)
+      // - AttendanceCheckModal.tsx nge-stack 2 elemen sekaligus (Modal
+      // "Absen Masuk" DI BAWAH + ConfirmDialog "Konfirmasi Absen Masuk" DI
+      // ATAS, pola yang sama kayak EmployeeOfficeScopeTab), keduanya
+      // punya tombol "Batal" sendiri-sendiri - locator gak di-scope bakal
+      // strict-mode violation (ketemu 2 elemen).
+      await dialog.getByRole('button', { name: 'Batal' }).click()
+      await dialog.waitFor({ state: 'hidden', timeout: 5000 })
     })
 
     writeReports()

@@ -96,7 +96,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             'EMPLOYEE' => [
-                'attendance.view', 'attendance.create',
+                'attendance.view', 'attendance.create', 'attendance.update',
                 'leave.view', 'leave.create',
                 'payslip.view',
                 'notification.view', 'notification.delete',

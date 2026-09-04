@@ -183,6 +183,11 @@ $apiRoutes = function () {
     // TRANSACTION
     // =========================
 
+    // Route literal WAJIB didaftar SEBELUM apiResource - kalau tidak,
+    // 'allowed-offices' bakal ketangkep sama wildcard GET attendances/{attendance} (show).
+    Route::get('attendances/allowed-offices', [AttendanceController::class, 'allowedOffices'])
+        ->middleware('permission:attendance.create');
+
     Route::apiResource('attendances', AttendanceController::class)
         ->only(['index', 'show'])->middleware('permission:attendance.view');
 

@@ -54,6 +54,42 @@ public function index(Request $request)
 }
 
     /**
+     * Daftar kantor yang diizinkan buat employee yang login HARI INI,
+     * lengkap dengan koordinat+radius - dipakai frontend (Task 9.5)
+     * buat resolve lokasi check-in/check-out. Cuma nyambungin ke
+     * AttendanceLocationPolicyService::getAllowedOfficeIds() yang
+     * SUDAH ADA (priority Employee Override > Position Policy > Home
+     * Office), TIDAK menulis ulang logicnya di sini.
+     */
+    public function allowedOffices(Request $request)
+    {
+        $employee = $request->user();
+
+        $locationPolicyService = new AttendanceLocationPolicyService();
+
+        $officeIds = $locationPolicyService->getAllowedOfficeIds($employee);
+
+        // null = ALL_BRANCHES (kontrak getAllowedOfficeIds()) - ambil
+        // semua kantor aktif. Array = daftar id spesifik dari HOME_ONLY/
+        // SPECIFIC_BRANCHES/SUPERVISED_BRANCHES, ambil apa adanya.
+        $query = \App\Models\OfficeLocation::query();
+
+        if ($officeIds === null) {
+            $query->where('is_active', true);
+        } else {
+            $query->whereIn('id', $officeIds);
+        }
+
+        $offices = $query->get(['id', 'office_name', 'latitude', 'longitude', 'radius_meter']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar kantor yang diizinkan berhasil diambil.',
+            'data' => $offices,
+        ]);
+    }
+
+    /**
      * Hitung jarak antara 2 koordinat pakai formula Haversine (meter).
      */
     private function distanceInMeters(float $lat1, float $lon1, float $lat2, float $lon2): float

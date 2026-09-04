@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
+import { usePermission } from './lib/permissions'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { LoginPage } from './features/auth/pages/LoginPage'
 import { DepartmentListPage } from './features/master-data/pages/DepartmentListPage'
@@ -16,7 +17,23 @@ import { EmployeeFormPage } from './features/employees/pages/EmployeeFormPage'
 import { EmployeeDetailPage } from './features/employees/pages/EmployeeDetailPage'
 import { AuditLogListPage } from './features/audit-log/pages/AuditLogListPage'
 import { DashboardPage } from './features/dashboard/pages/DashboardPage'
+import { EmployeeHomePage } from './features/employee-home/pages/EmployeeHomePage'
 import { NotificationListPage } from './features/notifications/pages/NotificationListPage'
+
+/**
+ * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
+ * punya permission dashboard.view (role admin/manajerial), kalau
+ * TIDAK render EmployeeHomePage (role EMPLOYEE). Sebelumnya "/"
+ * SELALU render DashboardPage tanpa syarat - EMPLOYEE yang login
+ * mentok di pesan "akses ditolak" (PermissionGate di dalam
+ * DashboardPage sendiri), dikonfirmasi investigasi sebelumnya. Logic
+ * percabangan HARUS ada di komponen terpisah (bukan langsung di JSX
+ * Route) karena butuh manggil hook usePermission.
+ */
+function HomeRoute() {
+  const canViewDashboard = usePermission('dashboard.view')
+  return canViewDashboard ? <DashboardPage /> : <EmployeeHomePage />
+}
 
 /**
  * Route '/login' final (Langkah 6). '/' (Task 7 - Dashboard nyata,
@@ -51,7 +68,7 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <HomeRoute />
           </ProtectedRoute>
         }
       />
