@@ -60,17 +60,27 @@ public function index(Request $request)
      * AttendanceLocationPolicyService::getAllowedOfficeIds() yang
      * SUDAH ADA (priority Employee Override > Position Policy > Home
      * Office), TIDAK menulis ulang logicnya di sini.
+     *
+     * ?direction=CHECK_IN|CHECK_OUT (Task per-arah) - default CHECK_IN
+     * kalau gak dikirim/nilainya gak dikenal. `is_unrestricted` BARU -
+     * true kalau aturan yang berlaku buat arah ini persis 'ANYWHERE',
+     * dipakai frontend buat mutuskan sembunyikan section GPS sama
+     * sekali (bukan cuma nampilin peringatan radius yang gak relevan).
      */
     public function allowedOffices(Request $request)
     {
         $employee = $request->user();
 
+        $direction = $request->query('direction', 'CHECK_IN');
+        $direction = in_array($direction, ['CHECK_IN', 'CHECK_OUT'], true) ? $direction : 'CHECK_IN';
+
         $locationPolicyService = new AttendanceLocationPolicyService();
 
-        $officeIds = $locationPolicyService->getAllowedOfficeIds($employee);
+        $officeIds = $locationPolicyService->getAllowedOfficeIds($employee, $direction);
+        $isUnrestricted = $locationPolicyService->isUnrestricted($employee, $direction);
 
-        // null = ALL_BRANCHES (kontrak getAllowedOfficeIds()) - ambil
-        // semua kantor aktif. Array = daftar id spesifik dari HOME_ONLY/
+        // null = ALL_BRANCHES ATAU ANYWHERE (kontrak getAllowedOfficeIds()) -
+        // ambil semua kantor aktif. Array = daftar id spesifik dari HOME_ONLY/
         // SPECIFIC_BRANCHES/SUPERVISED_BRANCHES, ambil apa adanya.
         $query = \App\Models\OfficeLocation::query();
 
@@ -86,6 +96,7 @@ public function index(Request $request)
             'success' => true,
             'message' => 'Daftar kantor yang diizinkan berhasil diambil.',
             'data' => $offices,
+            'is_unrestricted' => $isUnrestricted,
         ]);
     }
 
@@ -249,7 +260,7 @@ public function store(Request $request)
 
     $locationPolicyService = new AttendanceLocationPolicyService();
 
-    if (!$locationPolicyService->isOfficeAllowed($employee, $validated['office_location_id'])) {
+    if (!$locationPolicyService->isOfficeAllowed($employee, $validated['office_location_id'], 'CHECK_IN')) {
         return response()->json([
             'success' => false,
             'message' => 'Karyawan ini tidak diizinkan absen di lokasi kantor tersebut sesuai kebijakan lokasi absensi (Attendance Location Policy).'
@@ -273,6 +284,20 @@ public function store(Request $request)
         $validated['check_in_longitude'] ?? null,
         \App\Models\OfficeLocation::find($validated['office_location_id'])
     );
+
+    // Block radius (Task per-arah, Bagian B.2) - SEBELUMNYA is_valid_location
+    // cuma flag informational, gak pernah nolak request. Sekarang di luar
+    // radius BENERAN nolak submit, KECUALI aturan yang berlaku buat arah
+    // CHECK_IN employee ini persis 'ANYWHERE' (isUnrestricted) - GPS/foto
+    // TETAP direkam apa adanya di kedua kasus (lihat Attendance::create()
+    // di bawah, TIDAK ada field yang di-skip), cuma keputusan block/
+    // gak-nya yang beda.
+    if (!$isValidLocation && !$locationPolicyService->isUnrestricted($employee, 'CHECK_IN')) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Kamu berada di luar radius kantor yang diizinkan. Absen tidak dapat disimpan.'
+        ], 422);
+    }
 
     $attendance = Attendance::create($validated + $metrics + [
         'is_valid_location' => $isValidLocation,
@@ -366,20 +391,57 @@ public function update(Request $request, string $id)
     }
 
     // Kalau employee_id atau office_location_id ikut diubah, cek ulang
-    // Attendance Location Policy-nya
+    // Attendance Location Policy-nya - arah CHECK_IN (perubahan
+    // office_location_id eksplisit dianggap koreksi kantor "hari itu",
+    // arah yang sama dipakai pas absen masuk; alur Absen Pulang NORMAL
+    // gak pernah kirim office_location_id sama sekali, ditangani blok
+    // terpisah di bawah yang selalu reuse kantor dari baris yang sama).
     $employeeId = $validated['employee_id'] ?? $attendance->employee_id;
     $officeLocationId = $validated['office_location_id'] ?? $attendance->office_location_id;
+
+    $locationPolicyService = new AttendanceLocationPolicyService();
 
     if (isset($validated['employee_id']) || isset($validated['office_location_id'])) {
 
         $employee = Employee::findOrFail($employeeId);
 
-        $locationPolicyService = new AttendanceLocationPolicyService();
-
-        if (!$locationPolicyService->isOfficeAllowed($employee, $officeLocationId)) {
+        if (!$locationPolicyService->isOfficeAllowed($employee, $officeLocationId, 'CHECK_IN')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Karyawan ini tidak diizinkan absen di lokasi kantor tersebut sesuai kebijakan lokasi absensi (Attendance Location Policy).'
+            ], 422);
+        }
+    }
+
+    // Absen Pulang (Task per-arah, Bagian B.3): kantor SELALU direuse
+    // dari office_location_id baris yang SAMA (attendance->office_location_id
+    // yang sudah divalidasi pas check-in) - karyawan TIDAK PERNAH diminta
+    // pilih ulang kantor pas check-out. Blok ini HANYA jalan kalau request
+    // beneran ngirim koordinat check-out (aksi check-out asli, bukan
+    // sekadar edit field lain kayak notes/attendance_status).
+    if (array_key_exists('check_out_latitude', $validated) || array_key_exists('check_out_longitude', $validated)) {
+
+        $checkOutEmployee = Employee::findOrFail($employeeId);
+        $checkOutOfficeId = $attendance->office_location_id;
+        $checkOutOffice = \App\Models\OfficeLocation::find($checkOutOfficeId);
+
+        if (!$locationPolicyService->isOfficeAllowed($checkOutEmployee, $checkOutOfficeId, 'CHECK_OUT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Karyawan ini tidak diizinkan absen di lokasi kantor tersebut sesuai kebijakan lokasi absensi (Attendance Location Policy).'
+            ], 422);
+        }
+
+        $isCheckOutValidLocation = $this->validateLocation(
+            $validated['check_out_latitude'] ?? null,
+            $validated['check_out_longitude'] ?? null,
+            $checkOutOffice
+        );
+
+        if (!$isCheckOutValidLocation && !$locationPolicyService->isUnrestricted($checkOutEmployee, 'CHECK_OUT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kamu berada di luar radius kantor yang diizinkan. Absen tidak dapat disimpan.'
             ], 422);
         }
     }

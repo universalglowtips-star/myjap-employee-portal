@@ -71,6 +71,13 @@ export function AttendanceCard() {
           setModalMode(null)
           setToast({ variant: 'success', message })
         }}
+        onError={(message) => {
+          // Modal SENDIRI tetap kebuka (nampilin pesan inline + biarin
+          // user coba lagi tanpa kehilangan foto/kantor yang udah
+          // dipilih) - toast ini cuma buat visibility tambahan, pola
+          // sama persis Toast sukses di atas (bukan pengganti).
+          setToast({ variant: 'error', message })
+        }}
       />
 
       {toast && (

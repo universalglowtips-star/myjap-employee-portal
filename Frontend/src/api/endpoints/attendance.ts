@@ -6,7 +6,7 @@ import type {
   AttendanceCheckInRequest,
   AttendanceCheckOutRequest,
   AllowedOfficesResponse,
-  AllowedOffice,
+  AttendanceDirection,
 } from '../types/attendance'
 
 export async function fetchAttendances(params: AttendanceQueryParams): Promise<AttendanceListResponse> {
@@ -14,10 +14,10 @@ export async function fetchAttendances(params: AttendanceQueryParams): Promise<A
   return res.data
 }
 
-/** GET /attendances/allowed-offices - lihat api/types/attendance.ts buat konteks. */
-export async function fetchAllowedOffices(): Promise<AllowedOffice[]> {
-  const res = await apiClient.get<AllowedOfficesResponse>('/attendances/allowed-offices')
-  return res.data.data
+/** GET /attendances/allowed-offices?direction=... - lihat api/types/attendance.ts buat konteks `is_unrestricted`. */
+export async function fetchAllowedOffices(direction: AttendanceDirection): Promise<AllowedOfficesResponse> {
+  const res = await apiClient.get<AllowedOfficesResponse>('/attendances/allowed-offices', { params: { direction } })
+  return res.data
 }
 
 /** POST /attendances - Absen Masuk. */

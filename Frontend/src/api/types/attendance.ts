@@ -118,8 +118,18 @@ export interface AllowedOffice {
   radius_meter: number
 }
 
+export type AttendanceDirection = 'CHECK_IN' | 'CHECK_OUT'
+
 export interface AllowedOfficesResponse {
   success: true
   message: string
   data: AllowedOffice[]
+  /**
+   * Task per-arah - true kalau aturan yang berlaku buat employee ini,
+   * di arah yang diminta, persis 'ANYWHERE' (dari AttendanceLocationPolicyService::isUnrestricted()).
+   * `data` TETAP berisi daftar kantor (sama seperti ALL_BRANCHES - office_location_id
+   * tetap wajib dipilih), field ini KHUSUS buat frontend mutuskan
+   * sembunyikan section GPS/radius sama sekali, bukan buat mengosongkan pilihan kantor.
+   */
+  is_unrestricted: boolean
 }

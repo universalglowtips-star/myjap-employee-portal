@@ -19,7 +19,7 @@ class EmployeeAttendanceLocationOverrideController extends Controller
     {
         $employee = Employee::findOrFail($employeeId);
 
-        $override = EmployeeAttendanceLocationOverride::with(['offices', 'creator'])
+        $override = EmployeeAttendanceLocationOverride::with(['officesCheckIn', 'officesCheckOut', 'creator'])
             ->where('employee_id', $employeeId)
             ->first();
 
@@ -39,17 +39,29 @@ class EmployeeAttendanceLocationOverrideController extends Controller
     }
 
     /**
-     * Set/update override untuk satu employee (upsert).
-     * Body: { "scope_type": "...", "office_location_ids": [...], "reason": "..." }
+     * Set/update override untuk satu employee (upsert). scope_type
+     * dipecah per arah (Task per-arah) - Tanggal Berlaku + Alasan TETAP
+     * 1 set dipakai bareng buat kedua arah (dikonfirmasi user, BUKAN
+     * diduplikasi).
+     * Body: {
+     *   "scope_type_check_in": "...", "office_location_ids_check_in": [...],
+     *   "scope_type_check_out": "...", "office_location_ids_check_out": [...],
+     *   "effective_start_date": "...", "effective_end_date": "...", "reason": "..."
+     * }
      */
     public function update(Request $request, string $employeeId): JsonResponse
     {
         $employee = Employee::findOrFail($employeeId);
 
+        $scopeRule = 'in:HOME_ONLY,ALL_BRANCHES,SPECIFIC_BRANCHES,SUPERVISED_BRANCHES,ANYWHERE';
+
         $validated = $request->validate([
-            'scope_type' => 'required|in:HOME_ONLY,ALL_BRANCHES,SPECIFIC_BRANCHES,SUPERVISED_BRANCHES',
-            'office_location_ids' => 'required_if:scope_type,SPECIFIC_BRANCHES|array',
-            'office_location_ids.*' => 'exists:office_locations,id',
+            'scope_type_check_in' => "required|$scopeRule",
+            'office_location_ids_check_in' => 'required_if:scope_type_check_in,SPECIFIC_BRANCHES|array',
+            'office_location_ids_check_in.*' => 'exists:office_locations,id',
+            'scope_type_check_out' => "required|$scopeRule",
+            'office_location_ids_check_out' => 'required_if:scope_type_check_out,SPECIFIC_BRANCHES|array',
+            'office_location_ids_check_out.*' => 'exists:office_locations,id',
             'effective_start_date' => 'nullable|date',
             'effective_end_date' => 'nullable|date|after_or_equal:effective_start_date',
             'reason' => 'required|string|max:1000',
@@ -58,16 +70,19 @@ class EmployeeAttendanceLocationOverrideController extends Controller
         $existing = EmployeeAttendanceLocationOverride::where('employee_id', $employeeId)->first();
 
         $oldValues = $existing ? [
-            'scope_type' => $existing->scope_type,
+            'scope_type_check_in' => $existing->scope_type_check_in,
+            'scope_type_check_out' => $existing->scope_type_check_out,
             'effective_start_date' => $existing->effective_start_date?->toDateString(),
             'effective_end_date' => $existing->effective_end_date?->toDateString(),
-            'office_location_ids' => $existing->offices()->pluck('office_locations.id')->toArray(),
+            'office_location_ids_check_in' => $existing->officesCheckIn()->pluck('office_locations.id')->toArray(),
+            'office_location_ids_check_out' => $existing->officesCheckOut()->pluck('office_locations.id')->toArray(),
         ] : null;
 
         $override = EmployeeAttendanceLocationOverride::updateOrCreate(
             ['employee_id' => $employeeId],
             [
-                'scope_type' => $validated['scope_type'],
+                'scope_type_check_in' => $validated['scope_type_check_in'],
+                'scope_type_check_out' => $validated['scope_type_check_out'],
                 'effective_start_date' => $validated['effective_start_date'] ?? null,
                 'effective_end_date' => $validated['effective_end_date'] ?? null,
                 'reason' => $validated['reason'],
@@ -75,10 +90,20 @@ class EmployeeAttendanceLocationOverrideController extends Controller
             ]
         );
 
-        if ($validated['scope_type'] === 'SPECIFIC_BRANCHES') {
-            $override->offices()->sync($validated['office_location_ids']);
+        // Sync PER ARAH - officesCheckIn()/officesCheckOut() sudah
+        // di-scope withPivotValue('direction', ...) di model, jadi
+        // sync() di sini otomatis ngisi kolom direction yang benar dan
+        // detach cuma baris arah itu doang, gak ganggu arah lainnya.
+        if ($validated['scope_type_check_in'] === 'SPECIFIC_BRANCHES') {
+            $override->officesCheckIn()->sync($validated['office_location_ids_check_in']);
         } else {
-            $override->offices()->sync([]);
+            $override->officesCheckIn()->sync([]);
+        }
+
+        if ($validated['scope_type_check_out'] === 'SPECIFIC_BRANCHES') {
+            $override->officesCheckOut()->sync($validated['office_location_ids_check_out']);
+        } else {
+            $override->officesCheckOut()->sync([]);
         }
 
         AuditLogService::log(
@@ -86,10 +111,12 @@ class EmployeeAttendanceLocationOverrideController extends Controller
             $existing ? 'override_updated' : 'override_created',
             $oldValues,
             [
-                'scope_type' => $validated['scope_type'],
+                'scope_type_check_in' => $validated['scope_type_check_in'],
+                'scope_type_check_out' => $validated['scope_type_check_out'],
                 'effective_start_date' => $validated['effective_start_date'] ?? null,
                 'effective_end_date' => $validated['effective_end_date'] ?? null,
-                'office_location_ids' => $validated['office_location_ids'] ?? [],
+                'office_location_ids_check_in' => $validated['office_location_ids_check_in'] ?? [],
+                'office_location_ids_check_out' => $validated['office_location_ids_check_out'] ?? [],
                 'reason' => $validated['reason'],
             ],
             $request->user()->id,
@@ -99,12 +126,15 @@ class EmployeeAttendanceLocationOverrideController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Override attendance location berhasil disimpan.',
-            'data' => $override->fresh()->load(['employee', 'offices', 'creator']),
+            'data' => $override->fresh()->load(['employee', 'officesCheckIn', 'officesCheckOut', 'creator']),
         ]);
     }
 
     /**
      * Hapus override - employee ini balik ikut Position Policy lagi.
+     * 1 tombol, hapus KESELURUHAN baris (kedua arah sekaligus) - pivot
+     * offices (kedua arah) ikut kehapus otomatis lewat cascadeOnDelete
+     * di migration aslinya, gak perlu detach manual di sini.
      */
     public function destroy(Request $request, string $employeeId): JsonResponse
     {
@@ -116,7 +146,8 @@ class EmployeeAttendanceLocationOverrideController extends Controller
                 $override,
                 'override_deleted',
                 [
-                    'scope_type' => $override->scope_type,
+                    'scope_type_check_in' => $override->scope_type_check_in,
+                    'scope_type_check_out' => $override->scope_type_check_out,
                     'effective_start_date' => $override->effective_start_date?->toDateString(),
                     'effective_end_date' => $override->effective_end_date?->toDateString(),
                 ],

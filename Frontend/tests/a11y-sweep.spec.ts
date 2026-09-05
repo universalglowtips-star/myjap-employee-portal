@@ -124,6 +124,13 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // timeout - ini murni budget waktu test-nya, bukan bug aksesibilitas.
     test.setTimeout(900_000)
 
+    // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
+    // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
+    // bawah, karena localStorage browser di titik itu SUDAH ke-overwrite
+    // token EMPLOYEE (login ulang di step "State Awal"), gak bisa dibaca
+    // ulang dari localStorage lagi.
+    let superAdminToken: string | null = null
+
     // === /login (SEBELUM login - context browser baru, otomatis logged-out) ===
     await safeStep('Login', '/login', async () => {
       await page.goto('/login')
@@ -312,10 +319,51 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await runAxe(page, 'Detail Karyawan - Tab Pengecualian (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`)
     })
 
-    // === Isi form (scope ALL_BRANCHES, gak butuh MultiSelect) -> Dialog Konfirmasi Submit ===
+    // === MultiSelect Cabang arah CHECK_IN - state dropdown terbuka ===
+    // scope_type dipecah 2 kolom (Task per-arah) - id field sekarang
+    // #scope_type_check_in/#scope_type_check_out (BUKAN #scope_type
+    // tunggal lagi), #office_location_ids_check_in/#office_location_ids_check_out
+    // (BUKAN #office_location_ids tunggal).
+    await safeStep('Detail Karyawan - MultiSelect Cabang Check-In (terbuka)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#scope_type_check_in').selectOption('SPECIFIC_BRANCHES')
+      const trigger = page.locator('#office_location_ids_check_in')
+      await trigger.waitFor({ state: 'visible', timeout: 10000 })
+      await trigger.click()
+      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - MultiSelect Cabang Check-In (terbuka)', `/employees/${EMPLOYEE_EDIT_ID}`)
+      await page.locator('input[type="checkbox"]').first().click()
+      await page.getByRole('button', { name: 'Selesai' }).click()
+      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'hidden', timeout: 5000 })
+    })
+
+    // === Tab Pengecualian - 2 blok arah SEKALIGUS SPECIFIC_BRANCHES (Task per-arah) ===
+    // Form lama cuma bisa 1 scope SPECIFIC_BRANCHES aktif dalam satu
+    // waktu - sekarang KEDUA arah bisa punya sub-bagian Cabang terbuka
+    // BARENGAN, state form paling kompleks yang mungkin, belum pernah
+    // discan sebelumnya. Popover MultiSelect check-in di atas SUDAH
+    // ketutup (klik "Selesai") - klik trigger check-out di sini gak
+    // bakal nutup APA-APA punya check-in (udah ketutup duluan), murni
+    // buat nampilin KEDUA field Cabang (trigger + chip terpilih)
+    // sekaligus di layout, bukan 2 popover ke-expand bersamaan (klik
+    // trigger lain otomatis nutup popover lain - behavior standar
+    // "klik di luar nutup dropdown" MultiSelect.tsx, berlaku universal
+    // ke semua instance-nya, dicek langsung ke komponennya).
+    await safeStep('Detail Karyawan - Tab Pengecualian - 2 Blok Arah (SPECIFIC_BRANCHES)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#scope_type_check_out').selectOption('SPECIFIC_BRANCHES')
+      const triggerOut = page.locator('#office_location_ids_check_out')
+      await triggerOut.waitFor({ state: 'visible', timeout: 10000 })
+      await triggerOut.click()
+      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'visible', timeout: 10000 })
+      await page.locator('input[type="checkbox"]').first().click()
+      await page.getByRole('button', { name: 'Selesai' }).click()
+      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'hidden', timeout: 5000 })
+
+      await runAxe(page, 'Detail Karyawan - Tab Pengecualian - 2 Blok Arah (SPECIFIC_BRANCHES)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Isi alasan -> submit -> Dialog Konfirmasi Submit ===
     await safeStep('Detail Karyawan - Dialog Konfirmasi Submit', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
-      await page.locator('#scope_type').selectOption('ALL_BRANCHES')
-      await page.locator('#reason').fill('a11y sweep - state terisi buat scan aksesibilitas')
+      await page.locator('#reason').fill('a11y sweep - state terisi 2 arah buat scan aksesibilitas')
       await page.getByRole('button', { name: 'Simpan' }).click()
       const dialog = page.getByRole('alertdialog')
       await dialog.waitFor({ state: 'visible', timeout: 10000 })
@@ -328,22 +376,6 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     await safeStep('Detail Karyawan - Tab Pengecualian (terisi)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
       await page.getByText('Aktif Sekarang').waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Detail Karyawan - Tab Pengecualian (terisi)', `/employees/${EMPLOYEE_EDIT_ID}`)
-    })
-
-    // === MultiSelect office_location_ids - state dropdown terbuka ===
-    await safeStep('Detail Karyawan - MultiSelect Cabang (terbuka)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
-      await page.locator('#scope_type').selectOption('SPECIFIC_BRANCHES')
-      const trigger = page.locator('#office_location_ids')
-      await trigger.waitFor({ state: 'visible', timeout: 10000 })
-      await trigger.click()
-      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'visible', timeout: 10000 })
-      await runAxe(page, 'Detail Karyawan - MultiSelect Cabang (terbuka)', `/employees/${EMPLOYEE_EDIT_ID}`)
-      await page.getByRole('button', { name: 'Selesai' }).click()
-      await page.locator('input[type="checkbox"]').first().waitFor({ state: 'hidden', timeout: 5000 })
-      // Balik ke ALL_BRANCHES - override yang mau dihapus di step berikut
-      // masih yang tersimpan (ALL_BRANCHES), bukan SPECIFIC_BRANCHES yang
-      // belum disimpan di step ini.
-      await page.locator('#scope_type').selectOption('ALL_BRANCHES')
     })
 
     // === Dialog Konfirmasi Hapus + bersihin data test ===
@@ -570,22 +602,27 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       // dibersihkan dulu). Step berikutnya di section ini SELALU batalkan
       // dialog konfirmasi (bukan submit beneran), jadi section ini sendiri
       // TIDAK menciptakan baris baru yang perlu dibersihkan lagi setelahnya.
-      const token = await page.evaluate(() => {
+      superAdminToken = await page.evaluate(() => {
         const raw = localStorage.getItem('myjap-auth')
         return raw ? (JSON.parse(raw)?.state?.token ?? null) : null
       })
       const today = new Date().toISOString().slice(0, 10)
       const listRes = await page.request.get(
         `${API_BASE}/attendances?employee_id=${EMPLOYEE_TEST_ID}&start_date=${today}&end_date=${today}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${superAdminToken}` } }
       )
       const listBody = await listRes.json()
       const existing = listBody.data?.[0]
       if (existing) {
         await page.request.delete(`${API_BASE}/attendances/${existing.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${superAdminToken}` },
         })
       }
+      // Jaga-jaga ada sisa override dari run lain yang error di tengah -
+      // bersihin juga biar state "State Awal"/"is_unrestricted" di bawah deterministik.
+      await page.request.delete(`${API_BASE}/employees/${EMPLOYEE_TEST_ID}/attendance-location-override`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+      })
     })
 
     await safeStep('Employee Home - State Awal', '/', async () => {
@@ -611,7 +648,7 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
 
       await page.getByRole('button', { name: 'Absen Masuk' }).click()
       await page.getByRole('heading', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 5000 })
-      await page.locator('#attendance-office').waitFor({ state: 'visible', timeout: 10000 })
+      await page.locator('#attendance-office').waitFor({ state: 'visible', timeout: 15000 })
       await page.getByText(/di luar radius kantor ini/).waitFor({ state: 'visible', timeout: 15000 })
       await page.getByRole('button', { name: 'Ambil Foto' }).waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Employee Home - Form Absen Masuk (dropdown + radius)', '/')
@@ -643,6 +680,71 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       // strict-mode violation (ketemu 2 elemen).
       await dialog.getByRole('button', { name: 'Batal' }).click()
       await dialog.waitFor({ state: 'hidden', timeout: 5000 })
+    })
+
+    // === Employee Home - Form Absen Masuk dengan is_unrestricted (Task per-arah) ===
+    // Setup override ANYWHERE khusus arah CHECK_IN via API, pakai
+    // superAdminToken yang di-stash step "Bersihkan..." di atas -
+    // localStorage browser SEKARANG isinya token EMPLOYEE (ke-overwrite
+    // pas login ulang di step "State Awal"), gak bisa dibaca ulang dari
+    // situ lagi buat aksi admin kayak gini.
+    await safeStep('Employee Home - Form Absen Masuk (is_unrestricted)', '/', async () => {
+      await page.request.put(`${API_BASE}/employees/${EMPLOYEE_TEST_ID}/attendance-location-override`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+        data: {
+          scope_type_check_in: 'ANYWHERE',
+          scope_type_check_out: 'HOME_ONLY',
+          reason: 'a11y sweep - state is_unrestricted',
+        },
+      })
+
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('main').getByText('Absensi Hari Ini').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByRole('button', { name: 'Absen Masuk' }).click()
+      await page.getByRole('heading', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 5000 })
+      await page.locator('#attendance-office').waitFor({ state: 'visible', timeout: 15000 })
+      // Section "Lokasi GPS" HARUS gak ada sama sekali buat scope ANYWHERE - hint ini yang jadi bukti section itu bener-bener gak dirender.
+      await page.getByText(/bebas pilih kantor mana pun/).waitFor({ state: 'visible', timeout: 10000 })
+      await page.getByRole('button', { name: 'Ambil Foto' }).waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Employee Home - Form Absen Masuk (is_unrestricted)', '/')
+
+      // Tutup modal (Batal) - state ini cuma buat scan, gak perlu submit.
+      await page.getByRole('button', { name: 'Batal' }).click()
+    })
+
+    // === Employee Home - State Error 422 (Ditolak) ===
+    await safeStep('Employee Home - State Error 422 (Ditolak)', '/', async () => {
+      // Balikin ke kondisi NORMAL (hapus override ANYWHERE) - state ini
+      // justru BUTUH submit BENERAN ditolak radius (geolocation masih
+      // di-mock jauh dari step "Form Absen Masuk (dropdown + radius)"
+      // sebelumnya, browser context yang sama). Aman disubmit sungguhan
+      // karena 422 artinya TIDAK ADA baris attendance yang kesimpen sama
+      // sekali (diverifikasi manual terpisah - lihat memory
+      // project_employee_home_task95), gak perlu cleanup tambahan setelahnya.
+      await page.request.delete(`${API_BASE}/employees/${EMPLOYEE_TEST_ID}/attendance-location-override`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+      })
+
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('main').getByText('Absensi Hari Ini').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByRole('button', { name: 'Absen Masuk' }).click()
+      await page.getByRole('heading', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 5000 })
+      await page.locator('#attendance-office').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByText(/di luar radius kantor ini/).waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByRole('button', { name: 'Ambil Foto' }).waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByRole('button', { name: 'Ambil Foto' }).click()
+      await page.getByAltText('Foto absen yang sudah diambil').waitFor({ state: 'visible', timeout: 5000 })
+
+      const submitBtn = page.getByRole('button', { name: 'Absen Masuk' }).last()
+      await submitBtn.click()
+      const dialog = page.getByRole('alertdialog')
+      await dialog.waitFor({ state: 'visible', timeout: 10000 })
+      await dialog.getByRole('button', { name: 'Ya, Absen Masuk' }).click()
+
+      await page.getByText(/Absen tidak berhasil/).first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Employee Home - State Error 422 (Ditolak)', '/')
     })
 
     writeReports()

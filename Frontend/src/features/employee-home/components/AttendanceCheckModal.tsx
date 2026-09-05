@@ -11,7 +11,7 @@ import { useCheckInAttendance, useCheckOutAttendance } from '../hooks/useAttenda
 import { todayDateString } from '../hooks/useTodayAttendance'
 import { determineAttendanceStatus } from '../lib/attendanceStatus'
 import { distanceInMeters } from '../../../lib/geo'
-import type { Attendance, AllowedOffice } from '../../../api/types/attendance'
+import type { Attendance, AllowedOffice, AttendanceDirection } from '../../../api/types/attendance'
 import type { NormalizedApiError } from '../../../api/client'
 
 interface AttendanceCheckModalProps {
@@ -21,10 +21,14 @@ interface AttendanceCheckModalProps {
   /** Wajib diisi untuk mode check-out (butuh id baris + office_location yang sudah dipilih pas check-in). Boleh null pas check-in (belum ada baris). */
   todayAttendance: Attendance | null
   onSuccess: (message: string) => void
+  /** Dipanggil pas submit ditolak server (422 di luar radius, atau kantor gak diizinkan) - parent nampilin Toast, modal SENDIRI tetap kebuka nampilin pesan inline (lihat submitError). */
+  onError?: (message: string) => void
 }
 
 type GeoState =
   | { status: 'idle' }
+  /** Scope 'ANYWHERE' buat arah ini (Task per-arah) - GPS SENGAJA gak pernah diminta sama sekali, bukan gagal. */
+  | { status: 'skipped' }
   | { status: 'loading' }
   | { status: 'success'; latitude: number; longitude: number }
   | { status: 'error'; message: string }
@@ -37,25 +41,32 @@ type CameraState =
   | { status: 'error'; message: string }
 
 /**
- * Modal Absen Masuk/Pulang (Task 9.5 Bagian C) - GPS (auto-pilih
- * kantor terdekat + peringatan radius, non-blocking) + kamera (WAJIB
- * ambil foto sebelum submit aktif, validasi FRONTEND saja - backend
- * terima null) + dropdown kantor (cuma dari allowed-offices, khusus
- * mode check-in) + ConfirmDialog sebelum submit beneran.
+ * Modal Absen Masuk/Pulang - GPS (auto-pilih kantor terdekat + radius
+ * BLOCKING sekarang, kecuali scope 'ANYWHERE' - Task per-arah) + kamera
+ * (WAJIB ambil foto sebelum submit aktif, TIDAK dimatikan oleh ANYWHERE
+ * sama sekali) + dropdown kantor (cuma dari allowed-offices, khusus mode
+ * check-in) + ConfirmDialog sebelum submit beneran.
  *
- * Mode check-out TIDAK fetch allowed-offices sama sekali - kantornya
- * FIXED dari office_location baris attendance hari ini yang sudah ada
- * (dipilih pas check-in, gak bisa diganti pas check-out).
+ * Mode check-out TIDAK pakai daftar kantor dari allowed-offices buat
+ * dropdown (kantornya FIXED, direuse dari office_location baris
+ * attendance hari ini yang sudah ada) - TAPI tetap manggil
+ * useAllowedOffices buat direction CHECK_OUT, murni buat baca
+ * `is_unrestricted`-nya (backend juga validasi ulang pakai office yang
+ * di-reuse itu, lihat AttendanceController::update()).
  */
-export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onSuccess }: AttendanceCheckModalProps) {
+export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onSuccess, onError }: AttendanceCheckModalProps) {
   const isCheckIn = mode === 'check-in'
+  const direction: AttendanceDirection = isCheckIn ? 'CHECK_IN' : 'CHECK_OUT'
   const employee = useAuthStore((s) => s.employee)
 
   const {
-    data: allowedOffices,
+    data: allowedOfficesResponse,
     isLoading: isAllowedOfficesLoading,
     isError: isAllowedOfficesError,
-  } = useAllowedOffices(open && isCheckIn)
+  } = useAllowedOffices(direction, open)
+
+  const allowedOffices = allowedOfficesResponse?.data
+  const isUnrestricted = allowedOfficesResponse?.is_unrestricted ?? false
 
   const [geo, setGeo] = useState<GeoState>({ status: 'idle' })
   const [camera, setCamera] = useState<CameraState>({ status: 'idle' })
@@ -118,9 +129,9 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
     }
   }
 
-  // Reset semua state internal + minta izin GPS/kamera tiap kali modal
-  // dibuka - biar gak kebawa dari sesi sebelumnya (misal foto lama
-  // nyangkut kalau user buka-tutup-buka modal lagi berkali-kali).
+  // Reset state internal + minta izin KAMERA tiap kali modal dibuka -
+  // foto TETAP WAJIB apapun scope-nya (ANYWHERE cuma matiin radius,
+  // BUKAN foto), jadi kamera selalu diminta segera, gak nunggu apa pun.
   useEffect(() => {
     if (!open) return
     setGeo({ status: 'idle' })
@@ -128,13 +139,28 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
     setSelectedOfficeId(null)
     setConfirmOpen(false)
     setSubmitError(null)
-    requestGeolocation()
     requestCamera()
     return () => {
       stopCameraStream()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // GPS - DEFERRED sampai allowed-offices selesai load, biar tau
+  // is_unrestricted DULU sebelum mutusin minta izin lokasi atau enggak.
+  // Scope 'ANYWHERE' (Task per-arah) - section GPS gak relevan sama
+  // sekali, jangan ganggu user minta izin lokasi yang gak bakal dipakai.
+  useEffect(() => {
+    if (!open || isAllowedOfficesLoading) return
+    if (geo.status !== 'idle') return
+
+    if (isUnrestricted) {
+      setGeo({ status: 'skipped' })
+    } else {
+      requestGeolocation()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isAllowedOfficesLoading, isUnrestricted])
 
   // <video> baru muncul di DOM pas status 'streaming' - attach stream ke situ setiap kali status berubah jadi itu.
   useEffect(() => {
@@ -143,10 +169,20 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
     }
   }, [camera.status])
 
-  // Auto-pilih kantor terdekat begitu allowedOffices + GPS dua-duanya siap (check-in aja - check-out kantornya fixed).
+  // Auto-pilih kantor (check-in aja - check-out kantornya fixed):
+  // - unrestricted (ANYWHERE) -> default ke home office kalau ada di
+  //   daftar, employee tetap bebas ganti manual (dropdown tetap aktif).
+  // - GPS sukses -> kantor terdekat.
+  // - GPS gagal -> kantor pertama di daftar (dropdown gak boleh kosong).
   useEffect(() => {
     if (!isCheckIn || selectedOfficeId !== null) return
     if (!allowedOffices || allowedOffices.length === 0) return
+
+    if (isUnrestricted) {
+      const home = allowedOffices.find((o) => o.id === employee?.office_location_id)
+      setSelectedOfficeId(home?.id ?? allowedOffices[0].id)
+      return
+    }
 
     if (geo.status === 'success') {
       let nearest = allowedOffices[0]
@@ -160,11 +196,9 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
       }
       setSelectedOfficeId(nearest.id)
     } else if (geo.status === 'error') {
-      // GPS gagal - gak bisa auto-pilih terdekat, default ke kantor
-      // pertama di daftar biar dropdown gak kosong (user tetap bisa ganti manual).
       setSelectedOfficeId(allowedOffices[0].id)
     }
-  }, [isCheckIn, allowedOffices, geo, selectedOfficeId])
+  }, [isCheckIn, allowedOffices, geo, selectedOfficeId, isUnrestricted, employee])
 
   /** Foto absen cuma butuh cukup jelas buat verifikasi manual HRD, bukan resolusi penuh kamera - downscale ke maks 480px di sisi terpanjang sebelum di-encode base64, biar payload JSON yang dikirim ke POST/PUT tetap wajar (puluhan KB, bukan MB). Rasio aspek dipertahankan. */
   const MAX_PHOTO_DIMENSION = 480
@@ -254,8 +288,17 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
         onSuccess('Absen pulang berhasil dicatat.')
       }
     } catch (err) {
+      // Backend sekarang BENERAN bisa nolak submit (422 - di luar radius,
+      // atau kantor gak diizinkan) - BUKAN cuma error jaringan/validasi
+      // generik lagi. Prefix "Absen tidak berhasil" biar jelas ini
+      // penolakan aksi (bukan sekadar error teknis), pesan asli dari
+      // server (apiError.message) tetap ditampilkan apa adanya di
+      // belakangnya - server yang paling tau alasan spesifiknya
+      // (kantor gak diizinkan vs di luar radius, dua pesan beda).
       const apiError = err as NormalizedApiError
-      setSubmitError(apiError.message)
+      const displayMessage = `Absen tidak berhasil — ${apiError.message}`
+      setSubmitError(displayMessage)
+      onError?.(displayMessage)
       setConfirmOpen(false)
     }
   }
@@ -292,12 +335,19 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
                   Tidak ada kantor yang diizinkan untuk absen. Hubungi HRD.
                 </p>
               ) : (
-                <Select
-                  id="attendance-office"
-                  value={selectedOfficeId !== null ? String(selectedOfficeId) : ''}
-                  options={(allowedOffices ?? []).map((o) => ({ value: String(o.id), label: o.office_name }))}
-                  onChange={(e) => setSelectedOfficeId(Number(e.target.value))}
-                />
+                <>
+                  <Select
+                    id="attendance-office"
+                    value={selectedOfficeId !== null ? String(selectedOfficeId) : ''}
+                    options={(allowedOffices ?? []).map((o) => ({ value: String(o.id), label: o.office_name }))}
+                    onChange={(e) => setSelectedOfficeId(Number(e.target.value))}
+                  />
+                  {isUnrestricted && (
+                    <p className="font-body text-xs text-neutral-600">
+                      Kamu punya pengecualian lokasi - bebas pilih kantor mana pun, tanpa batasan radius.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -309,54 +359,55 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <Label as="p">Lokasi GPS</Label>
-            {geo.status === 'loading' && (
-              <p className="flex items-center gap-1.5 font-body text-sm text-neutral-600">
-                <MapPin size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" /> Mendeteksi lokasi...
-              </p>
-            )}
-            {geo.status === 'error' && (
-              <div
-                role="alert"
-                className="flex items-start gap-1.5 rounded-sm border border-status-rejected/30 bg-status-rejected/10 p-2.5"
-              >
-                <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-status-rejected" aria-hidden="true" />
-                <div className="flex flex-col gap-1">
-                  {/* text-neutral-900 (BUKAN text-status-rejected) - ikon+border+bg tint tetap merah (murni dekoratif, gak kena rule color-contrast), tapi teks yang beneran dibaca WAJIB warna aman: text-status-rejected (#C53030) di atas bg-status-rejected/10 (#f2e2df) cuma 4.35:1, gagal AA (4.5:1) - pola yang PERSIS sama kayak root cause color-contrast Audit Log badge yang udah diketahui (lihat memory project_a11y_sweep). */}
-                  <p className="font-body text-sm text-neutral-900">{geo.message}</p>
-                  <button
-                    type="button"
-                    onClick={requestGeolocation}
-                    className="self-start font-body text-sm font-medium text-primary-700 underline"
-                  >
-                    Coba lagi
-                  </button>
-                </div>
-              </div>
-            )}
-            {geo.status === 'success' && selectedOffice && distance !== null && (
-              <div className="flex flex-col gap-1.5">
-                <p className="font-body text-sm text-neutral-600">
-                  Jarak ke {selectedOffice.office_name}: {Math.round(distance)} meter (radius diizinkan:{' '}
-                  {selectedOffice.radius_meter}m)
+          {/* Section GPS SEMBUNYI TOTAL kalau scope arah ini 'ANYWHERE' (Task per-arah) - gak relevan sama sekali, termasuk gak pernah minta izin lokasi (lihat useEffect GPS di atas). */}
+          {!isUnrestricted && (
+            <div className="flex flex-col gap-1.5">
+              <Label as="p">Lokasi GPS</Label>
+              {geo.status === 'loading' && (
+                <p className="flex items-center gap-1.5 font-body text-sm text-neutral-600">
+                  <MapPin size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" /> Mendeteksi lokasi...
                 </p>
-                {isOutsideRadius && (
-                  <div
-                    role="alert"
-                    className="flex items-start gap-1.5 rounded-sm border border-status-pending/30 bg-status-pending/10 p-2.5"
-                  >
-                    <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-status-pending" aria-hidden="true" />
-                    {/* text-neutral-900 (BUKAN text-status-pending) - dikonfirmasi LANGSUNG dari a11y sweep: text-status-pending (#dd6b20) di atas bg-status-pending/10 (#fcf0e9) cuma 3.02:1, gagal WCAG AA (4.5:1). Ikon+border+bg tint tetap kuning/oranye (dekoratif, gak kena rule color-contrast). */}
-                    <p className="font-body text-sm text-neutral-900">
-                      Kamu berada {Math.round(distance - selectedOffice.radius_meter)} meter di luar radius kantor ini.
-                      Kamu tetap bisa absen, tapi lokasi ini akan tercatat di luar radius.
-                    </p>
+              )}
+              {geo.status === 'error' && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-1.5 rounded-sm border border-status-rejected/30 bg-status-rejected/10 p-2.5"
+                >
+                  <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-status-rejected" aria-hidden="true" />
+                  <div className="flex flex-col gap-1">
+                    <p className="font-body text-sm text-neutral-900">{geo.message}</p>
+                    <button
+                      type="button"
+                      onClick={requestGeolocation}
+                      className="self-start font-body text-sm font-medium text-primary-700 underline"
+                    >
+                      Coba lagi
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+              {geo.status === 'success' && selectedOffice && distance !== null && (
+                <div className="flex flex-col gap-1.5">
+                  <p className="font-body text-sm text-neutral-600">
+                    Jarak ke {selectedOffice.office_name}: {Math.round(distance)} meter (radius diizinkan:{' '}
+                    {selectedOffice.radius_meter}m)
+                  </p>
+                  {isOutsideRadius && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-1.5 rounded-sm border border-status-pending/30 bg-status-pending/10 p-2.5"
+                    >
+                      <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-status-pending" aria-hidden="true" />
+                      <p className="font-body text-sm text-neutral-900">
+                        Kamu berada {Math.round(distance - selectedOffice.radius_meter)} meter di luar radius kantor ini.{' '}
+                        <span className="font-semibold">Absen kemungkinan akan ditolak jika tetap di luar radius.</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label as="p">Foto</Label>
@@ -368,7 +419,6 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
               >
                 <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-status-rejected" aria-hidden="true" />
                 <div className="flex flex-col gap-1">
-                  {/* text-neutral-900 - alasan sama persis banner GPS error di atas (text-status-rejected di atas bg-status-rejected/10 gagal WCAG AA). */}
                   <p className="font-body text-sm text-neutral-900">{camera.message}</p>
                   <button
                     type="button"

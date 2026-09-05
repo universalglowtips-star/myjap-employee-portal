@@ -14,7 +14,9 @@ class EmployeeAttendanceLocationOverride extends Model
 
         'employee_id',
 
-        'scope_type',
+        'scope_type_check_in',
+
+        'scope_type_check_out',
 
         'effective_start_date',
 
@@ -69,6 +71,11 @@ class EmployeeAttendanceLocationOverride extends Model
         return $this->belongsTo(Employee::class, 'created_by')->withTrashed();
     }
 
+    /**
+     * Daftar cabang SPECIFIC_BRANCHES buat KEDUA arah sekaligus (dipakai
+     * cuma buat tampilan gabungan/lama) - pemakaian nyata yang butuh
+     * bedain arah HARUS pakai officesCheckIn()/officesCheckOut() di bawah.
+     */
     public function offices(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -77,5 +84,28 @@ class EmployeeAttendanceLocationOverride extends Model
             'employee_attendance_location_override_id',
             'office_location_id'
         )->withTrashed();
+    }
+
+    /**
+     * Daftar cabang SPECIFIC_BRANCHES khusus arah CHECK_IN - pivot
+     * sekarang punya kolom `direction` (Task per-arah), bisa beda dari
+     * officesCheckOut(). withPivotValue() (BUKAN wherePivot() biasa) -
+     * dicek langsung ke source Laravel (InteractsWithPivotTable.php):
+     * withPivotValue() otomatis (a) nge-filter query pas dibaca DAN
+     * (b) nge-isi kolom `direction` otomatis pas attach()/sync() insert
+     * baris baru, plus (c) newPivotQuery() (dipakai detach() di dalam
+     * sync()) ikut ke-scope juga - wherePivot() polos CUMA (a), gak akan
+     * ngisi `direction` sendiri pas sync() nyoba insert baris baru
+     * (bakal error kolom NOT NULL gak keisi).
+     */
+    public function officesCheckIn(): BelongsToMany
+    {
+        return $this->offices()->withPivotValue('direction', 'CHECK_IN');
+    }
+
+    /** Daftar cabang SPECIFIC_BRANCHES khusus arah CHECK_OUT. */
+    public function officesCheckOut(): BelongsToMany
+    {
+        return $this->offices()->withPivotValue('direction', 'CHECK_OUT');
     }
 }

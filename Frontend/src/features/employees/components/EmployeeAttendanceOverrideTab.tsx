@@ -32,21 +32,26 @@ const scopeOptions: { value: OverrideScopeType; label: string }[] = [
   { value: 'ALL_BRANCHES', label: 'Semua Cabang' },
   { value: 'SPECIFIC_BRANCHES', label: 'Cabang Tertentu' },
   { value: 'SUPERVISED_BRANCHES', label: 'Cabang yang Diawasi' },
+  { value: 'ANYWHERE', label: 'Bebas (Tanpa Batasan Lokasi)' },
 ]
 
 const REASON_MAX_LENGTH = 1000
 
 /**
- * Skema di-generate lewat factory - `required_if:scope_type,SPECIFIC_BRANCHES`
- * (backend) dan `after_or_equal:effective_start_date` (backend) direplikasi
- * di sini via superRefine, client-side, buat UX (pesan instan tanpa round-trip),
- * backend TETAP jadi otoritas validasi final.
+ * scope_type dipecah 2 SISI (check-in/check-out, Task per-arah) -
+ * masing-masing punya field scope_type + office_location_ids SENDIRI,
+ * makanya superRefine juga dobel (1 per arah). Tanggal berlaku + alasan
+ * TETAP 1 set dipakai bareng buat KEDUA arah (dikonfirmasi eksplisit,
+ * BUKAN diduplikasi) - required_if (backend) & superRefine (di sini)
+ * direplikasi client-side buat UX instan, backend TETAP otoritas final.
  */
 function buildOverrideSchema() {
   return z
     .object({
-      scope_type: z.string().min(1, 'Cakupan wajib dipilih'),
-      office_location_ids: z.array(z.string()).optional(),
+      scope_type_check_in: z.string().min(1, 'Cakupan saat Absen Masuk wajib dipilih'),
+      office_location_ids_check_in: z.array(z.string()).optional(),
+      scope_type_check_out: z.string().min(1, 'Cakupan saat Absen Pulang wajib dipilih'),
+      office_location_ids_check_out: z.array(z.string()).optional(),
       effective_start_date: z.string().optional(),
       effective_end_date: z.string().optional(),
       reason: z
@@ -55,10 +60,17 @@ function buildOverrideSchema() {
         .max(REASON_MAX_LENGTH, `Alasan maksimal ${REASON_MAX_LENGTH} karakter`),
     })
     .superRefine((data, ctx) => {
-      if (data.scope_type === 'SPECIFIC_BRANCHES' && (!data.office_location_ids || data.office_location_ids.length === 0)) {
+      if (data.scope_type_check_in === 'SPECIFIC_BRANCHES' && (!data.office_location_ids_check_in || data.office_location_ids_check_in.length === 0)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['office_location_ids'],
+          path: ['office_location_ids_check_in'],
+          message: 'Pilih minimal 1 cabang',
+        })
+      }
+      if (data.scope_type_check_out === 'SPECIFIC_BRANCHES' && (!data.office_location_ids_check_out || data.office_location_ids_check_out.length === 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['office_location_ids_check_out'],
           message: 'Pilih minimal 1 cabang',
         })
       }
@@ -81,7 +93,8 @@ type OverrideStatus = 'active' | 'not_yet' | 'ended'
  * TAPI TIDAK diekspos sebagai field JSON di response show() (dikonfirmasi
  * dari controller - cuma method PHP biasa, bukan accessor/appended
  * attribute) - dihitung ulang di sini dari effective_start_date/end_date
- * vs tanggal hari ini, cermin logic yang sama persis.
+ * vs tanggal hari ini, cermin logic yang sama persis. Status ini
+ * SHARED buat kedua arah (tanggal berlaku gak dipecah per arah).
  */
 function computeOverrideStatus(startDate: string | null, endDate: string | null): OverrideStatus {
   const today = new Date().toISOString().slice(0, 10)
@@ -120,6 +133,70 @@ function OverrideStatusIndicator({ startDate, endDate }: { startDate: string | n
   )
 }
 
+/** 1 blok Cakupan+Cabang - dipakai 2x (check-in/check-out), parameterized biar gak duplikasi JSX identik 2x penuh. */
+interface DirectionRuleFieldsProps {
+  legend: string
+  scopeFieldName: 'scope_type_check_in' | 'scope_type_check_out'
+  officesFieldName: 'office_location_ids_check_in' | 'office_location_ids_check_out'
+  scopeValue: string
+  officeIds: string[]
+  scopeError?: string
+  officesError?: string
+  officeLocationOptions: { value: string; label: string }[]
+  canEdit: boolean
+  register: ReturnType<typeof useForm<OverrideFormValues>>['register']
+  setValue: ReturnType<typeof useForm<OverrideFormValues>>['setValue']
+}
+
+function DirectionRuleFields({
+  legend,
+  scopeFieldName,
+  officesFieldName,
+  scopeValue,
+  officeIds,
+  scopeError,
+  officesError,
+  officeLocationOptions,
+  canEdit,
+  register,
+  setValue,
+}: DirectionRuleFieldsProps) {
+  return (
+    <div className="rounded-md border border-neutral-200 p-4">
+      <p className="mb-3 font-body text-sm font-semibold text-neutral-900">{legend}</p>
+      <div className={cn('grid grid-cols-1 gap-x-4 gap-y-3', scopeValue !== 'SPECIFIC_BRANCHES' ? '' : 'sm:grid-cols-2')}>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={scopeFieldName}>Cakupan</Label>
+          <Select
+            id={scopeFieldName}
+            className="py-2"
+            options={scopeOptions}
+            placeholder="Pilih Cakupan"
+            disabled={!canEdit}
+            error={scopeError}
+            {...register(scopeFieldName)}
+          />
+        </div>
+
+        {scopeValue === 'SPECIFIC_BRANCHES' && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={officesFieldName}>Cabang</Label>
+            <MultiSelect
+              id={officesFieldName}
+              options={officeLocationOptions}
+              value={officeIds}
+              onChange={(next) => setValue(officesFieldName, next, { shouldValidate: true })}
+              placeholder="Pilih Cabang"
+              disabled={!canEdit}
+              error={officesError}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendanceOverrideTabProps) {
   const canView = usePermission('attendance-location-policy.view')
   const canEdit = usePermission('attendance-location-policy.update')
@@ -149,17 +226,21 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
   useEffect(() => {
     if (!data) return
     reset({
-      scope_type: override?.scope_type ?? '',
-      office_location_ids: override?.offices?.map((o) => String(o.id)) ?? [],
+      scope_type_check_in: override?.scope_type_check_in ?? '',
+      office_location_ids_check_in: override?.offices_check_in?.map((o) => String(o.id)) ?? [],
+      scope_type_check_out: override?.scope_type_check_out ?? '',
+      office_location_ids_check_out: override?.offices_check_out?.map((o) => String(o.id)) ?? [],
       effective_start_date: override?.effective_start_date ?? '',
       effective_end_date: override?.effective_end_date ?? '',
       reason: override?.reason ?? '',
     })
   }, [data, override, reset])
 
-  const scopeType = watch('scope_type')
+  const scopeTypeCheckIn = watch('scope_type_check_in')
+  const scopeTypeCheckOut = watch('scope_type_check_out')
   const reasonValue = watch('reason') ?? ''
-  const officeLocationIds = watch('office_location_ids') ?? []
+  const officeLocationIdsCheckIn = watch('office_location_ids_check_in') ?? []
+  const officeLocationIdsCheckOut = watch('office_location_ids_check_out') ?? []
 
   const officeLocationOptions = (officeLocations ?? []).map((o) => ({ value: String(o.id), label: o.office_name }))
 
@@ -175,10 +256,15 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
     if (!pendingSubmitValues) return
     try {
       const payload: EmployeeAttendanceLocationOverrideUpdateRequest = {
-        scope_type: pendingSubmitValues.scope_type as OverrideScopeType,
-        office_location_ids:
-          pendingSubmitValues.scope_type === 'SPECIFIC_BRANCHES'
-            ? (pendingSubmitValues.office_location_ids ?? []).map(Number)
+        scope_type_check_in: pendingSubmitValues.scope_type_check_in as OverrideScopeType,
+        office_location_ids_check_in:
+          pendingSubmitValues.scope_type_check_in === 'SPECIFIC_BRANCHES'
+            ? (pendingSubmitValues.office_location_ids_check_in ?? []).map(Number)
+            : undefined,
+        scope_type_check_out: pendingSubmitValues.scope_type_check_out as OverrideScopeType,
+        office_location_ids_check_out:
+          pendingSubmitValues.scope_type_check_out === 'SPECIFIC_BRANCHES'
+            ? (pendingSubmitValues.office_location_ids_check_out ?? []).map(Number)
             : undefined,
         effective_start_date: pendingSubmitValues.effective_start_date || null,
         effective_end_date: pendingSubmitValues.effective_end_date || null,
@@ -191,7 +277,15 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
       const apiError = err as NormalizedApiError
       if (apiError.fieldErrors) {
         for (const [field, messages] of Object.entries(apiError.fieldErrors)) {
-          if (field === 'scope_type' || field === 'office_location_ids' || field === 'effective_start_date' || field === 'effective_end_date' || field === 'reason') {
+          if (
+            field === 'scope_type_check_in' ||
+            field === 'office_location_ids_check_in' ||
+            field === 'scope_type_check_out' ||
+            field === 'office_location_ids_check_out' ||
+            field === 'effective_start_date' ||
+            field === 'effective_end_date' ||
+            field === 'reason'
+          ) {
             setError(field as keyof OverrideFormValues, { message: messages[0] })
           }
         }
@@ -255,91 +349,82 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
             </p>
           )}
 
-          <form
-            id="override-form"
-            onSubmit={handleSubmit(onFormSubmit)}
-            noValidate
-            className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
-          >
-            <div className={cn('flex flex-col gap-1.5', scopeType !== 'SPECIFIC_BRANCHES' && 'sm:col-span-2')}>
-              <Label htmlFor="scope_type">
-                Cakupan
-              </Label>
-              <Select
-                id="scope_type"
-                className="py-2"
-                options={scopeOptions}
-                placeholder="Pilih Cakupan"
-                disabled={!canEdit}
-                error={errors.scope_type?.message}
-                {...register('scope_type')}
-              />
-            </div>
+          <form id="override-form" onSubmit={handleSubmit(onFormSubmit)} noValidate className="flex flex-col gap-4">
+            <DirectionRuleFields
+              legend="Aturan Saat Absen Masuk"
+              scopeFieldName="scope_type_check_in"
+              officesFieldName="office_location_ids_check_in"
+              scopeValue={scopeTypeCheckIn}
+              officeIds={officeLocationIdsCheckIn}
+              scopeError={errors.scope_type_check_in?.message}
+              officesError={errors.office_location_ids_check_in?.message}
+              officeLocationOptions={officeLocationOptions}
+              canEdit={canEdit}
+              register={register}
+              setValue={setValue}
+            />
 
-            {scopeType === 'SPECIFIC_BRANCHES' && (
+            <DirectionRuleFields
+              legend="Aturan Saat Absen Pulang"
+              scopeFieldName="scope_type_check_out"
+              officesFieldName="office_location_ids_check_out"
+              scopeValue={scopeTypeCheckOut}
+              officeIds={officeLocationIdsCheckOut}
+              scopeError={errors.scope_type_check_out?.message}
+              officesError={errors.office_location_ids_check_out?.message}
+              officeLocationOptions={officeLocationOptions}
+              canEdit={canEdit}
+              register={register}
+              setValue={setValue}
+            />
+
+            <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="office_location_ids">
-                  Cabang
+                <Label htmlFor="effective_start_date">
+                  Berlaku Mulai <span className="font-normal text-neutral-600">(opsional)</span>
                 </Label>
-                <MultiSelect
-                  id="office_location_ids"
-                  options={officeLocationOptions}
-                  value={officeLocationIds}
-                  onChange={(next) => setValue('office_location_ids', next, { shouldValidate: true })}
-                  placeholder="Pilih Cabang"
+                <Input
+                  id="effective_start_date"
+                  type="date"
+                  className="py-2"
                   disabled={!canEdit}
-                  error={errors.office_location_ids?.message}
+                  error={errors.effective_start_date?.message}
+                  {...register('effective_start_date')}
                 />
               </div>
-            )}
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="effective_start_date">
-                Berlaku Mulai <span className="font-normal text-neutral-600">(opsional)</span>
-              </Label>
-              <Input
-                id="effective_start_date"
-                type="date"
-                className="py-2"
-                disabled={!canEdit}
-                error={errors.effective_start_date?.message}
-                {...register('effective_start_date')}
-              />
-            </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="effective_end_date">
+                  Berlaku Sampai <span className="font-normal text-neutral-600">(opsional)</span>
+                </Label>
+                <Input
+                  id="effective_end_date"
+                  type="date"
+                  className="py-2"
+                  disabled={!canEdit}
+                  error={errors.effective_end_date?.message}
+                  {...register('effective_end_date')}
+                />
+              </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="effective_end_date">
-                Berlaku Sampai <span className="font-normal text-neutral-600">(opsional)</span>
-              </Label>
-              <Input
-                id="effective_end_date"
-                type="date"
-                className="py-2"
-                disabled={!canEdit}
-                error={errors.effective_end_date?.message}
-                {...register('effective_end_date')}
-              />
-            </div>
-
-            <p className="font-body text-xs text-neutral-600 sm:col-span-2 sm:-mt-2">
-              Kosongkan untuk berlaku permanen.
-            </p>
-
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="reason">
-                Alasan
-              </Label>
-              <Textarea
-                id="reason"
-                rows={3}
-                maxLength={REASON_MAX_LENGTH}
-                disabled={!canEdit}
-                error={errors.reason?.message}
-                {...register('reason')}
-              />
-              <p className="font-body text-xs text-neutral-600">
-                {reasonValue.length} / {REASON_MAX_LENGTH} karakter
+              <p className="font-body text-xs text-neutral-600 sm:col-span-2 sm:-mt-2">
+                Kosongkan untuk berlaku permanen. Berlaku buat KEDUA arah (Absen Masuk & Pulang) sekaligus.
               </p>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label htmlFor="reason">Alasan</Label>
+                <Textarea
+                  id="reason"
+                  rows={3}
+                  maxLength={REASON_MAX_LENGTH}
+                  disabled={!canEdit}
+                  error={errors.reason?.message}
+                  {...register('reason')}
+                />
+                <p className="font-body text-xs text-neutral-600">
+                  {reasonValue.length} / {REASON_MAX_LENGTH} karakter
+                </p>
+              </div>
             </div>
           </form>
 
@@ -378,7 +463,7 @@ export function EmployeeAttendanceOverrideTab({ employeeId }: EmployeeAttendance
         onCancel={() => setDeleteConfirmOpen(false)}
         onConfirm={handleConfirmDelete}
         title="Hapus Pengecualian Lokasi Absensi"
-        description="Karyawan ini akan langsung kembali mengikuti kebijakan posisinya untuk absensi. Lanjutkan?"
+        description="Karyawan ini akan langsung kembali mengikuti kebijakan posisinya untuk absensi (KEDUA arah - Absen Masuk & Pulang). Lanjutkan?"
         variant="danger"
         confirmLabel="Ya, Hapus"
         isConfirming={deleteMutation.isPending}
