@@ -688,6 +688,12 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // localStorage browser SEKARANG isinya token EMPLOYEE (ke-overwrite
     // pas login ulang di step "State Awal"), gak bisa dibaca ulang dari
     // situ lagi buat aksi admin kayak gini.
+    //
+    // CATATAN: dropdown #attendance-office SENGAJA DIHAPUS buat scope
+    // ANYWHERE (tugas "Revisi tampilan kantor untuk scope Bebas") - kantor
+    // sekarang ditampilkan READ-ONLY (nama kantor asal karyawan), pola
+    // sama persis kantor check-out. Assertion di bawah ngikutin behavior
+    // BARU ini (bukan cek dropdown lagi) - lihat AttendanceCheckModal.tsx.
     await safeStep('Employee Home - Form Absen Masuk (is_unrestricted)', '/', async () => {
       await page.request.put(`${API_BASE}/employees/${EMPLOYEE_TEST_ID}/attendance-location-override`, {
         headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
@@ -703,9 +709,10 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.getByRole('main').getByText('Absensi Hari Ini').waitFor({ state: 'visible', timeout: 15000 })
       await page.getByRole('button', { name: 'Absen Masuk' }).click()
       await page.getByRole('heading', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 5000 })
-      await page.locator('#attendance-office').waitFor({ state: 'visible', timeout: 15000 })
+      // Kantor asal (read-only) - Samarinda Branch (office_location_id=2, home office employee 27).
+      await page.getByText('Samarinda Branch').waitFor({ state: 'visible', timeout: 15000 })
       // Section "Lokasi GPS" HARUS gak ada sama sekali buat scope ANYWHERE - hint ini yang jadi bukti section itu bener-bener gak dirender.
-      await page.getByText(/bebas pilih kantor mana pun/).waitFor({ state: 'visible', timeout: 10000 })
+      await page.getByText(/bebas absen tanpa batasan radius/).waitFor({ state: 'visible', timeout: 10000 })
       await page.getByRole('button', { name: 'Ambil Foto' }).waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Employee Home - Form Absen Masuk (is_unrestricted)', '/')
 
@@ -745,6 +752,82 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
 
       await page.getByText(/Absen tidak berhasil/).first().waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Employee Home - State Error 422 (Ditolak)', '/')
+    })
+
+    // === Riwayat Absensi (Task 9.5b) - /attendance, role EMPLOYEE ===
+    // Halaman baru "Riwayat Absensi" (nav Sidebar "Absensi", sebelumnya
+    // dead link ke route yang belum terdaftar) - masih login EMPLOYEE
+    // dari section Employee Home di atas, pakai superAdminToken yang
+    // sama buat setup/teardown data via API.
+    await safeStep('Riwayat Absensi - Bersihkan riwayat 90 hari (persiapan)', '/attendance', async () => {
+      // Pastikan employee 27 BENERAN kosong dalam rentang 90 hari, biar
+      // state "kosong" di bawah deterministik walau skrip ini dijalankan
+      // berkali-kali (baris sisa dari run sebelumnya kalau ada - step
+      // 422 di atas sendiri gak pernah nyimpen baris apa pun).
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
+      const listRes = await page.request.get(
+        `${API_BASE}/attendances?employee_id=${EMPLOYEE_TEST_ID}&start_date=${ninetyDaysAgo}&end_date=${today}&per_page=100`,
+        { headers: { Authorization: `Bearer ${superAdminToken}` } }
+      )
+      const listBody = await listRes.json()
+      for (const row of listBody.data ?? []) {
+        await page.request.delete(`${API_BASE}/attendances/${row.id}`, {
+          headers: { Authorization: `Bearer ${superAdminToken}` },
+        })
+      }
+    })
+
+    await safeStep('Riwayat Absensi - State Kosong', '/attendance', async () => {
+      await gotoAndSettle(page, '/attendance')
+      await page.getByText('Belum ada riwayat absensi dalam 3 bulan terakhir').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Riwayat Absensi - State Kosong', '/attendance')
+    })
+
+    await safeStep('Riwayat Absensi - State Terisi (+ indikator luar radius)', '/attendance', async () => {
+      // Seed 1 baris histori 5 hari lalu via API admin: override CHECK_IN
+      // ANYWHERE SEMENTARA (skip validasi radius) biar baris tanpa
+      // check_in_latitude/longitude (is_valid_location otomatis kehitung
+      // false di backend) tetap TERSIMPAN, bukan ditolak 422 - pola sama
+      // persis step "is_unrestricted"/"State Error 422" di atas.
+      // check_out SENGAJA dikosongkan juga - sekalian nguji kolom "Jam
+      // Pulang" nampilin "-".
+      await page.request.put(`${API_BASE}/employees/${EMPLOYEE_TEST_ID}/attendance-location-override`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+        data: {
+          scope_type_check_in: 'ANYWHERE',
+          scope_type_check_out: 'ANYWHERE',
+          reason: 'a11y sweep - seed riwayat absensi',
+        },
+      })
+
+      const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const createRes = await page.request.post(`${API_BASE}/attendances`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+        data: {
+          employee_id: EMPLOYEE_TEST_ID,
+          office_location_id: 2,
+          attendance_date: fiveDaysAgo,
+          attendance_status: 'Present',
+          check_in: `${fiveDaysAgo} 08:15:00`,
+        },
+      })
+      const createBody = await createRes.json()
+      const seedAttendanceId = createBody.data.id
+
+      // Balikin override - cuma dibutuhkan sesaat buat lolos create di atas.
+      await page.request.delete(`${API_BASE}/employees/${EMPLOYEE_TEST_ID}/attendance-location-override`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+      })
+
+      await gotoAndSettle(page, '/attendance')
+      await page.getByTitle('Di luar radius kantor').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Riwayat Absensi - State Terisi (+ indikator luar radius)', '/attendance')
+
+      // Cleanup - baris seed ini gak perlu nyangkut buat run berikutnya.
+      await page.request.delete(`${API_BASE}/attendances/${seedAttendanceId}`, {
+        headers: { Authorization: `Bearer ${superAdminToken}` },
+      })
     })
 
     writeReports()

@@ -36,7 +36,12 @@ public function index(Request $request)
 
     $this->scopeToOwnDataIfEmployee($query, $request);
 
-    $query->latest();
+    // Urutan attendance_date DESC (BUKAN created_at/->latest()) - Riwayat
+    // Absensi (Task 9.5b) butuh "terbaru dulu" berdasar TANGGAL absennya,
+    // yang bisa beda dari kapan barisnya dibuat di DB (mis. admin nginput
+    // data susulan tanggal lampau setelah data yang lebih baru). created_at
+    // dipakai sebagai tie-breaker kedua (beda employee, tanggal sama).
+    $query->orderByDesc('attendance_date')->orderByDesc('created_at');
 
     $attendance = $query->paginate($request->integer('per_page', 15));
 

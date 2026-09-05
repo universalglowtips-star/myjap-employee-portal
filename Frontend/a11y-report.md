@@ -1,6 +1,6 @@
 # Laporan A11y Sweep - MyJAP Employee Portal
 
-Dibuat: 2026-09-05T09:52:14.338Z
+Dibuat: 2026-09-05T20:24:06.834Z
 
 Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`)
 
@@ -50,6 +50,8 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Employee Home - Dialog Konfirmasi Absen Masuk | `/` | Discan | 0 |
 | Employee Home - Form Absen Masuk (is_unrestricted) | `/` | Discan | 0 |
 | Employee Home - State Error 422 (Ditolak) | `/` | Discan | 0 |
+| Riwayat Absensi - State Kosong | `/attendance` | Discan | 0 |
+| Riwayat Absensi - State Terisi (+ indikator luar radius) | `/attendance` | Discan | 0 |
 
 **Total violation di seluruh halaman: 6**
 
@@ -66,8 +68,8 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
 - **Muncul di halaman**:
   - Audit Log - List (`/audit-log`)
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(1) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(9) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
 
 ### 2. `color-contrast` - 3 kemunculan
 
@@ -78,5 +80,5 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
 - **Muncul di halaman**:
   - Audit Log - List (`/audit-log`)
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(2) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
