@@ -356,6 +356,11 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
             <div className="flex flex-col gap-1.5">
               <Label as="p">Lokasi Kantor</Label>
               <p className="font-body text-sm text-neutral-900">{checkOutOffice.office_name}</p>
+              {isUnrestricted && (
+                <p className="font-body text-xs text-neutral-600">
+                  Kamu punya pengecualian lokasi - bebas absen tanpa batasan radius.
+                </p>
+              )}
             </div>
           )}
 
