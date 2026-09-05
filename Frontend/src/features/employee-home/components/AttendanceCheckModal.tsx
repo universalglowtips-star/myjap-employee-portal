@@ -325,28 +325,43 @@ export function AttendanceCheckModal({ open, onClose, mode, todayAttendance, onS
         <div className="flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-1">
           {isCheckIn && (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="attendance-office">Lokasi Kantor</Label>
               {isAllowedOfficesLoading ? (
-                <div className="h-10 animate-pulse rounded-sm bg-neutral-100" aria-hidden="true" />
+                <>
+                  <Label as="p">Lokasi Kantor</Label>
+                  <div className="h-10 animate-pulse rounded-sm bg-neutral-100" aria-hidden="true" />
+                </>
               ) : isAllowedOfficesError ? (
-                <p className="font-body text-sm text-status-rejected">Gagal memuat daftar kantor yang diizinkan.</p>
+                <>
+                  <Label as="p">Lokasi Kantor</Label>
+                  <p className="font-body text-sm text-status-rejected">Gagal memuat daftar kantor yang diizinkan.</p>
+                </>
               ) : (allowedOffices ?? []).length === 0 ? (
-                <p className="font-body text-sm text-status-rejected">
-                  Tidak ada kantor yang diizinkan untuk absen. Hubungi HRD.
-                </p>
+                <>
+                  <Label as="p">Lokasi Kantor</Label>
+                  <p className="font-body text-sm text-status-rejected">
+                    Tidak ada kantor yang diizinkan untuk absen. Hubungi HRD.
+                  </p>
+                </>
+              ) : isUnrestricted ? (
+                // Scope 'ANYWHERE' - kantor gak boleh dipilih manual, SELALU kantor
+                // asal karyawan (office_location_id-nya sendiri), ditampilkan
+                // read-only (pola sama seperti kantor check-out yang di-reuse).
+                <>
+                  <Label as="p">Lokasi Kantor</Label>
+                  <p className="font-body text-sm text-neutral-900">{selectedOffice?.office_name ?? '-'}</p>
+                  <p className="font-body text-xs text-neutral-600">
+                    Kamu punya pengecualian lokasi - bebas absen tanpa batasan radius.
+                  </p>
+                </>
               ) : (
                 <>
+                  <Label htmlFor="attendance-office">Lokasi Kantor</Label>
                   <Select
                     id="attendance-office"
                     value={selectedOfficeId !== null ? String(selectedOfficeId) : ''}
                     options={(allowedOffices ?? []).map((o) => ({ value: String(o.id), label: o.office_name }))}
                     onChange={(e) => setSelectedOfficeId(Number(e.target.value))}
                   />
-                  {isUnrestricted && (
-                    <p className="font-body text-xs text-neutral-600">
-                      Kamu punya pengecualian lokasi - bebas pilih kantor mana pun, tanpa batasan radius.
-                    </p>
-                  )}
                 </>
               )}
             </div>
