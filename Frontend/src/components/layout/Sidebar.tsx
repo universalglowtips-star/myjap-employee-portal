@@ -23,11 +23,24 @@ import { evaluatePermission } from '../../permissions/evaluatePermission'
 import { cn } from '../../lib/cn'
 
 /**
- * Struktur grup+item: OVERVIEW (Dashboard), PEOPLE (Karyawan/Absensi/
- * Cuti), MASTER DATA (Departemen/Posisi/Shift Kerja/Lokasi Kantor/
- * Komponen Gaji - grup baru, ditambahkan di antara People & Payroll),
- * PAYROLL (Periode Payroll/Slip Gaji/Proses Massal Payroll/Alur
- * Approval), SYSTEM (Role & Permission/Notifikasi/Audit Log).
+ * Struktur grup+item: OVERVIEW (Dashboard ATAU Beranda, lihat catatan
+ * di bawah), PEOPLE (Karyawan/Absensi/Cuti), MASTER DATA (Departemen/
+ * Posisi/Shift Kerja/Lokasi Kantor/Komponen Gaji - grup baru,
+ * ditambahkan di antara People & Payroll), PAYROLL (Periode Payroll/
+ * Slip Gaji/Proses Massal Payroll/Alur Approval), SYSTEM (Role &
+ * Permission/Notifikasi/Audit Log).
+ *
+ * OVERVIEW - item "Dashboard" (permission dashboard.view) DIGANTI
+ * "Beranda" (tanpa permission, selalu tampil) buat role yang gak punya
+ * dashboard.view (EMPLOYEE). SEBELUMNYA grup ini kosong total buat
+ * EMPLOYEE (satu-satunya item-nya disembunyikan, PermissionGate cuma
+ * nyembunyiin item bukan grupnya) - EMPLOYEE gak punya cara balik ke
+ * "/" dari halaman lain sama sekali. Kedua item ngarah ke path yang
+ * SAMA ("/") - HomeRoute (App.tsx) yang branch render Dashboard vs
+ * EmployeeHomePage berdasar permission yang sama, jadi cukup 1 item
+ * per role, gak pernah dua-duanya sekaligus. `buildNavGroups()`
+ * (BUKAN konstanta statis lagi) karena pilihan item ini butuh tau
+ * `canViewDashboard` yang cuma ada di render time (hook).
  *
  * Komponen Gaji PINDAH dari grup Payroll ke Master Data - `to` path-nya
  * SENGAJA tetap '/payroll/salary-components' (gak diubah), cuma
@@ -64,47 +77,63 @@ import { cn } from '../../lib/cn'
  * mulai langsung dari grup menu, gak ada header brand lagi di sini
  * (biar gak duplikat di 2 tempat).
  */
-const navGroups = [
-  {
-    label: 'Overview',
-    items: [{ to: '/', label: 'Dashboard', icon: Home, permission: 'dashboard.view' }],
-  },
-  {
-    label: 'People',
-    items: [
-      { to: '/employees', label: 'Karyawan', icon: Users, permission: 'employee.view' },
-      { to: '/attendance', label: 'Absensi', icon: Clock, permission: 'attendance.view' },
-      { to: '/leave', label: 'Cuti', icon: Calendar, permission: 'leave.view' },
-    ],
-  },
-  {
-    label: 'Master Data',
-    items: [
-      { to: '/departments', label: 'Departemen', icon: Building, permission: 'department.view' },
-      { to: '/positions', label: 'Posisi', icon: Briefcase, permission: 'position.view' },
-      { to: '/work-shifts', label: 'Shift Kerja', icon: Timer, permission: 'work-shift.view' },
-      { to: '/office-locations', label: 'Lokasi Kantor', icon: MapPin, permission: 'office-location.view' },
-      { to: '/payroll/salary-components', label: 'Komponen Gaji', icon: SlidersHorizontal, permission: 'salary-component.view' },
-    ],
-  },
-  {
-    label: 'Payroll',
-    items: [
-      { to: '/payroll/periods', label: 'Periode Payroll', icon: DollarSign, permission: 'dashboard.view' },
-      { to: '/payroll/payslips', label: 'Slip Gaji', icon: FileText, permission: 'payslip.view' },
-      { to: '/payroll/bulk-process', label: 'Proses Massal Payroll', icon: Layers, permission: 'payroll.generate-bulk' },
-      { to: '/payroll/approval-workflow', label: 'Alur Approval', icon: Workflow, permission: 'approval-workflow.view' },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { to: '/roles', label: 'Role & Permission', icon: ShieldCheck, permission: 'role.view' },
-      { to: '/notifications', label: 'Notifikasi', icon: Bell, permission: null },
-      { to: '/audit-log', label: 'Audit Log', icon: List, permission: 'audit-log.view' },
-    ],
-  },
-] as const
+interface NavItem {
+  to: string
+  label: string
+  icon: typeof Home
+  permission: string | null
+}
+
+interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
+function buildNavGroups(canViewDashboard: boolean): NavGroup[] {
+  return [
+    {
+      label: 'Overview',
+      items: canViewDashboard
+        ? [{ to: '/', label: 'Dashboard', icon: Home, permission: 'dashboard.view' }]
+        : [{ to: '/', label: 'Beranda', icon: Home, permission: null }],
+    },
+    {
+      label: 'People',
+      items: [
+        { to: '/employees', label: 'Karyawan', icon: Users, permission: 'employee.view' },
+        { to: '/attendance', label: 'Absensi', icon: Clock, permission: 'attendance.view' },
+        { to: '/leave', label: 'Cuti', icon: Calendar, permission: 'leave.view' },
+      ],
+    },
+    {
+      label: 'Master Data',
+      items: [
+        { to: '/departments', label: 'Departemen', icon: Building, permission: 'department.view' },
+        { to: '/positions', label: 'Posisi', icon: Briefcase, permission: 'position.view' },
+        { to: '/work-shifts', label: 'Shift Kerja', icon: Timer, permission: 'work-shift.view' },
+        { to: '/office-locations', label: 'Lokasi Kantor', icon: MapPin, permission: 'office-location.view' },
+        { to: '/payroll/salary-components', label: 'Komponen Gaji', icon: SlidersHorizontal, permission: 'salary-component.view' },
+      ],
+    },
+    {
+      label: 'Payroll',
+      items: [
+        { to: '/payroll/periods', label: 'Periode Payroll', icon: DollarSign, permission: 'dashboard.view' },
+        { to: '/payroll/payslips', label: 'Slip Gaji', icon: FileText, permission: 'payslip.view' },
+        { to: '/payroll/bulk-process', label: 'Proses Massal Payroll', icon: Layers, permission: 'payroll.generate-bulk' },
+        { to: '/payroll/approval-workflow', label: 'Alur Approval', icon: Workflow, permission: 'approval-workflow.view' },
+      ],
+    },
+    {
+      label: 'System',
+      items: [
+        { to: '/roles', label: 'Role & Permission', icon: ShieldCheck, permission: 'role.view' },
+        { to: '/notifications', label: 'Notifikasi', icon: Bell, permission: null },
+        { to: '/audit-log', label: 'Audit Log', icon: List, permission: 'audit-log.view' },
+      ],
+    },
+  ]
+}
 
 interface SidebarProps {
   /** true = Sidebar ciut jadi 64px icon-only - HANYA berlaku di desktop (>=lg), lewat class `lg:`. Di mobile gak ngaruh, itu urusan drawer di bawah. */
@@ -127,7 +156,9 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
   // supaya Sidebar re-render begitu GET /me kelar pas login/refresh.
   const permissions = useAuthStore((s) => s.permissions)
   const isSuperAdmin = useAuthStore((s) => s.employee?.role?.role_code === 'SUPER_ADMIN')
+  const canViewDashboard = evaluatePermission(permissions, isSuperAdmin, 'dashboard.view')
 
+  const navGroups = buildNavGroups(canViewDashboard)
   const visibleGroups = navGroups.filter((group) =>
     group.items.some(
       (item) => item.permission === null || evaluatePermission(permissions, isSuperAdmin, item.permission)
