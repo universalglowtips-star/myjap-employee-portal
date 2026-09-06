@@ -2,8 +2,10 @@ import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { AppShell } from '../../../components/layout/AppShell'
 import { Table } from '../../../components/ui/Table'
+import { Input } from '../../../components/ui/Input'
+import { Label } from '../../../components/ui/Label'
 import { formatDate } from '../../../lib/formatDate'
-import { useAttendanceHistory } from '../hooks/useAttendanceHistory'
+import { useAttendanceHistory, todayDateString, minStartDateString } from '../hooks/useAttendanceHistory'
 import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge'
 import type { Attendance } from '../../../api/types/attendance'
 
@@ -22,15 +24,42 @@ function formatTime(datetime: string | null): string {
  * (AttendanceRoute), BUKAN di sini - halaman ini gak perlu PermissionGate
  * sendiri karena cuma bisa "ketemu" lewat percabangan itu.
  *
- * Fetch 90 hari terakhir - ScopesOwnData backend otomatis batasin ke
- * absensi milik sendiri, TIDAK kirim employee_id manual (pola sama
- * persis useTodayAttendance.ts).
+ * Rentang tanggal (Task 9.5b Bagian B) - default Dari=90 hari lalu,
+ * Sampai=hari ini, user bisa ganti manual. Disimpan di URL search
+ * params (pola sama persis AuditLogListPage.tsx: key `start_date`/
+ * `end_date`, auto-refetch onChange TANPA tombol "Terapkan" - filter
+ * date range yang SUDAH ADA di app ini (Audit Log) juga auto-apply,
+ * bukan pakai tombol, jadi ngikutin pola yang sudah mapan). Diklem
+ * (clamp) ke batas [minStartDateString(), todayDateString()] di
+ * `updateDateFilter` sendiri, BUKAN cuma andalin atribut HTML
+ * min/max - browser tertentu masih bisa nge-commit value manual di
+ * luar batas itu ke onChange walau attribute-nya sudah dipasang.
  */
 export function AttendanceHistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
 
-  const { data, isLoading, isError } = useAttendanceHistory(page, PER_PAGE)
+  const minStartDate = minStartDateString()
+  const today = todayDateString()
+  const startDate = searchParams.get('start_date') ?? minStartDate
+  const endDate = searchParams.get('end_date') ?? today
+
+  const { data, isLoading, isError } = useAttendanceHistory(startDate, endDate, page, PER_PAGE)
+
+  function updateDateFilter(key: 'start_date' | 'end_date', rawValue: string) {
+    const fallback = key === 'start_date' ? minStartDate : today
+    let value = rawValue || fallback
+    if (value < minStartDate) value = minStartDate
+    if (value > today) value = today
+
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set(key, value)
+      // Rentang berubah -> balik ke halaman 1, hasil baru bisa aja lebih pendek dari halaman yang lagi dibuka sekarang.
+      next.delete('page')
+      return next
+    })
+  }
 
   function handlePageChange(newPage: number) {
     setSearchParams((prev) => {
@@ -47,7 +76,37 @@ export function AttendanceHistoryPage() {
 
   return (
     <AppShell title="Riwayat Absensi">
-      <p className="mb-4 font-body text-sm text-neutral-600">Menampilkan data 3 bulan terakhir</p>
+      <p className="mb-4 font-body text-sm text-neutral-600">
+        Pilih rentang tanggal untuk melihat riwayat absensi (maksimal 90 hari terakhir).
+      </p>
+
+      <div className="mb-4 flex flex-col gap-3 rounded-md bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:w-1/2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="filter-start-date">Dari Tanggal</Label>
+            <Input
+              id="filter-start-date"
+              type="date"
+              min={minStartDate}
+              max={today}
+              value={startDate}
+              onChange={(e) => updateDateFilter('start_date', e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="filter-end-date">Sampai Tanggal</Label>
+            <Input
+              id="filter-end-date"
+              type="date"
+              min={minStartDate}
+              max={today}
+              value={endDate}
+              onChange={(e) => updateDateFilter('end_date', e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
       {isError ? (
         <div className="flex flex-col items-center gap-2 rounded-md bg-white p-12 text-center shadow-sm">

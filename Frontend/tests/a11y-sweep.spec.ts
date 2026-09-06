@@ -830,6 +830,35 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       })
     })
 
+    // === Riwayat Absensi - Date Range Picker (Task 9.5b Bagian B) ===
+    await safeStep('Riwayat Absensi - Date Range Picker (fokus)', '/attendance', async () => {
+      await gotoAndSettle(page, '/attendance')
+      await page.locator('#filter-start-date').waitFor({ state: 'visible', timeout: 15000 })
+      // "Terbuka" - popup kalender native <input type="date"> dirender
+      // browser DI LUAR DOM (OS-level widget) - sama kasus limitasi
+      // Dashboard's #attendance-today-date (lihat step "Dashboard - Date
+      // Picker Kehadiran (fokus)" di atas). Fokus pada input jadi proxy
+      // DOM-scannable terdekat, axe gak bisa bedakan popup terbuka/tertutup.
+      await page.locator('#filter-start-date').focus()
+      await runAxe(page, 'Riwayat Absensi - Date Range Picker (fokus)', '/attendance')
+    })
+
+    await safeStep('Riwayat Absensi - Date Range Picker (terisi rentang custom)', '/attendance', async () => {
+      // Ganti "Dari Tanggal" ke rentang custom beneran (bukan default 90
+      // hari) - tunggu refetch (auto-apply onChange, TANPA tombol
+      // "Terapkan") selesai sebelum scan, biar state yang kescan beneran
+      // hasil rentang baru, bukan state transisi/loading.
+      const rangeStart = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const rangeResPromise = page.waitForResponse(
+        (res) => res.url().includes('/attendances?') && res.url().includes(`start_date=${rangeStart}`)
+      )
+      await page.locator('#filter-start-date').fill(rangeStart)
+      await rangeResPromise
+      await page.waitForLoadState('networkidle')
+      await page.waitForTimeout(300)
+      await runAxe(page, 'Riwayat Absensi - Date Range Picker (terisi rentang custom)', '/attendance')
+    })
+
     writeReports()
     printSummary()
   })

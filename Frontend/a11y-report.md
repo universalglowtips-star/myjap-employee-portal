@@ -1,6 +1,6 @@
 # Laporan A11y Sweep - MyJAP Employee Portal
 
-Dibuat: 2026-09-05T20:24:06.834Z
+Dibuat: 2026-09-06T09:21:40.999Z
 
 Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`)
 
@@ -42,7 +42,7 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Lokasi Kantor - Modal Edit (Tab Info) | `/office-locations` | Discan | 0 |
 | Lokasi Kantor - Modal Edit (Tab Supervisor) | `/office-locations` | Discan | 0 |
 | Komponen Gaji | `/payroll/salary-components` | Discan | 0 |
-| Audit Log - List | `/audit-log` | Discan | 6 |
+| Audit Log - List | `/audit-log` | Discan | 9 |
 | Audit Log - Detail Modal | `/audit-log` | Discan | 0 |
 | Employee Home - State Awal | `/` | Discan | 0 |
 | Employee Home - Form Absen Masuk (dropdown + radius) | `/` | Discan | 0 |
@@ -52,14 +52,16 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Employee Home - State Error 422 (Ditolak) | `/` | Discan | 0 |
 | Riwayat Absensi - State Kosong | `/attendance` | Discan | 0 |
 | Riwayat Absensi - State Terisi (+ indikator luar radius) | `/attendance` | Discan | 0 |
+| Riwayat Absensi - Date Range Picker (fokus) | `/attendance` | Discan | 0 |
+| Riwayat Absensi - Date Range Picker (terisi rentang custom) | `/attendance` | Discan | 0 |
 
-**Total violation di seluruh halaman: 6**
+**Total violation di seluruh halaman: 9**
 
 ## Dikelompokkan Berdasarkan Root Cause
 
 Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasarkan pasangan warna foreground/background PERSIS (class Tailwind yang sama selalu hasilin pasangan warna yang sama, di halaman mana pun dia dipakai).
 
-### 1. `color-contrast` - 3 kemunculan
+### 1. `color-contrast` - 5 kemunculan
 
 - **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
 - **Impact**: serious
@@ -68,10 +70,12 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
 - **Muncul di halaman**:
   - Audit Log - List (`/audit-log`)
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(1) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(9) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
 
-### 2. `color-contrast` - 3 kemunculan
+### 2. `color-contrast` - 4 kemunculan
 
 - **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
 - **Impact**: serious
@@ -80,5 +84,6 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
 - **Muncul di halaman**:
   - Audit Log - List (`/audit-log`)
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(2) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
