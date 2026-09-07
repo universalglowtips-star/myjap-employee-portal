@@ -20,6 +20,7 @@ import { DashboardPage } from './features/dashboard/pages/DashboardPage'
 import { EmployeeHomePage } from './features/employee-home/pages/EmployeeHomePage'
 import { NotificationListPage } from './features/notifications/pages/NotificationListPage'
 import { AttendanceHistoryPage } from './features/attendance/pages/AttendanceHistoryPage'
+import { AttendanceMonitoringPage } from './features/attendance/pages/AttendanceMonitoringPage'
 
 /**
  * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
@@ -37,25 +38,23 @@ function HomeRoute() {
 }
 
 /**
- * Percabangan "/attendance" (Task 9.5b Bagian A) - pola SAMA PERSIS
- * HomeRoute di atas. Versi EMPLOYEE (riwayat absensi 90 hari milik
- * sendiri, AttendanceHistoryPage) dibangun SEKARANG; versi admin
- * (monitoring semua karyawan) BELUM - placeholder sederhana dulu,
- * dibangun terpisah di Task 10 (URL sama, cuma component-nya diganti
- * nanti). Dicek pakai dashboard.view (BUKAN attendance.view yang
- * dipakai Sidebar buat nampilin nav item-nya) - dashboard.view yang
- * jadi pembeda role admin/manajerial vs EMPLOYEE di seluruh app ini
- * (persis sama kayak HomeRoute), sesuai instruksi eksplisit tugas.
+ * Percabangan "/attendance" (Task 9.5b Bagian A, diisi penuh Task 10) -
+ * pola SAMA PERSIS HomeRoute di atas. EMPLOYEE (tanpa dashboard.view)
+ * lihat riwayat 90 hari miliknya sendiri (AttendanceHistoryPage);
+ * role dengan dashboard.view (DIRECTOR/MANAGER/FINANCE/HRD/SUPER_ADMIN)
+ * lihat monitoring SEMUA karyawan (AttendanceMonitoringPage, Task 10).
+ * Dicek pakai dashboard.view (BUKAN attendance.view yang dipakai
+ * Sidebar buat nampilin nav item-nya) - dashboard.view yang jadi
+ * pembeda role admin/manajerial vs EMPLOYEE di seluruh app ini (persis
+ * sama kayak HomeRoute). AttendanceMonitoringPage SENDIRI tetap
+ * dibungkus PermissionGate attendance.view (defense-in-depth) - FINANCE
+ * punya dashboard.view TAPI TIDAK punya attendance.view (dikonfirmasi
+ * investigasi Task 10), jadi tetap ketahan "akses ditolak" di dalam,
+ * bukan lolos begitu aja cuma karena lolos branch di sini.
  */
 function AttendanceRoute() {
   const canViewDashboard = usePermission('dashboard.view')
-  return canViewDashboard ? (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-8 text-center">
-      <p className="font-body text-sm text-neutral-600">Halaman monitoring absensi akan dibangun di Task 10.</p>
-    </div>
-  ) : (
-    <AttendanceHistoryPage />
-  )
+  return canViewDashboard ? <AttendanceMonitoringPage /> : <AttendanceHistoryPage />
 }
 
 /**
@@ -74,9 +73,9 @@ function AttendanceRoute() {
  * grup "People" di Sidebar) + '/employees/new' & '/employees/:id/edit'
  * (Fase 8c, Form Tambah/Edit - 1 komponen shared, FormData/multipart
  * karena ada upload foto), '/audit-log' (viewer read-only), '/notifications'
- * (Task 9), dan '/attendance' (Task 9.5b - riwayat pribadi EMPLOYEE,
- * placeholder buat admin nunggu Task 10) sudah ada. Route lain masih
- * belum dibuat, nunggu giliran masing-masing.
+ * (Task 9), dan '/attendance' (Task 9.5b - riwayat pribadi EMPLOYEE;
+ * Task 10 - monitoring semua karyawan buat role admin, URL sama) sudah
+ * ada. Route lain masih belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)

@@ -14,6 +14,20 @@ export async function fetchEmployeesForFilter(): Promise<Employee[]> {
 }
 
 /**
+ * GET /employees - dropdown filter "Karyawan" di Monitoring Absensi
+ * Admin (Task 10). per_page 1000 (BUKAN 100 kayak fetchEmployeesForFilter
+ * di atas) - patokan investigasi tugas ini pakai skala ~200 karyawan,
+ * mau ada headroom jauh di atas itu. Filter `is_active` dilakukan
+ * CLIENT-SIDE di sini - backend GET /employees TERKONFIRMASI cuma baca
+ * `per_page` (lihat EmployeeQueryParams), gak ada query param is_active
+ * yang bisa dikirim ke server sama sekali.
+ */
+export async function fetchActiveEmployeesForAttendanceFilter(): Promise<Employee[]> {
+  const res = await apiClient.get<EmployeeListResponse>('/employees', { params: { per_page: 1000 } })
+  return res.data.data.filter((e) => e.is_active)
+}
+
+/**
  * GET /employees - dipakai buat daftar kandidat karyawan di Tab
  * Supervisor (Lokasi Kantor). Permission employee.view - independen
  * dari office-location.* maupun attendance-location-policy.* yang

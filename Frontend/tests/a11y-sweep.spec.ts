@@ -118,11 +118,15 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 900s (bukan 600s lagi) - sweep terus nambah (Task 7 Dashboard +3,
-    // Task 9 Notifikasi +4 state baru), run terakhir kena 10-11 menit,
-    // mepet/lewatin limit lama. Semua state TETAP 0 violation waktu kena
-    // timeout - ini murni budget waktu test-nya, bukan bug aksesibilitas.
-    test.setTimeout(900_000)
+    // 1200s (bukan 900s lagi) - sweep terus nambah (Task 7 Dashboard +3,
+    // Task 9 Notifikasi +4, Task 10 Monitoring Absensi +5 state baru), run
+    // terakhir kena 15.1 menit, lewatin limit lama karena beberapa step
+    // lama (Wewenang Cabang dialog, Lokasi Kantor Tab Supervisor) kena
+    // waitFor/waitForResponse timeout individual di tengah jalan (masing2
+    // ke-catch oleh safeStep, bukan fatal) - akumulasi waktu itu yang bikin
+    // overall test lewat limit. Semua state TETAP 0 violation waktu itu
+    // terjadi - ini murni budget waktu test-nya, bukan bug aksesibilitas.
+    test.setTimeout(1_200_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -569,6 +573,89 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await runAxe(page, 'Komponen Gaji', '/payroll/salary-components')
     })
 
+    // === /attendance (Task 10) - Monitoring Absensi Admin, masih login
+    // SUPER_ADMIN (punya dashboard.view -> branch AttendanceRoute render
+    // AttendanceMonitoringPage, bukan AttendanceHistoryPage EMPLOYEE). ===
+    await safeStep('Monitoring Absensi - State Kosong (Rincian Harian & Ringkasan)', '/attendance', async () => {
+      // Rentang tanggal jauh di masa lalu (2020) - dijamin kosong tanpa
+      // perlu query dulu buat cek data eksisting apa, pola sama persis
+      // trick "?page=2" buat state kosong Notifikasi di atas.
+      await gotoAndSettle(page, '/attendance?start_date=2020-01-01&end_date=2020-01-02')
+      await page.getByText('Belum ada data absensi untuk filter ini.').first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Monitoring Absensi - Rincian Harian (kosong)', '/attendance')
+
+      await page.getByRole('button', { name: 'Ringkasan per Karyawan' }).click()
+      await page.getByText('Belum ada data absensi untuk filter ini.').first().waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Monitoring Absensi - Ringkasan per Karyawan (kosong)', '/attendance')
+    })
+
+    await safeStep('Monitoring Absensi - State Terisi (Rincian Harian, Ringkasan, Dropdown Ekspor)', '/attendance', async () => {
+      // Token session SUPER_ADMIN yang lagi aktif (localStorage, BUKAN
+      // cookie) - page.request butuh header Authorization manual, gak
+      // otomatis ikut kayak fetch dari dalam page - pola sama persis
+      // step "Employee Home - Bersihkan..." di bawah.
+      const token = await page.evaluate(() => {
+        const raw = localStorage.getItem('myjap-auth')
+        return raw ? (JSON.parse(raw)?.state?.token ?? null) : null
+      })
+
+      // Tanggal SENGAJA gak fixed - unique constraint attendances_employee_id_
+      // attendance_date_unique di MariaDB TIDAK ngecualiin baris soft-deleted,
+      // jadi tanggal hardcoded bakal PERMANEN nabrak DUPLICATE ENTRY di run
+      // kedua dan seterusnya (baris seed run pertama soft-delete di cleanup
+      // bawah, tapi tetap "ada" buat constraint) - ketemu beneran pas run
+      // gagal dengan "Cannot read properties of undefined (reading 'id')"
+      // (createBody.data undefined karena create-nya sendiri 500 duplicate
+      // key, bukan bug di kode aplikasi Task 10). Offset hari di masa lalu
+      // divariasikan per run (basis epoch ms) - virtually never re-hits
+      // tanggal yang sama dua run beruntun, sekalian gak akan pernah ketimpa
+      // data asli manapun. Employee 27 (QA Employee Test) + office 2
+      // (Samarinda Branch, home office-nya sendiri) + koordinat PERSIS
+      // Samarinda - lolos Attendance Location Policy default (ALL_BRANCHES)
+      // tanpa perlu override ANYWHERE sama sekali (beda dari step Employee
+      // Home di bawah yang butuh override buat kasus radius/dropdown).
+      const daysAgo = 700 + (Date.now() % 1000)
+      const seedDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const createRes = await page.request.post(`${API_BASE}/attendances`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        data: {
+          employee_id: EMPLOYEE_TEST_ID,
+          office_location_id: 2,
+          attendance_date: seedDate,
+          attendance_status: 'Present',
+          check_in: `${seedDate} 08:00:00`,
+          check_in_latitude: -0.502183,
+          check_in_longitude: 117.153801,
+        },
+      })
+      const createBody = await createRes.json()
+      const seedAttendanceId = createBody.data.id
+
+      await gotoAndSettle(page, `/attendance?start_date=${seedDate}&end_date=${seedDate}`)
+      // table.getByText (BUKAN page.getByText polos) - dropdown "Karyawan"
+      // punya <option value="27">QA Employee Test</option> yang SELALU
+      // ada di DOM (walau gak "visible" secara native <select>), locator
+      // gak di-scope bakal ketemu itu duluan (posisi DOM sebelum tabel),
+      // ditemukan lewat error message Playwright pas verifikasi manual.
+      await page.locator('table').getByText('QA Employee Test').first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Monitoring Absensi - Rincian Harian (terisi)', '/attendance')
+
+      await page.getByRole('button', { name: 'Ringkasan per Karyawan' }).click()
+      await page.getByRole('columnheader', { name: 'Hadir', exact: true }).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Monitoring Absensi - Ringkasan per Karyawan (terisi)', '/attendance')
+
+      // Dropdown "Ekspor" terbuka.
+      await page.getByRole('button', { name: 'Ekspor' }).click()
+      await page.getByRole('menu').waitFor({ state: 'visible', timeout: 5000 })
+      await runAxe(page, 'Monitoring Absensi - Dropdown Ekspor (terbuka)', '/attendance')
+      await page.keyboard.press('Escape')
+
+      // Cleanup - baris seed ini gak perlu nyangkut buat run berikutnya.
+      await page.request.delete(`${API_BASE}/attendances/${seedAttendanceId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    })
+
     // === /audit-log (List + Detail Modal) ===
     await safeStep('Audit Log - List', '/audit-log', async () => {
       await gotoAndSettle(page, '/audit-log')
@@ -801,7 +888,15 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
         },
       })
 
-      const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      // Offset 3-5 hari (bukan selalu tepat 5) - sama alasan komentar di
+      // step "Monitoring Absensi - State Terisi" di atas (unique constraint
+      // gak ngecualiin soft-deleted, tanggal fixed nabrak DUPLICATE ENTRY
+      // di run kedua di HARI YANG SAMA). Tetap harus kecil (bukan ratusan
+      // hari kayak step Monitoring Absensi) - halaman ini navigasi TANPA
+      // date-range query param, jadi harus tetap masuk default filter
+      // "awal bulan ini - hari ini" milik halaman Riwayat Absensi sendiri.
+      const daysAgo = 3 + (Date.now() % 3)
+      const fiveDaysAgo = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
       const createRes = await page.request.post(`${API_BASE}/attendances`, {
         headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
         data: {
