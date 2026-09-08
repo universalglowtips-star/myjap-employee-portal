@@ -704,6 +704,32 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       })
     })
 
+    // === Slip Gaji - Admin (Task 12) - login masih SUPER_ADMIN aktif ===
+    await safeStep('Slip Gaji - Admin - List Kosong', '/payroll/payslips', async () => {
+      await gotoAndSettle(page, '/payroll/payslips?month=1&year=2020')
+      await page.getByText('Belum ada slip gaji untuk filter ini.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Slip Gaji - Admin - List Kosong', '/payroll/payslips')
+    })
+
+    await safeStep('Slip Gaji - Admin - List Terisi + Detail', '/payroll/payslips', async () => {
+      // TIDAK seed baris baru - data existing (Ahmad Bagus/Employee
+      // Testing RBAC/Dummy Testing Samarinda, campuran Draft+Published)
+      // sudah cukup dan stabil buat state ini, pola sama persis kenapa
+      // Riwayat Absensi/Cuti tertentu kadang reuse data existing kalau
+      // memang sudah reliable - hindari nambah seed/cleanup yang gak perlu.
+      await gotoAndSettle(page, '/payroll/payslips')
+      const table = page.locator('table')
+      await table.getByRole('button', { name: 'Lihat Detail' }).first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Slip Gaji - Admin - List Terisi', '/payroll/payslips')
+
+      await table.getByRole('button', { name: 'Lihat Detail' }).first().click()
+      const dialog = page.getByRole('dialog')
+      await dialog.waitFor({ state: 'visible', timeout: 5000 })
+      await dialog.getByText('Gaji Bersih (Netto)').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Slip Gaji - Admin - Detail Modal', '/payroll/payslips', '[role="dialog"]')
+      await page.keyboard.press('Escape')
+    })
+
     // === /audit-log (List + Detail Modal) ===
     await safeStep('Audit Log - List', '/audit-log', async () => {
       await gotoAndSettle(page, '/audit-log')
@@ -1035,6 +1061,96 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.request.delete(`${API_BASE}/leaves/${seedLeaveId}`, {
         headers: { Authorization: `Bearer ${superAdminToken}` },
       })
+    })
+
+    // === Slip Gaji - Karyawan (Task 12) - login masih EMPLOYEE aktif ===
+    await safeStep('Slip Gaji - Karyawan - State Kosong', '/payroll/payslips', async () => {
+      // TIDAK perlu filter khusus buat state kosong - QA Employee Test
+      // (id 27) memang belum pernah punya payslip sama sekali di data
+      // existing (dikonfirmasi investigasi Task 12), jadi state default
+      // SUDAH kosong tanpa perlu manipulasi apapun.
+      await gotoAndSettle(page, '/payroll/payslips')
+      await page.getByText('Belum ada slip gaji yang diterbitkan.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Slip Gaji - Karyawan - State Kosong', '/payroll/payslips')
+    })
+
+    await safeStep('Slip Gaji - Karyawan - State Terisi + Detail', '/payroll/payslips', async () => {
+      // Payslip::create() via API TIDAK kena guard forceDeleting/updating
+      // (itu cuma nyegat update/delete instance, bukan create) - seed
+      // dan cleanup POST/DELETE biasa aman, pola sama persis Leave/
+      // Attendance di atas. superAdminToken dari step "Bersihkan..."
+      // (section Employee Home).
+      const seedRes = await page.request.post(`${API_BASE}/payslips`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+        data: {
+          employee_id: EMPLOYEE_TEST_ID,
+          month: 8,
+          year: 2099,
+          items: [
+            { salary_component_id: 1, amount: 4000000 },
+          ],
+        },
+      })
+      const seedBody = await seedRes.json()
+      const seedPayslipId = seedBody.data.id
+      let isPublished = false
+
+      // try/finally WAJIB di sini (beda dari step Leave/Attendance yang
+      // gak butuh) - publish() bisa gagal kalau period_type REGULAR
+      // punya ApprovalWorkflow aktif (harus Submitted->Approved dulu,
+      // di luar kendali/scope test ini) - kalau throw di tengah TANPA
+      // finally, DELETE di bawah gak pernah kepanggil, payslip Draft
+      // yatim numpuk tiap run gagal. Ditemukan investigasi Task 12: DB
+      // sekarang MEMANG punya workflow REGULAR aktif dan approve()-nya
+      // sendiri lagi bug (audit_logs.description varchar(255) kepotong
+      // sama pesan notifikasi "tidak ada FINANCE aktif" yang lebih
+      // panjang dari itu) - keduanya di luar scope Task 12 (Payroll
+      // Period/Approval, bukan Payslip view-only), backend freeze,
+      // dilaporkan terpisah, TIDAK diperbaiki di sini.
+      try {
+
+        const publishRes = await page.request.post(`${API_BASE}/payslips/${seedPayslipId}/publish`, {
+          headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+        })
+        const publishBody = await publishRes.json()
+        isPublished = publishBody.success === true
+
+        if (!isPublished) {
+          throw new Error(`Publish payslip seed gagal (kemungkinan ApprovalWorkflow REGULAR aktif + approve() bug - di luar scope Task 12): ${publishBody.message}`)
+        }
+
+        await gotoAndSettle(page, '/payroll/payslips')
+        const table = page.locator('table')
+        await table.getByText('Agustus 2099').first().waitFor({ state: 'visible', timeout: 15000 })
+        await runAxe(page, 'Slip Gaji - Karyawan - State Terisi', '/payroll/payslips')
+
+        await table.getByRole('button', { name: 'Lihat Detail' }).first().click()
+        const dialog = page.getByRole('dialog')
+        await dialog.waitFor({ state: 'visible', timeout: 5000 })
+        await dialog.getByText('Gaji Bersih (Netto)').waitFor({ state: 'visible', timeout: 15000 })
+        await runAxe(page, 'Slip Gaji - Karyawan - Detail Modal', '/payroll/payslips', '[role="dialog"]')
+        await page.keyboard.press('Escape')
+
+      } finally {
+
+        // Cleanup - baris seed ini gak perlu nyangkut buat run berikutnya,
+        // GARANSI jalan walau block di atas throw (publish gagal dsb).
+        // Payslip::booted() blokir instance forceDelete() SELAMANYA
+        // (guard financial-record) - DELETE /payslips/{id} biasa (soft
+        // delete) TETAP diblokir kalau status Published (destroy() nolak
+        // 422), jadi unpublish dulu balik ke Draft - TAPI cuma kalau
+        // beneran berhasil Published (unpublish() sendiri nolak 422
+        // kalau status masih Draft, lihat isPublished guard).
+        if (isPublished) {
+          await page.request.post(`${API_BASE}/payslips/${seedPayslipId}/unpublish`, {
+            headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+            data: { unpublish_reason: 'a11y sweep cleanup' },
+          })
+        }
+        await page.request.delete(`${API_BASE}/payslips/${seedPayslipId}`, {
+          headers: { Authorization: `Bearer ${superAdminToken}` },
+        })
+      }
     })
 
     writeReports()

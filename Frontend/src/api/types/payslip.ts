@@ -10,6 +10,19 @@ import type { Employee } from './employee'
  * Field lengkap (bukan cuma yang dipakai Card Employee Home) - biar
  * type ini reusable buat halaman daftar slip gaji nanti (Task 12).
  */
+/** payslip_items - breakdown per-komponen, SNAPSHOT (component_code/name/type dibekukan saat item dibuat, gak ikut berubah kalau salary_components aslinya di-rename belakangan) - ambil field ini langsung, JANGAN join live ke salaryComponent buat nampilin nama/tipe. */
+export interface PayslipItem {
+  id: number
+  payslip_id: number
+  salary_component_id: number
+  component_code: string
+  component_name: string
+  component_type: 'earning' | 'deduction'
+  amount: string
+  sort_order: number
+  notes: string | null
+}
+
 export interface Payslip {
   id: number
   payroll_period_id: number | null
@@ -30,6 +43,7 @@ export interface Payslip {
   updated_at: string
   deleted_at: string | null
   employee?: Employee
+  items?: PayslipItem[]
 }
 
 export interface PayslipListResponse {
@@ -53,4 +67,10 @@ export interface PayslipQueryParams {
   search?: string
   per_page?: number
   page?: number
+}
+
+export interface PayslipDetailResponse {
+  success: true
+  message: string
+  data: Payslip
 }

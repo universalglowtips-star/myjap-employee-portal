@@ -23,6 +23,8 @@ import { AttendanceHistoryPage } from './features/attendance/pages/AttendanceHis
 import { AttendanceMonitoringPage } from './features/attendance/pages/AttendanceMonitoringPage'
 import { LeaveEmployeePage } from './features/leave/pages/LeaveEmployeePage'
 import { LeaveAdminPage } from './features/leave/pages/LeaveAdminPage'
+import { PayslipEmployeePage } from './features/payslip/pages/PayslipEmployeePage'
+import { PayslipAdminPage } from './features/payslip/pages/PayslipAdminPage'
 
 /**
  * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
@@ -77,6 +79,23 @@ function LeaveRoute() {
 }
 
 /**
+ * Percabangan "/payroll/payslips" (Task 12) - pola SAMA PERSIS
+ * AttendanceRoute/LeaveRoute di atas, TAPI beda satu hal penting:
+ * `payslip.view` ada di SEMUA role (termasuk FINANCE, yang TIDAK
+ * punya attendance.view/leave.view) - dikonfirmasi investigasi Task 12,
+ * bukan asumsi. Jadi percabangan dashboard.view ini murni soal UI mana
+ * yang dirender (riwayat sendiri vs list semua+filter), BUKAN soal
+ * siapa yang boleh akses sama sekali - PayslipAdminPage tetap dibungkus
+ * PermissionGate payslip.view sendiri (defense-in-depth, pola sama),
+ * walau di antara 5 role yang ada sekarang gak ada yang bakal kena
+ * block beneran di situ.
+ */
+function PayslipRoute() {
+  const canViewDashboard = usePermission('dashboard.view')
+  return canViewDashboard ? <PayslipAdminPage /> : <PayslipEmployeePage />
+}
+
+/**
  * Route '/login' final (Langkah 6). '/' (Task 7 - Dashboard nyata,
  * KPI cards + chart tren kehadiran, AppShell-nya dirender DI DALAM
  * DashboardPage sendiri, bukan di sini lagi - beda dari waktu masih
@@ -96,8 +115,12 @@ function LeaveRoute() {
  * Task 10 - monitoring semua karyawan buat role admin, URL sama), dan
  * '/leave' (Task 11 - form pengajuan+riwayat pribadi EMPLOYEE;
  * approve/reject semua karyawan buat role admin, URL sama, pola
- * percabangan persis '/attendance') sudah ada. Route lain masih belum
- * dibuat, nunggu giliran masing-masing.
+ * percabangan persis '/attendance'), dan '/payroll/payslips' (Task 12 -
+ * riwayat pribadi EMPLOYEE (Published-only); list semua+filter buat
+ * role admin/HRD/Finance, URL sama, pola percabangan persis
+ * '/attendance' - VIEW-ONLY, create/edit/publish/unpublish sengaja
+ * TIDAK diekspos walau backend-nya sudah lengkap, itu scope Task 13/15)
+ * sudah ada. Route lain masih belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -242,6 +265,14 @@ function App() {
         element={
           <ProtectedRoute>
             <LeaveRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/payslips"
+        element={
+          <ProtectedRoute>
+            <PayslipRoute />
           </ProtectedRoute>
         }
       />
