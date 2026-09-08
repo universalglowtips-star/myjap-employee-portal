@@ -35,8 +35,6 @@
   --color-accent-500: #E8A33D;
   --color-accent-600: #C7862A;
 
-  --color-status-draft: #6B7280;
-  --color-status-submitted: #2563EB;
   /* #2F855A asli gagal WCAG AA (4.2:1) buat teks di atas bg-neutral-50
      (#F7F6F3) - dipakai gak cuma di StatusBadge (background tint 24%
      alpha, kontras aman di sana) tapi juga sebagai teks polos
@@ -45,12 +43,30 @@
      gagal. Digelapin dikit (scale ~90%, hue sama persis) jadi 5.0:1,
      lolos AA dengan margin wajar, BUKAN ganti skema warna. */
   --color-status-approved: #2A7851;
-  --color-status-published: #0D9488;
+  /* draft/published/pending (Task 11, sesi investigasi StatusBadge.tsx)
+     TERNYATA gagal 4.5:1 juga sebagai teks polos di atas bg-neutral-50
+     (draft 4.47, published 3.46, pending 3.13) - ketauan pas
+     StatusBadge.tsx & AttendanceStatusBadge.tsx (Task 9.5b/10, SUDAH
+     SHIP) dipakai buat status Pending/Sick/Permission di dalam
+     Table.tsx (yang gak dibungkus card putih, duduk langsung di atas
+     bg-neutral-50 AppShell) - baru ketangkep sweep sekarang karena
+     baru sekarang ada state yang beneran render baris status itu.
+     Digelapin (hue dipertahankan, lightness diturunkan lewat HSL)
+     sampai ~4.6-4.7:1 vs bg-neutral-50, pola sama persis approved di
+     atas. cancelled BARU (status Cuti Task 11) reuse neutral-600
+     (#5C574C) - BUKAN warna baru, primitive yang udah ada, kontras
+     6.65:1 vs bg-neutral-50, jauh lebih aman dari neutral-400 (2.72,
+     gagal) yang sebelumnya jadi fallback diam-diam kalau status gak
+     dikenali statusColor(). */
+  --color-status-draft: #69707D;
+  --color-status-submitted: #2563EB;
+  --color-status-published: #0B7D72;
   --color-status-rejected: #C53030;
-  --color-status-pending: #DD6B20;
+  --color-status-pending: #B0551A;
+  --color-status-cancelled: #5C574C;
 
   --color-success: #2F855A;
-  --color-warning: #DD6B20;
+  --color-warning: #B0551A;
   --color-danger: #C53030;
 
   --color-neutral-0: #FFFFFF;

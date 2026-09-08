@@ -21,6 +21,8 @@ import { EmployeeHomePage } from './features/employee-home/pages/EmployeeHomePag
 import { NotificationListPage } from './features/notifications/pages/NotificationListPage'
 import { AttendanceHistoryPage } from './features/attendance/pages/AttendanceHistoryPage'
 import { AttendanceMonitoringPage } from './features/attendance/pages/AttendanceMonitoringPage'
+import { LeaveEmployeePage } from './features/leave/pages/LeaveEmployeePage'
+import { LeaveAdminPage } from './features/leave/pages/LeaveAdminPage'
 
 /**
  * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
@@ -58,6 +60,23 @@ function AttendanceRoute() {
 }
 
 /**
+ * Percabangan "/leave" (Task 11) - pola SAMA PERSIS AttendanceRoute di
+ * atas. EMPLOYEE (tanpa dashboard.view) lihat form pengajuan + kuota +
+ * riwayat cuti miliknya sendiri (LeaveEmployeePage); role dengan
+ * dashboard.view (DIRECTOR/MANAGER/FINANCE/HRD/SUPER_ADMIN) lihat
+ * daftar SEMUA pengajuan + approve/reject (LeaveAdminPage).
+ * LeaveAdminPage SENDIRI tetap dibungkus PermissionGate leave.view
+ * (defense-in-depth) - FINANCE punya dashboard.view TAPI TIDAK punya
+ * leave.view SAMA SEKALI (dikonfirmasi investigasi Task 11, beda dari
+ * attendance.view yang setidaknya listed), jadi tetap ketahan "akses
+ * ditolak" di dalam.
+ */
+function LeaveRoute() {
+  const canViewDashboard = usePermission('dashboard.view')
+  return canViewDashboard ? <LeaveAdminPage /> : <LeaveEmployeePage />
+}
+
+/**
  * Route '/login' final (Langkah 6). '/' (Task 7 - Dashboard nyata,
  * KPI cards + chart tren kehadiran, AppShell-nya dirender DI DALAM
  * DashboardPage sendiri, bukan di sini lagi - beda dari waktu masih
@@ -73,9 +92,12 @@ function AttendanceRoute() {
  * grup "People" di Sidebar) + '/employees/new' & '/employees/:id/edit'
  * (Fase 8c, Form Tambah/Edit - 1 komponen shared, FormData/multipart
  * karena ada upload foto), '/audit-log' (viewer read-only), '/notifications'
- * (Task 9), dan '/attendance' (Task 9.5b - riwayat pribadi EMPLOYEE;
- * Task 10 - monitoring semua karyawan buat role admin, URL sama) sudah
- * ada. Route lain masih belum dibuat, nunggu giliran masing-masing.
+ * (Task 9), '/attendance' (Task 9.5b - riwayat pribadi EMPLOYEE;
+ * Task 10 - monitoring semua karyawan buat role admin, URL sama), dan
+ * '/leave' (Task 11 - form pengajuan+riwayat pribadi EMPLOYEE;
+ * approve/reject semua karyawan buat role admin, URL sama, pola
+ * percabangan persis '/attendance') sudah ada. Route lain masih belum
+ * dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -212,6 +234,14 @@ function App() {
         element={
           <ProtectedRoute>
             <AttendanceRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leave"
+        element={
+          <ProtectedRoute>
+            <LeaveRoute />
           </ProtectedRoute>
         }
       />

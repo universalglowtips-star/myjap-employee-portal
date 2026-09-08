@@ -118,15 +118,16 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 1200s (bukan 900s lagi) - sweep terus nambah (Task 7 Dashboard +3,
-    // Task 9 Notifikasi +4, Task 10 Monitoring Absensi +5 state baru), run
+    // 1500s (bukan 1200s lagi) - sweep terus nambah (Task 7 Dashboard +3,
+    // Task 9 Notifikasi +4, Task 10 Monitoring Absensi +5, Task 11 Cuti +5
+    // state baru, 2 di antaranya seed+cleanup lewat page.request), run
     // terakhir kena 15.1 menit, lewatin limit lama karena beberapa step
     // lama (Wewenang Cabang dialog, Lokasi Kantor Tab Supervisor) kena
     // waitFor/waitForResponse timeout individual di tengah jalan (masing2
     // ke-catch oleh safeStep, bukan fatal) - akumulasi waktu itu yang bikin
     // overall test lewat limit. Semua state TETAP 0 violation waktu itu
     // terjadi - ini murni budget waktu test-nya, bukan bug aksesibilitas.
-    test.setTimeout(1_200_000)
+    test.setTimeout(1_500_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -656,6 +657,53 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       })
     })
 
+    // === Cuti - Admin (Task 11) - login masih SUPER_ADMIN aktif ===
+    await safeStep('Cuti - Admin - List Kosong', '/leave', async () => {
+      await gotoAndSettle(page, '/leave?start_date=2099-01-01&end_date=2099-01-02')
+      await page.getByText('Belum ada pengajuan cuti untuk filter ini.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Cuti - Admin - List Kosong', '/leave')
+    })
+
+    await safeStep('Cuti - Admin - List Terisi + Dialog Tolak', '/leave', async () => {
+      const token = await page.evaluate(() => {
+        const raw = localStorage.getItem('myjap-auth')
+        return raw ? (JSON.parse(raw)?.state?.token ?? null) : null
+      })
+
+      // Seed 1 baris Pending sendiri (BUKAN pakai data existing yang
+      // kebetulan Pending) - pola sama persis state lain di sweep ini,
+      // supaya step ini gak coupled ke state DB yang bisa berubah kalau
+      // baris existing itu diproses orang lain.
+      const seedRes = await page.request.post(`${API_BASE}/leaves`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        data: {
+          employee_id: EMPLOYEE_TEST_ID,
+          leave_type: 'Sick Leave',
+          start_date: '2099-06-01',
+          end_date: '2099-06-01',
+          reason: 'a11y sweep - seed Cuti Admin',
+        },
+      })
+      const seedBody = await seedRes.json()
+      const seedLeaveId = seedBody.data.id
+
+      await gotoAndSettle(page, '/leave')
+      const table = page.locator('table')
+      await table.getByText('QA Employee Test').first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Cuti - Admin - List Terisi', '/leave')
+
+      const seedRow = page.locator('tr', { has: page.getByText('1 Jun 2099') })
+      await seedRow.getByRole('button', { name: 'Tolak' }).click()
+      await page.getByRole('alertdialog').waitFor({ state: 'visible', timeout: 5000 })
+      await runAxe(page, 'Cuti - Admin - Dialog Tolak (alasan wajib)', '/leave')
+      await page.keyboard.press('Escape')
+
+      // Cleanup - baris seed ini gak perlu nyangkut buat run berikutnya.
+      await page.request.delete(`${API_BASE}/leaves/${seedLeaveId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    })
+
     // === /audit-log (List + Detail Modal) ===
     await safeStep('Audit Log - List', '/audit-log', async () => {
       await gotoAndSettle(page, '/audit-log')
@@ -952,6 +1000,41 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
       await runAxe(page, 'Riwayat Absensi - Date Range Picker (terisi rentang custom)', '/attendance')
+    })
+
+    // === Cuti - Karyawan (Task 11) - login masih EMPLOYEE aktif dari section Employee Home/Riwayat Absensi di atas ===
+    await safeStep('Cuti - Karyawan - Form Kosong + Kuota', '/leave', async () => {
+      await gotoAndSettle(page, '/leave')
+      await page.getByLabel('Jenis Cuti').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByText('Sisa Kuota Cuti Tahunan').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Cuti - Karyawan - Form Kosong + Kuota', '/leave')
+    })
+
+    await safeStep('Cuti - Karyawan - Riwayat Terisi', '/leave', async () => {
+      // superAdminToken yang di-stash step "Bersihkan..." (section
+      // Employee Home) - pola sama persis step Riwayat Absensi State
+      // Terisi di atas.
+      const seedRes = await page.request.post(`${API_BASE}/leaves`, {
+        headers: { Authorization: `Bearer ${superAdminToken}`, Accept: 'application/json' },
+        data: {
+          employee_id: EMPLOYEE_TEST_ID,
+          leave_type: 'Sick Leave',
+          start_date: '2099-07-01',
+          end_date: '2099-07-01',
+          reason: 'a11y sweep - seed Cuti Karyawan',
+        },
+      })
+      const seedBody = await seedRes.json()
+      const seedLeaveId = seedBody.data.id
+
+      await gotoAndSettle(page, '/leave')
+      await page.locator('table').getByText('Sick Leave').first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Cuti - Karyawan - Riwayat Terisi', '/leave')
+
+      // Cleanup - baris seed ini gak perlu nyangkut buat run berikutnya.
+      await page.request.delete(`${API_BASE}/leaves/${seedLeaveId}`, {
+        headers: { Authorization: `Bearer ${superAdminToken}` },
+      })
     })
 
     writeReports()
