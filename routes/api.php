@@ -200,6 +200,12 @@ $apiRoutes = function () {
     Route::apiResource('attendances', AttendanceController::class)
         ->only(['destroy'])->middleware('permission:attendance.delete');
 
+    // Route literal WAJIB didaftar SEBELUM apiResource - pola sama persis
+    // 'attendances/allowed-offices' di atas - kalau tidak, 'quota' bakal
+    // ketangkep wildcard GET leaves/{leave} (show).
+    Route::get('leaves/quota', [LeaveController::class, 'quota'])
+        ->middleware('permission:leave.view');
+
     Route::apiResource('leaves', LeaveController::class)
         ->only(['index', 'show'])->middleware('permission:leave.view');
 

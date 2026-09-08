@@ -86,6 +86,50 @@ public function index(Request $request): JsonResponse
 }
 
 /**
+ * Sisa kuota cuti tahunan (Annual Leave SAJA - jenis lain tidak
+ * dipotong kuota). Keputusan bisnis final: 12 hari/tahun flat semua
+ * karyawan, TIDAK ada prorate karyawan baru, TIDAK ada carry-over
+ * (dihitung ulang per tahun kalender). Sengaja TIDAK ada migration
+ * baru - kuota bukan angka yang disimpan, tapi dihitung on-the-fly
+ * dari SUM(total_days) leave Annual Leave yang statusnya Approved di
+ * tahun berjalan, jadi otomatis selalu konsisten sama data leaves
+ * yang ada, gak ada state terpisah yang bisa gak sinkron.
+ *
+ * Tanpa `employee_id` -> default ke user yang login (dipakai widget
+ * kuota di form pengajuan karyawan sendiri, gak perlu tau ID sendiri).
+ * ensureOwnDataOrAdmin tetap menolak EMPLOYEE yang coba lihat kuota
+ * karyawan lain.
+ */
+public function quota(Request $request): JsonResponse
+{
+    $employeeId = $request->filled('employee_id')
+        ? (int) $request->input('employee_id')
+        : $request->user()->id;
+
+    $this->ensureOwnDataOrAdmin($request, $employeeId);
+
+    $year = now()->year;
+
+    $used = (int) Leave::where('employee_id', $employeeId)
+        ->where('leave_type', 'Annual Leave')
+        ->where('status', 'Approved')
+        ->whereYear('start_date', $year)
+        ->sum('total_days');
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Sisa kuota cuti tahunan berhasil diambil.',
+        'data' => [
+            'employee_id' => $employeeId,
+            'year' => $year,
+            'quota' => 12,
+            'used' => $used,
+            'remaining' => max(0, 12 - $used),
+        ],
+    ]);
+}
+
+/**
  * Employee_id WAJIB dari user yang login kalau role-nya EMPLOYEE -
  * gak bisa ngajuin cuti atas nama orang lain. Role administratif
  * (HRD/Manager/dst) tetap bebas isi employee_id manapun.
@@ -98,6 +142,29 @@ public function store(StoreLeaveRequest $request): JsonResponse
 
     $totalDays = Carbon::parse($validated['start_date'])
         ->diffInDays(Carbon::parse($validated['end_date'])) + 1;
+
+    // Kuota Annual Leave - tahun berjalan diambil dari start_date
+    // pengajuan (bukan tanggal submit) - konsisten sama basis
+    // perhitungan quota() di atas (whereYear('start_date', ...)).
+    if ($validated['leave_type'] === 'Annual Leave') {
+
+        $year = Carbon::parse($validated['start_date'])->year;
+
+        $used = (int) Leave::where('employee_id', $validated['employee_id'])
+            ->where('leave_type', 'Annual Leave')
+            ->where('status', 'Approved')
+            ->whereYear('start_date', $year)
+            ->sum('total_days');
+
+        $remaining = max(0, 12 - $used);
+
+        if ($totalDays > $remaining) {
+            return response()->json([
+                'success' => false,
+                'message' => "Sisa kuota cuti tahunan kamu tinggal {$remaining} hari di tahun {$year}, tidak cukup untuk pengajuan {$totalDays} hari."
+            ], 422);
+        }
+    }
 
     // Upload lampiran (kalau ada)
     $attachment = null;
