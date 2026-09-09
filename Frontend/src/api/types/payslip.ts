@@ -64,6 +64,8 @@ export interface PayslipQueryParams {
   year?: number
   status?: string
   department_id?: number
+  /** Filter langsung ke kolom office_location_id milik payslips sendiri (snapshot cabang saat payslip dibuat) - ditambahkan sesi follow-up terpisah dari Task 12 utama, setelah disetujui eksplisit. */
+  office_location_id?: number
   search?: string
   per_page?: number
   page?: number

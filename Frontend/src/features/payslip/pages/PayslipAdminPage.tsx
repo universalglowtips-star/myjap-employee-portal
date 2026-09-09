@@ -13,6 +13,7 @@ import { formatCurrency } from '../../../lib/formatCurrency'
 import { formatMonthYear, MONTH_NAMES } from '../lib/payslipFormat'
 import { usePayslips } from '../hooks/usePayslips'
 import { useActiveEmployeesForFilter } from '../../attendance/hooks/useActiveEmployeesForFilter'
+import { useOfficeLocationsForFilter } from '../../attendance/hooks/useOfficeLocationsForFilter'
 import { useDepartments } from '../../master-data/hooks/useDepartments'
 import { PayslipDetailModal } from '../components/PayslipDetailModal'
 import type { Payslip } from '../../../api/types/payslip'
@@ -32,11 +33,13 @@ const STATUS_OPTIONS = [
  * di App.tsx (PayslipRoute), pola sama persis
  * AttendanceMonitoringPage/LeaveAdminPage (Task 10/11).
  *
- * Filter SENGAJA TIDAK termasuk "Cabang" (office_location_id) - walau
- * kolom itu ADA di tabel payslips, GET /payslips (PayslipController::index())
- * TIDAK mendukung filter itu sama sekali (dikonfirmasi baca kode
- * controller, bukan asumsi dari nama kolom) - backend freeze,
- * menambah param baru di luar scope Task 12 tanpa persetujuan.
+ * Filter Cabang (office_location_id) ditambahkan sesi follow-up
+ * TERPISAH dari Task 12 utama (commit 3fd10f0) - awalnya sengaja
+ * dilewatin karena GET /payslips belum dukung param itu, sekarang
+ * backend-nya sudah ditambah (additive, disetujui eksplisit terpisah
+ * dari backend freeze Task 12). Reuse useOfficeLocationsForFilter.ts
+ * (Task 10, attendance feature) apa adanya - auto-update dari data
+ * Lokasi Kantor asli, bukan hardcode.
  *
  * TIDAK ADA tombol create/generate/edit/delete/publish/unpublish di
  * halaman ini sama sekali - PayslipController.php punya semua method
@@ -54,10 +57,12 @@ export function PayslipAdminPage() {
   const year = searchParams.get('year') ?? ''
   const status = searchParams.get('status') ?? ''
   const search = searchParams.get('search') ?? ''
+  const officeLocationId = searchParams.get('office_location_id') ?? ''
 
   const { data, isLoading, isError } = usePayslips({
     employee_id: employeeId ? Number(employeeId) : undefined,
     department_id: departmentId ? Number(departmentId) : undefined,
+    office_location_id: officeLocationId ? Number(officeLocationId) : undefined,
     month: month ? Number(month) : undefined,
     year: year ? Number(year) : undefined,
     status: status || undefined,
@@ -67,6 +72,7 @@ export function PayslipAdminPage() {
   })
   const { data: employees, isError: isEmployeesError } = useActiveEmployeesForFilter()
   const { data: departments, isError: isDepartmentsError } = useDepartments()
+  const { data: officeLocations, isError: isOfficeLocationsError } = useOfficeLocationsForFilter()
 
   const rows = data?.data ?? []
 
@@ -87,6 +93,10 @@ export function PayslipAdminPage() {
   const departmentOptions = [
     { value: '', label: 'Semua Departemen' },
     ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.department_name })),
+  ]
+  const officeLocationOptions = [
+    { value: '', label: 'Semua Cabang' },
+    ...(officeLocations ?? []).map((o) => ({ value: String(o.id), label: o.office_name })),
   ]
 
   return (
@@ -165,6 +175,18 @@ export function PayslipAdminPage() {
                 value={year}
                 onChange={(e) => updateFilter('year', e.target.value)}
               />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="filter-office-location">Cabang</Label>
+              <Select
+                id="filter-office-location"
+                options={officeLocationOptions}
+                disabled={isOfficeLocationsError}
+                value={officeLocationId}
+                onChange={(e) => updateFilter('office_location_id', e.target.value)}
+              />
+              {isOfficeLocationsError && <p className="font-body text-xs text-status-rejected">Gagal memuat daftar cabang.</p>}
             </div>
           </div>
         </div>

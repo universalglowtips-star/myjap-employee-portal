@@ -162,12 +162,13 @@ use ScopesOwnData;
      * Display all payslips.
      *
      * Query params yang didukung:
-     * - employee_id   : filter berdasarkan karyawan
-     * - department_id : filter berdasarkan departemen karyawan
-     * - month, year   : filter periode
-     * - status        : Draft | Published
-     * - search        : cari nama karyawan
-     * - per_page      : jumlah data per halaman (default 10)
+     * - employee_id        : filter berdasarkan karyawan
+     * - department_id      : filter berdasarkan departemen karyawan
+     * - office_location_id : filter berdasarkan cabang (kolom milik payslips sendiri)
+     * - month, year        : filter periode
+     * - status             : Draft | Published
+     * - search             : cari nama karyawan
+     * - per_page           : jumlah data per halaman (default 10)
      */
     public function index(Request $request): JsonResponse
     {
@@ -191,6 +192,14 @@ use ScopesOwnData;
             $q->whereHas('employee', function ($emp) use ($request) {
                 $emp->where('department_id', $request->department_id);
             });
+        })
+        ->when($request->filled('office_location_id'), function ($q) use ($request) {
+            // Filter langsung ke kolom office_location_id milik payslips
+            // sendiri (SNAPSHOT cabang karyawan saat payslip dibuat, bukan
+            // cabang karyawan SEKARANG) - beda dari department_id di atas
+            // yang harus whereHas ke employee karena payslips gak punya
+            // kolom itu duluan.
+            $q->where('office_location_id', $request->office_location_id);
         })
         ->when($request->filled('search'), function ($q) use ($request) {
             $search = $request->search;
