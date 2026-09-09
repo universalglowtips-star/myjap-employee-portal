@@ -25,6 +25,8 @@ import { LeaveEmployeePage } from './features/leave/pages/LeaveEmployeePage'
 import { LeaveAdminPage } from './features/leave/pages/LeaveAdminPage'
 import { PayslipEmployeePage } from './features/payslip/pages/PayslipEmployeePage'
 import { PayslipAdminPage } from './features/payslip/pages/PayslipAdminPage'
+import { PayrollPeriodListPage } from './features/payroll-period/pages/PayrollPeriodListPage'
+import { PayrollPeriodDetailPage } from './features/payroll-period/pages/PayrollPeriodDetailPage'
 
 /**
  * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
@@ -119,7 +121,15 @@ function PayslipRoute() {
  * riwayat pribadi EMPLOYEE (Published-only); list semua+filter buat
  * role admin/HRD/Finance, URL sama, pola percabangan persis
  * '/attendance' - VIEW-ONLY, create/edit/publish/unpublish sengaja
- * TIDAK diekspos walau backend-nya sudah lengkap, itu scope Task 13/15)
+ * TIDAK diekspos walau backend-nya sudah lengkap, itu scope Task 13/15),
+ * dan '/payroll/periods' + '/payroll/periods/:id' (Task 13 - List+Detail,
+ * TANPA percabangan Route seperti '/attendance'/'/leave'/'/payroll/payslips'
+ * karena EMPLOYEE gak punya permission apapun di modul ini sama sekali -
+ * cuma satu halaman per route, gate-nya `dashboard.view` PermissionGate di
+ * dalam. Submit/Approve/Reject diekspos (masing-masing permission sendiri:
+ * payroll-period.submit/approve/reject), TIDAK ADA tombol Publish/Create/
+ * Edit/Delete - PayrollPeriodController.php sengaja gak punya route itu
+ * (dikonfirmasi investigasi), Publish murni Task 15 punya)
  * sudah ada. Route lain masih belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
@@ -273,6 +283,22 @@ function App() {
         element={
           <ProtectedRoute>
             <PayslipRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/periods"
+        element={
+          <ProtectedRoute>
+            <PayrollPeriodListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/periods/:id"
+        element={
+          <ProtectedRoute>
+            <PayrollPeriodDetailPage />
           </ProtectedRoute>
         }
       />

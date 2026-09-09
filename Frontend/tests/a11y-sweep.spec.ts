@@ -148,7 +148,15 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.locator('#email').fill(QA_EMAIL)
       await page.locator('#password').fill(QA_PASSWORD)
       await page.getByRole('button', { name: 'Masuk' }).click()
-      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 })
+      // 60000 (bukan 15000 lagi) - 3x gagal berturut-turut PERSIS di step
+      // ini pas mesin lagi tekanan RAM tinggi (Discord+beberapa window
+      // VSCode+Excel+sesi Claude lain jalan bareng, free RAM sempat cuma
+      // ~900MB dari 8GB total) - navigasi post-login beneran lambat karena
+      // starvation, BUKAN bug di LoginPage/aplikasi (dikonfirmasi curl
+      // langsung ke /api/login selalu 200 OK cepat di kondisi yang sama).
+      // 15s ketat buat kondisi ini, 60s ngasih ruang tanpa nutupin
+      // kegagalan asli (network/aplikasi beneran down tetap bakal timeout).
+      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 })
     })
 
     // === / (Dashboard, Task 7) - state awal load (KPI cards + chart default 7 hari) ===
@@ -704,6 +712,58 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       })
     })
 
+    // === Periode Payroll - Admin (Task 13) - login masih SUPER_ADMIN aktif ===
+    //
+    // Beda dari Leave/Attendance/Payslip di atas: PayrollPeriodController.php
+    // SENGAJA gak punya route DELETE (dikonfirmasi investigasi Task 13,
+    // periode cuma soft-deletable via kode/tinker langsung, gak ada endpoint
+    // HTTP-nya sama sekali) - jadi seed+mutate+cleanup lewat page.request
+    // TIDAK BISA dipakai di sini kayak state lain (bakal numpuk data uji
+    // "Approved" yang keliatan asli permanen di List sungguhan, gak pernah
+    // ke-cleanup). State di bawah ini SENGAJA cuma yang READ-ONLY/AMAN
+    // (baca data existing asli, atau buka dialog lalu Escape TANPA confirm -
+    // ConfirmDialog gak pernah mutate apapun sebelum tombol Confirm diklik).
+    // Alur mutasi penuh (Submit->Approve level 1/2/3->Approved, + Reject)
+    // divalidasi terpisah lewat curl manual (dicatat di laporan investigasi)
+    // dan screenshot visual-review satu kali pakai (seed dibersihkan manual
+    // via tinker sesudahnya) - BUKAN bagian permanent sweep ini.
+    await safeStep('Periode Payroll - Admin - List Kosong', '/payroll/periods', async () => {
+      await gotoAndSettle(page, '/payroll/periods?year=2015')
+      await page.getByText('Belum ada periode payroll untuk filter ini.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Periode Payroll - Admin - List Kosong', '/payroll/periods')
+    })
+
+    await safeStep('Periode Payroll - Admin - List Terisi + Detail + Dialog Submit', '/payroll/periods', async () => {
+      // TIDAK seed baris baru - data existing (4 Draft, 2 Published) sudah
+      // cukup dan stabil, pola sama persis Slip Gaji Admin List Terisi.
+      await gotoAndSettle(page, '/payroll/periods')
+      const table = page.locator('table')
+      // BUKAN 'tbody tr' polos - skeleton loading Table.tsx JUGA render
+      // <tr> (animate-pulse), locator itu bisa resolve prematur ke
+      // skeleton bukan data asli (ketemu nyata di visual-review script
+      // Task 13 - skeleton yang ke-capture, bukan tabel terisi). Nunggu
+      // teks kode periode asli (pola "REGULAR-") baru aman.
+      await table.getByText(/REGULAR-/).first().waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Periode Payroll - Admin - List Terisi', '/payroll/periods')
+
+      // Baris Draft (Submit button-nya cuma muncul buat status Draft) -
+      // pola locator sama persis Cuti Admin (tr yang punya teks tertentu).
+      const draftRow = table.locator('tbody tr', { has: page.getByText('Draft', { exact: true }) }).first()
+      await draftRow.locator('button').first().click()
+      await page.getByText('Alur Approval').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Periode Payroll - Admin - Detail (Draft)', '/payroll/periods/:id')
+
+      const submitButton = page.getByRole('button', { name: 'Submit', exact: true })
+      await submitButton.waitFor({ state: 'visible', timeout: 5000 })
+      await submitButton.click()
+      await page.getByRole('alertdialog').waitFor({ state: 'visible', timeout: 5000 })
+      await runAxe(page, 'Periode Payroll - Admin - Dialog Konfirmasi Submit', '/payroll/periods/:id')
+      // Escape (BATAL, bukan konfirmasi) - ConfirmDialog gak mutate apapun
+      // sebelum tombol "Ya, Submit" diklik, jadi periode existing ini TETAP
+      // Draft sesudah step ini, aman buat run berikutnya tanpa cleanup.
+      await page.keyboard.press('Escape')
+    })
+
     // === Slip Gaji - Admin (Task 12) - login masih SUPER_ADMIN aktif ===
     await safeStep('Slip Gaji - Admin - List Kosong', '/payroll/payslips', async () => {
       await gotoAndSettle(page, '/payroll/payslips?month=1&year=2020')
@@ -791,7 +851,8 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.locator('#email').fill(EMPLOYEE_EMAIL)
       await page.locator('#password').fill(EMPLOYEE_PASSWORD)
       await page.getByRole('button', { name: 'Masuk' }).click()
-      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 })
+      // 60000 - sama persis alasannya kayak login SUPER_ADMIN di atas.
+      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 })
       await page.getByRole('main').getByText('Absensi Hari Ini').waitFor({ state: 'visible', timeout: 15000 })
       await page.getByRole('button', { name: 'Absen Masuk' }).waitFor({ state: 'visible', timeout: 10000 })
       await runAxe(page, 'Employee Home - State Awal', '/')
