@@ -59,10 +59,16 @@ export function ApprovalTimeline({ period, approvalHistoryByCycle }: ApprovalTim
                     (dikonfirmasi axe langsung, dihitung manual: #0066FF/#E6F0FF). primary-700 (#0052CC) di
                     kombinasi sama = 5.94:1, lolos. Pola sama persis fix SidebarNavItem/EmployeeListPage
                     sebelumnya untuk teks di atas latar non-putih. */}
-                {isCurrent && <span className="font-body text-xs font-medium text-primary-700">Sedang menunggu approval</span>}
-                {step.restrict_to_office_location && (
-                  <span className="font-body text-xs text-neutral-500">Dibatasi per cabang</span>
-                )}
+                {isCurrent ? <span className="font-body text-xs font-medium text-primary-700">Sedang menunggu approval</span> : null}
+                {/* Ternary + null (BUKAN `step.restrict_to_office_location && (...)`) - field ini balik
+                    sebagai NUMBER (0/1) dari backend, bukan boolean asli (dikonfirmasi live curl, sama
+                    persis kelas bug office_location/approval_workflow di atas - lihat
+                    feedback_verify_enums_live). `0 && <span>` di React APA ADANYA me-render literal teks
+                    "0" (0 falsy tapi tetap valid ReactNode, beda dari false/null/undefined) - ini
+                    penyebab persis "0" nongol di kartu Level 2/3 (yang restrict_to_office_location-nya
+                    memang 0/false, cuma Level 1/Manager yang 1/true). Ternary eksplisit ke null aman
+                    terlepas number atau boolean asli. */}
+                {step.restrict_to_office_location ? <span className="font-body text-xs text-neutral-500">Dibatasi per cabang</span> : null}
               </div>
             )
           })}

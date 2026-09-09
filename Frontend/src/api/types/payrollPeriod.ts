@@ -28,7 +28,8 @@ export interface PayrollApproval {
   submission_cycle: number
   level: number
   approver_role_id: number
-  restrict_to_office_location: boolean
+  /** Balik sebagai NUMBER (0/1) dari backend, BUKAN boolean asli (dikonfirmasi live curl - kolom DB `boolean` tapi model gak nge-cast, json_encode PHP int apa adanya). Truthy/falsy check (ternary) tetap aman, TAPI JANGAN dipakai lewat pola `value && <JSX>` - React me-render literal "0" (falsy tapi tetap valid ReactNode), beda dari false/null/undefined. Sudah kejadian nyata di ApprovalTimeline.tsx (Task 13 koreksi). */
+  restrict_to_office_location: boolean | 0 | 1
   status: 'Pending' | 'Approved' | 'Rejected'
   acted_by: number | null
   acted_at: string | null
@@ -43,7 +44,8 @@ export interface ApprovalWorkflowStep {
   approval_workflow_id: number
   level: number
   approver_role_id: number
-  restrict_to_office_location: boolean
+  /** Balik sebagai NUMBER (0/1) dari backend, BUKAN boolean asli (dikonfirmasi live curl - kolom DB `boolean` tapi model gak nge-cast, json_encode PHP int apa adanya). Truthy/falsy check (ternary) tetap aman, TAPI JANGAN dipakai lewat pola `value && <JSX>` - React me-render literal "0" (falsy tapi tetap valid ReactNode), beda dari false/null/undefined. Sudah kejadian nyata di ApprovalTimeline.tsx (Task 13 koreksi). */
+  restrict_to_office_location: boolean | 0 | 1
   approver_role?: Role
 }
 
