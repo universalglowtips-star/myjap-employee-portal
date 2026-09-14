@@ -2,6 +2,9 @@ import type { Employee } from './employee'
 import type { OfficeLocation } from './officeLocation'
 import type { Role } from './role'
 import type { Payslip } from './payslip'
+import type { ApprovalWorkflow, ApprovalWorkflowStep } from './approvalWorkflow'
+
+export type { ApprovalWorkflow, ApprovalWorkflowStep }
 
 /**
  * Verifikasi: database/migrations/2026_08_01_090000_create_payroll_periods_table.php
@@ -38,24 +41,13 @@ export interface PayrollApproval {
   actor?: Employee | null
 }
 
-/** approval_workflow_steps - konfigurasi level, READ-ONLY dari sisi Task 13 (create/edit/delete step itu Task 14, approval-workflow.* permission, TIDAK disentuh di sini sama sekali). */
-export interface ApprovalWorkflowStep {
-  id: number
-  approval_workflow_id: number
-  level: number
-  approver_role_id: number
-  /** Balik sebagai NUMBER (0/1) dari backend, BUKAN boolean asli (dikonfirmasi live curl - kolom DB `boolean` tapi model gak nge-cast, json_encode PHP int apa adanya). Truthy/falsy check (ternary) tetap aman, TAPI JANGAN dipakai lewat pola `value && <JSX>` - React me-render literal "0" (falsy tapi tetap valid ReactNode), beda dari false/null/undefined. Sudah kejadian nyata di ApprovalTimeline.tsx (Task 13 koreksi). */
-  restrict_to_office_location: boolean | 0 | 1
-  approver_role?: Role
-}
-
-export interface ApprovalWorkflow {
-  id: number
-  name: string
-  applies_to_period_type: string
-  is_active: boolean
-  steps?: ApprovalWorkflowStep[]
-}
+// ApprovalWorkflow/ApprovalWorkflowStep (konfigurasi alur approval) sekarang
+// hidup di api/types/approvalWorkflow.ts (Task 14, full CRUD) - di-impor
+// ulang di atas & di-reexport supaya file ini gak perlu diubah untuk
+// caller yang sudah ada (ApprovalTimeline.tsx cuma konsumsi struktur ini
+// via nested property PayrollPeriod, bukan named import langsung -
+// dikonfirmasi grep, jadi reexport ini murni buat kompatibilitas kalau
+// ada import langsung di masa depan).
 
 export interface PayrollPeriod {
   id: number

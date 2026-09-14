@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T15:08:41.252Z",
+  "generatedAt": "2026-09-14T05:42:21.025Z",
   "totalViolations": 15,
   "pages": [
     {
@@ -297,6 +297,48 @@
       "violations": []
     },
     {
+      "label": "Alur Approval - Admin - List Kosong",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Alur Approval - Admin - List Terisi",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Alur Approval - Admin - Dialog Tambah (kosong)",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Alur Approval - Admin - Dialog Tambah (terisi)",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Alur Approval - Admin - Dialog Edit",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Alur Approval - Admin - Validasi Error",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Alur Approval - Admin - Dialog Konfirmasi Hapus",
+      "path": "/payroll/approval-workflow",
+      "status": "scanned",
+      "violations": []
+    },
+    {
       "label": "Audit Log - List",
       "path": "/audit-log",
       "status": "scanned",
@@ -384,8 +426,8 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Ditolak</span>",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
           "fgColor": "#c53030",
           "bgColor": "#f2e2df",
           "contrastRatio": 4.35,
@@ -397,11 +439,11 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diajukan</span>",
-          "fgColor": "#2563eb",
-          "bgColor": "#e2e7f2",
-          "contrastRatio": 4.17,
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
+          "fgColor": "#2a7851",
+          "bgColor": "#e3e9e3",
+          "contrastRatio": 4.36,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -410,11 +452,24 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
           "fgColor": "#2a7851",
           "bgColor": "#e3e9e3",
           "contrastRatio": 4.36,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "normal"
+        },
+        {
+          "ruleId": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
+          "fgColor": "#c53030",
+          "bgColor": "#f2e2df",
+          "contrastRatio": 4.35,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -436,11 +491,11 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Disetujui</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
+          "fgColor": "#c53030",
+          "bgColor": "#f2e2df",
+          "contrastRatio": 4.35,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -450,7 +505,7 @@
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
           "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Disetujui</span>",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
           "fgColor": "#2a7851",
           "bgColor": "#e3e9e3",
           "contrastRatio": 4.36,
@@ -462,11 +517,11 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Disetujui</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
+          "fgColor": "#c53030",
+          "bgColor": "#f2e2df",
+          "contrastRatio": 4.35,
           "fontSize": "9.0pt (12px)",
           "fontWeight": "normal"
         },
@@ -475,20 +530,7 @@
           "impact": "serious",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
           "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diajukan</span>",
-          "fgColor": "#2563eb",
-          "bgColor": "#e2e7f2",
-          "contrastRatio": 4.17,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
           "fgColor": "#2a7851",
           "bgColor": "#e3e9e3",
@@ -507,8 +549,7 @@
     {
       "label": "Employee Home - State Awal",
       "path": "/",
-      "status": "error",
-      "note": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Absen Masuk' }) to be visible\u001b[22m\n",
+      "status": "scanned",
       "violations": []
     },
     {
@@ -587,7 +628,7 @@
       "label": "Slip Gaji - Karyawan - State Terisi + Detail",
       "path": "/payroll/payslips",
       "status": "error",
-      "note": "Publish payslip seed gagal (kemungkinan ApprovalWorkflow REGULAR aktif + approve() bug - di luar scope Task 12): Periode payroll ini masih 'Draft' - harus melewati seluruh proses approval (Submitted -> Approved) dulu sebelum bisa dipublish.",
+      "note": "Cannot read properties of undefined (reading 'id')",
       "violations": []
     }
   ],
@@ -601,7 +642,7 @@
       "fgColor": "#2a7851",
       "bgColor": "#e3e9e3",
       "contrastRatio": 4.36,
-      "occurrenceCount": 9,
+      "occurrenceCount": 8,
       "occurrences": [
         {
           "label": "Audit Log - List",
@@ -624,7 +665,13 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
+        },
+        {
+          "label": "Audit Log - List",
+          "path": "/audit-log",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         },
         {
@@ -636,25 +683,13 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Disetujui</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
           "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Disetujui</span>"
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Disetujui</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
           "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
         }
       ]
@@ -668,7 +703,7 @@
       "fgColor": "#c53030",
       "bgColor": "#f2e2df",
       "contrastRatio": 4.35,
-      "occurrenceCount": 4,
+      "occurrenceCount": 7,
       "occurrences": [
         {
           "label": "Audit Log - List",
@@ -691,33 +726,26 @@
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Ditolak</span>"
-        }
-      ]
-    },
-    {
-      "signature": "color-contrast|#2563eb|#e2e7f2",
-      "ruleId": "color-contrast",
-      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-      "fgColor": "#2563eb",
-      "bgColor": "#e2e7f2",
-      "contrastRatio": 4.17,
-      "occurrenceCount": 2,
-      "occurrences": [
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diajukan</span>"
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
         },
         {
           "label": "Audit Log - List",
           "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-submitted\\/10.text-status-submitted.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-submitted/10 text-status-submitted\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Diajukan</span>"
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
+        },
+        {
+          "label": "Audit Log - List",
+          "path": "/audit-log",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
+        },
+        {
+          "label": "Audit Log - List",
+          "path": "/audit-log",
+          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
+          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
         }
       ]
     }

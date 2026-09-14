@@ -1,6 +1,6 @@
 # Laporan A11y Sweep - MyJAP Employee Portal
 
-Dibuat: 2026-09-09T15:08:41.254Z
+Dibuat: 2026-09-14T05:42:21.028Z
 
 Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`)
 
@@ -57,12 +57,16 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Slip Gaji - Admin - List Kosong | `/payroll/payslips` | Discan | 0 |
 | Slip Gaji - Admin - List Terisi | `/payroll/payslips` | Discan | 0 |
 | Slip Gaji - Admin - Detail Modal | `/payroll/payslips` | Discan | 0 |
+| Alur Approval - Admin - List Kosong | `/payroll/approval-workflow` | Discan | 0 |
+| Alur Approval - Admin - List Terisi | `/payroll/approval-workflow` | Discan | 0 |
+| Alur Approval - Admin - Dialog Tambah (kosong) | `/payroll/approval-workflow` | Discan | 0 |
+| Alur Approval - Admin - Dialog Tambah (terisi) | `/payroll/approval-workflow` | Discan | 0 |
+| Alur Approval - Admin - Dialog Edit | `/payroll/approval-workflow` | Discan | 0 |
+| Alur Approval - Admin - Validasi Error | `/payroll/approval-workflow` | Discan | 0 |
+| Alur Approval - Admin - Dialog Konfirmasi Hapus | `/payroll/approval-workflow` | Discan | 0 |
 | Audit Log - List | `/audit-log` | Discan | 15 |
 | Audit Log - Detail Modal | `/audit-log` | Discan | 0 |
-| Employee Home - State Awal | `/` | ERROR (locator.waitFor: Timeout 10000ms exceeded.
-Call log:
-[2m  - waiting for getByRole('button', { name: 'Absen Masuk' }) to be visible[22m
-) | 0 |
+| Employee Home - State Awal | `/` | Discan | 0 |
 | Employee Home - Form Absen Masuk (dropdown + radius) | `/` | Discan | 0 |
 | Employee Home - Setelah Foto Diambil | `/` | Discan | 0 |
 | Employee Home - Dialog Konfirmasi Absen Masuk | `/` | Discan | 0 |
@@ -75,15 +79,15 @@ Call log:
 | Cuti - Karyawan - Form Kosong + Kuota | `/leave` | Discan | 0 |
 | Cuti - Karyawan - Riwayat Terisi | `/leave` | Discan | 0 |
 | Slip Gaji - Karyawan - State Kosong | `/payroll/payslips` | Discan | 0 |
-| Slip Gaji - Karyawan - State Terisi + Detail | `/payroll/payslips` | ERROR (Publish payslip seed gagal (kemungkinan ApprovalWorkflow REGULAR aktif + approve() bug - di luar scope Task 12): Periode payroll ini masih 'Draft' - harus melewati seluruh proses approval (Submitted -> Approved) dulu sebelum bisa dipublish.) | 0 |
+| Slip Gaji - Karyawan - State Terisi + Detail | `/payroll/payslips` | ERROR (Cannot read properties of undefined (reading 'id')) | 0 |
 
 **Total violation di seluruh halaman: 15**
 
 ## Dikelompokkan Berdasarkan Root Cause
 
-Ditemukan 3 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasarkan pasangan warna foreground/background PERSIS (class Tailwind yang sama selalu hasilin pasangan warna yang sama, di halaman mana pun dia dipakai).
+Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasarkan pasangan warna foreground/background PERSIS (class Tailwind yang sama selalu hasilin pasangan warna yang sama, di halaman mana pun dia dipakai).
 
-### 1. `color-contrast` - 9 kemunculan
+### 1. `color-contrast` - 8 kemunculan
 
 - **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
 - **Impact**: serious
@@ -94,14 +98,13 @@ Ditemukan 3 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(2) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
 
-### 2. `color-contrast` - 4 kemunculan
+### 2. `color-contrast` - 7 kemunculan
 
 - **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
 - **Impact**: serious
@@ -112,15 +115,7 @@ Ditemukan 3 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(1) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(3) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-
-### 3. `color-contrast` - 2 kemunculan
-
-- **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
-- **Impact**: serious
-- **Referensi**: https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright
-- **Foreground**: `#2563eb` | **Background**: `#e2e7f2` | **Contrast Ratio**: 4.17
-- **Muncul di halaman**:
-  - Audit Log - List (`/audit-log`)
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-submitted\/10.text-status-submitted.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-submitted\/10.text-status-submitted.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`

@@ -118,16 +118,19 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 1500s (bukan 1200s lagi) - sweep terus nambah (Task 7 Dashboard +3,
-    // Task 9 Notifikasi +4, Task 10 Monitoring Absensi +5, Task 11 Cuti +5
-    // state baru, 2 di antaranya seed+cleanup lewat page.request), run
-    // terakhir kena 15.1 menit, lewatin limit lama karena beberapa step
-    // lama (Wewenang Cabang dialog, Lokasi Kantor Tab Supervisor) kena
-    // waitFor/waitForResponse timeout individual di tengah jalan (masing2
-    // ke-catch oleh safeStep, bukan fatal) - akumulasi waktu itu yang bikin
-    // overall test lewat limit. Semua state TETAP 0 violation waktu itu
-    // terjadi - ini murni budget waktu test-nya, bukan bug aksesibilitas.
-    test.setTimeout(1_500_000)
+    // 1800s (bukan 1500s lagi) - sweep terus nambah (Task 13 Periode
+    // Payroll +4, Task 14 Alur Approval +5, 1 di antaranya blok gabungan
+    // create+edit+validasi+hapus yang genuinely paling lama di seluruh
+    // suite). Run yang nambahin Task 14 kena 26.4 menit, lewatin limit
+    // 1500s lama justru DI TENGAH blok Alur Approval itu sendiri meski
+    // blok yang sama, dites SENDIRIAN (file terpisah), cuma makan 1.2
+    // menit - akumulasi ~60+ state SEBELUMNYA yang bikin sisa budget pas
+    // sampai situ udah tipis, bukan bug di blok itu sendiri (dikonfirmasi
+    // ulang - 4 state statis Alur Approval lain semua tetap 0 violation
+    // sebelum blok ini kena limit). Ini bump ke-6, sama persis alasan
+    // bump-bump sebelumnya (300->600->900->1200->1500->1800) - pertimbangkan
+    // paralelisasi beneran kalau ini kejadian lagi, sesuai catatan lama.
+    test.setTimeout(1_800_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -788,6 +791,121 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await dialog.getByText('Gaji Bersih (Netto)').waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Slip Gaji - Admin - Detail Modal', '/payroll/payslips', '[role="dialog"]')
       await page.keyboard.press('Escape')
+    })
+
+    // === Alur Approval - Admin (Task 14) - login masih SUPER_ADMIN aktif ===
+    //
+    // Workflow REGULAR (id=1, "Regular Payroll Approval") adalah data
+    // LIVE, dipakai periode payroll nyata - TIDAK PERNAH disentuh/diedit/
+    // dihapus di sweep ini. Semua state yang butuh data mutable pakai
+    // period_type OFF_CYCLE (dipilih sengaja: belum pernah punya workflow
+    // sama sekali sepanjang investigasi Task 14, jadi aman dipakai
+    // berulang tanpa collision/side-effect ke workflow REGULAR yang aktif).
+    //
+    // "Delete ditolak" (workflow diblokir karena dipakai periode Submitted/
+    // Approved) SENGAJA TIDAK ada di sini - PayrollPeriod gak punya route
+    // create sama sekali (dikonfirmasi investigasi Task 14 Fase 1), jadi
+    // gak ada cara seed periode Submitted untuk period_type non-REGULAR
+    // lewat HTTP API murni (findOrCreateRegular cuma buat REGULAR).
+    // Skenario itu sudah diverifikasi manual lewat curl+tinker terpisah,
+    // bukan di sweep permanen ini.
+    await safeStep('Alur Approval - Admin - List Kosong', '/payroll/approval-workflow', async () => {
+      await gotoAndSettle(page, '/payroll/approval-workflow?period_type=OFF_CYCLE')
+      await page.getByText('Belum ada alur approval untuk jenis periode', { exact: false }).waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Alur Approval - Admin - List Kosong', '/payroll/approval-workflow')
+    })
+
+    await safeStep('Alur Approval - Admin - List Terisi', '/payroll/approval-workflow', async () => {
+      // TIDAK seed baris baru - workflow REGULAR asli sudah cukup buat
+      // state ini, pola sama persis Slip Gaji Admin List Terisi di atas.
+      await gotoAndSettle(page, '/payroll/approval-workflow')
+      await page.getByText('Regular Payroll Approval').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Alur Approval - Admin - List Terisi', '/payroll/approval-workflow')
+    })
+
+    await safeStep('Alur Approval - Admin - Dialog Tambah (kosong)', '/payroll/approval-workflow', async () => {
+      await page.getByRole('button', { name: 'Tambah Alur Baru' }).click()
+      const dialog = page.getByRole('dialog')
+      await dialog.waitFor({ state: 'visible', timeout: 5000 })
+      await dialog.getByText('Level 1').waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Alur Approval - Admin - Dialog Tambah (kosong)', '/payroll/approval-workflow', '[role="dialog"]')
+      await page.keyboard.press('Escape')
+    })
+
+    await safeStep('Alur Approval - Admin - Dialog Tambah (terisi) + Edit + Validasi + Hapus', '/payroll/approval-workflow', async () => {
+      const token = await page.evaluate(() => {
+        const raw = localStorage.getItem('myjap-auth')
+        return raw ? (JSON.parse(raw)?.state?.token ?? null) : null
+      })
+      let createdWorkflowId: number | null = null
+
+      try {
+
+        // --- Dialog Tambah, isi lengkap 2 step (scan SEBELUM submit) ---
+        await page.getByRole('button', { name: 'Tambah Alur Baru' }).click()
+        const addDialog = page.getByRole('dialog')
+        await addDialog.waitFor({ state: 'visible', timeout: 5000 })
+
+        await addDialog.locator('#name').fill('QA A11y Sweep - OFF_CYCLE Approval')
+        await addDialog.locator('#applies_to_period_type').selectOption('OFF_CYCLE')
+        await addDialog.getByRole('button', { name: 'Tambah Step' }).click()
+
+        const roleSelects = addDialog.locator('select[id^="steps."][id$=".approver_role_id"]')
+        await roleSelects.nth(0).waitFor({ state: 'visible', timeout: 5000 })
+        const firstRoleValue = await roleSelects.nth(0).locator('option').nth(1).getAttribute('value')
+        const secondRoleValue = await roleSelects.nth(1).locator('option').nth(2).getAttribute('value')
+        await roleSelects.nth(0).selectOption(firstRoleValue!)
+        await roleSelects.nth(1).selectOption(secondRoleValue!)
+        await addDialog.locator('input[type="checkbox"]').first().check()
+
+        await runAxe(page, 'Alur Approval - Admin - Dialog Tambah (terisi)', '/payroll/approval-workflow', '[role="dialog"]')
+
+        await addDialog.getByRole('button', { name: 'Simpan' }).click()
+        await page.getByText('berhasil ditambahkan', { exact: false }).waitFor({ state: 'visible', timeout: 15000 })
+
+        const listRes = await page.request.get('http://127.0.0.1:8000/api/approval-workflows?period_type=OFF_CYCLE', {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        })
+        const listBody = await listRes.json()
+        createdWorkflowId = listBody.data[0]?.id ?? null
+
+        // --- Dialog Edit (data baru tersimpan) ---
+        const row = page.locator('tr', { has: page.getByText('QA A11y Sweep - OFF_CYCLE Approval') })
+        await row.waitFor({ state: 'visible', timeout: 15000 })
+        await row.getByLabel(/Edit/).click()
+        const editDialog = page.getByRole('dialog')
+        await editDialog.waitFor({ state: 'visible', timeout: 5000 })
+        await editDialog.getByText('tidak bisa diubah setelah alur dibuat', { exact: false }).waitFor({ state: 'visible', timeout: 10000 })
+        await runAxe(page, 'Alur Approval - Admin - Dialog Edit', '/payroll/approval-workflow', '[role="dialog"]')
+
+        // --- Validasi client-side (kosongkan Nama, coba submit) ---
+        await editDialog.locator('#name').fill('')
+        await editDialog.getByRole('button', { name: 'Simpan' }).click()
+        await editDialog.getByText('Nama alur wajib diisi').waitFor({ state: 'visible', timeout: 5000 })
+        await runAxe(page, 'Alur Approval - Admin - Validasi Error', '/payroll/approval-workflow', '[role="dialog"]')
+        await page.keyboard.press('Escape')
+
+        // --- Dialog Konfirmasi Hapus ---
+        await row.getByLabel(/Hapus/).click()
+        const confirmDialog = page.getByRole('alertdialog')
+        await confirmDialog.waitFor({ state: 'visible', timeout: 5000 })
+        await runAxe(page, 'Alur Approval - Admin - Dialog Konfirmasi Hapus', '/payroll/approval-workflow', '[role="alertdialog"]')
+
+        await confirmDialog.getByRole('button', { name: 'Ya, Lanjutkan' }).click()
+        await page.getByText('berhasil dihapus', { exact: false }).waitFor({ state: 'visible', timeout: 15000 })
+        createdWorkflowId = null // sudah kehapus lewat UI, gak perlu cleanup manual lagi
+
+      } finally {
+
+        // Jaring pengaman - kalau ada langkah di atas yang gagal SEBELUM
+        // sempat kehapus lewat UI, tetap force-delete lewat API langsung
+        // (bukan cuma soft-delete) biar gak numpuk row test tiap run gagal.
+        if (createdWorkflowId) {
+          await page.request.delete(`http://127.0.0.1:8000/api/approval-workflows/${createdWorkflowId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        }
+      }
     })
 
     // === /audit-log (List + Detail Modal) ===

@@ -27,6 +27,7 @@ import { PayslipEmployeePage } from './features/payslip/pages/PayslipEmployeePag
 import { PayslipAdminPage } from './features/payslip/pages/PayslipAdminPage'
 import { PayrollPeriodListPage } from './features/payroll-period/pages/PayrollPeriodListPage'
 import { PayrollPeriodDetailPage } from './features/payroll-period/pages/PayrollPeriodDetailPage'
+import { ApprovalWorkflowListPage } from './features/approval-workflow/pages/ApprovalWorkflowListPage'
 
 /**
  * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
@@ -129,7 +130,13 @@ function PayslipRoute() {
  * dalam. Submit/Approve/Reject diekspos (masing-masing permission sendiri:
  * payroll-period.submit/approve/reject), TIDAK ADA tombol Publish/Create/
  * Edit/Delete - PayrollPeriodController.php sengaja gak punya route itu
- * (dikonfirmasi investigasi), Publish murni Task 15 punya)
+ * (dikonfirmasi investigasi), Publish murni Task 15 punya), dan
+ * '/payroll/approval-workflow' (Task 14 - List+Modal CRUD, pola Master
+ * Data BUKAN view-only, HRD-only permanen by design - MANAGER/FINANCE
+ * yang jadi approver operasional TETAP TIDAK dapat akses ke modul
+ * konfigurasi ini, mereka lihat alurnya lewat ApprovalTimeline di halaman
+ * Periode Payroll Task 13 saja. TIDAK ADA percabangan Route - satu
+ * halaman, gate `approval-workflow.view` PermissionGate di dalam)
  * sudah ada. Route lain masih belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
@@ -299,6 +306,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PayrollPeriodDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/approval-workflow"
+        element={
+          <ProtectedRoute>
+            <ApprovalWorkflowListPage />
           </ProtectedRoute>
         }
       />
