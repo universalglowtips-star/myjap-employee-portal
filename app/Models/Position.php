@@ -35,4 +35,13 @@ class Position extends Model
     {
         return $this->hasOne(AttendanceLocationPolicy::class);
     }
+
+    /**
+     * Task 15b - komponen gaji (fixed/scheduled_variable) yang berlaku
+     * buat jabatan ini + nominal/tarif default-nya.
+     */
+    public function salaryComponentRates(): HasMany
+    {
+        return $this->hasMany(PositionSalaryComponent::class);
+    }
 }

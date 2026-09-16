@@ -18,6 +18,8 @@ class SalaryComponent extends Model
 
         'type',
 
+        'category',
+
         'default_amount',
 
         'is_taxable',
@@ -54,5 +56,15 @@ class SalaryComponent extends Model
     public function payslipItems(): HasMany
     {
         return $this->hasMany(PayslipItem::class);
+    }
+
+    /**
+     * Task 15b - default nominal/tarif per Jabatan yang RELEVAN buat
+     * komponen ini (cuma dipakai kalau category fixed/scheduled_variable
+     * - situational gak punya default tersimpan sama sekali).
+     */
+    public function positionRates(): HasMany
+    {
+        return $this->hasMany(PositionSalaryComponent::class);
     }
 }

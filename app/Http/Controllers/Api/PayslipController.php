@@ -10,6 +10,9 @@ use App\Models\Employee;
 use App\Models\Payslip;
 use App\Models\PayslipItem;
 use App\Models\PayrollPeriod;
+use App\Models\PayrollPeriodEmployeeQuantity;
+use App\Models\EmployeeSalaryComponent;
+use App\Models\PositionSalaryComponent;
 use App\Models\SalaryComponent;
 use App\Models\CompanySetting;
 use App\Models\Notification;
@@ -293,6 +296,39 @@ use ScopesOwnData;
      * Karyawan yang sudah punya payslip di periode itu otomatis dilewati
      * (tidak dibuat dobel).
      */
+    /**
+     * Task 15b - resolusi nominal/tarif 1 komponen buat 1 karyawan:
+     * BASIC (Gaji Pokok) SELALU employee.basic_salary langsung (TIDAK
+     * BERUBAH dari sebelumnya, keputusan eksplisit Bagus 2026-09-15 -
+     * Gaji Pokok TETAP komponen fixed sederhana, bukan tarif x Hari
+     * Kerja). Komponen fixed/scheduled_variable lain: override karyawan
+     * (employee_salary_components) menang kalau ada, kalau tidak fallback
+     * ke default jabatan (position_salary_components). Null balik kalau
+     * dua-duanya gak ada baris - komponen itu TIDAK BERLAKU buat karyawan
+     * ini (bukan 0).
+     */
+    private function resolveComponentRate(
+        SalaryComponent $component,
+        Employee $employee,
+        array $employeeOverridesMap,
+        array $positionRatesMap
+    ): ?float {
+
+        if ($component->code === 'BASIC') {
+            return (float) $employee->basic_salary;
+        }
+
+        if (isset($employeeOverridesMap[$employee->id][$component->id])) {
+            return (float) $employeeOverridesMap[$employee->id][$component->id];
+        }
+
+        if (isset($positionRatesMap[$employee->position_id][$component->id])) {
+            return (float) $positionRatesMap[$employee->position_id][$component->id];
+        }
+
+        return null;
+    }
+
     public function generateBulk(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -300,39 +336,138 @@ use ScopesOwnData;
             'year' => 'required|integer|min:2024',
         ]);
 
-        $requiredComponents = SalaryComponent::where('is_required', true)
-            ->where('is_active', true)
-            ->get();
+        // is_required LAMA sengaja TIDAK dipakai lagi di sini (Task 15b) -
+        // applicability sekarang ditentukan category + ada/tidaknya baris
+        // employee_salary_components/position_salary_components per
+        // karyawan, bukan flag global is_required. situational SENGAJA
+        // gak diambil sama sekali - gak pernah ikut generate otomatis.
+        $fixedComponents = SalaryComponent::where('category', 'fixed')->where('is_active', true)->get();
+        $scheduledComponents = SalaryComponent::where('category', 'scheduled_variable')->where('is_active', true)->get();
 
-        if ($requiredComponents->isEmpty()) {
+        if ($fixedComponents->isEmpty() && $scheduledComponents->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Belum ada komponen gaji wajib (is_required) yang aktif. Set dulu komponen wajib sebelum generate payroll massal.'
+                'message' => 'Belum ada komponen gaji kategori fixed/scheduled_variable yang aktif. Atur dulu Komponen Gaji sebelum generate payroll massal.'
+            ], 422);
+        }
+
+        $activeEmployees = Employee::where('is_active', true)->get();
+
+        if ($activeEmployees->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada karyawan aktif untuk digenerate.'
+            ], 422);
+        }
+
+        // Resolve/bikin SEMUA periode yang relevan (1 per cabang yang
+        // punya karyawan aktif) DI LUAR chunk loop - dibutuhkan utuh
+        // buat pre-flight check quantity di bawah, bukan cuma pas
+        // insert payslip-nya nanti.
+        $periodCache = [];   // office_location_id => PayrollPeriod
+        $existingCache = []; // office_location_id => Collection<employee_id>
+
+        foreach ($activeEmployees->pluck('office_location_id')->unique() as $officeLocationId) {
+
+            $officeKey = $officeLocationId ?? 'null';
+
+            $period = PayrollPeriod::findOrCreateRegular(
+                $validated['month'],
+                $validated['year'],
+                $request->user()->id,
+                $officeLocationId
+            );
+
+            $periodCache[$officeKey] = $period;
+            $existingCache[$officeKey] = Payslip::where('payroll_period_id', $period->id)
+                ->pluck('employee_id')
+                ->flip();
+        }
+
+        // Lookup map SEKALI (bukan per-employee/per-chunk) - tabel
+        // employee_salary_components/position_salary_components jauh
+        // lebih kecil dari jumlah karyawan, aman di-load penuh.
+        $employeeOverridesMap = \App\Models\EmployeeSalaryComponent::get()
+            ->groupBy('employee_id')
+            ->map(fn ($rows) => $rows->pluck('amount', 'salary_component_id')->all())
+            ->all();
+
+        $positionRatesMap = \App\Models\PositionSalaryComponent::get()
+            ->groupBy('position_id')
+            ->map(fn ($rows) => $rows->pluck('amount', 'salary_component_id')->all())
+            ->all();
+
+        // Pre-flight WAJIB: untuk tiap karyawan yang BENERAN akan
+        // digenerate (bukan yang bakal di-skip karena udah punya payslip/
+        // periode locked), tiap komponen scheduled_variable yang tarifnya
+        // resolve (berarti komponen itu berlaku buat dia) HARUS sudah
+        // punya baris quantity di periode ini. Kalau ada yang belum,
+        // GAGAL TOTAL dengan daftar jelas - JANGAN generate sebagian
+        // dengan quantity dianggap 0 secara diam-diam.
+        $missingQuantities = [];
+
+        foreach ($activeEmployees as $employee) {
+
+            $officeKey = $employee->office_location_id ?? 'null';
+            $period = $periodCache[$officeKey];
+
+            if ($period->locked || $existingCache[$officeKey]->has($employee->id)) {
+                continue; // bakal di-skip pas generate beneran, gak perlu quantity
+            }
+
+            foreach ($scheduledComponents as $component) {
+
+                $rate = $this->resolveComponentRate($component, $employee, $employeeOverridesMap, $positionRatesMap);
+
+                if ($rate === null) {
+                    continue; // komponen ini emang gak berlaku buat karyawan ini
+                }
+
+                $hasQuantity = PayrollPeriodEmployeeQuantity::where('payroll_period_id', $period->id)
+                    ->where('employee_id', $employee->id)
+                    ->where('salary_component_id', $component->id)
+                    ->exists();
+
+                if (!$hasQuantity) {
+                    $missingQuantities[] = [
+                        'employee_id' => $employee->id,
+                        'employee_name' => $employee->full_name,
+                        'salary_component_id' => $component->id,
+                        'salary_component_name' => $component->name,
+                        'payroll_period_id' => $period->id,
+                        'period_code' => $period->period_code,
+                    ];
+                }
+            }
+        }
+
+        if (!empty($missingQuantities)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Belum semua Jumlah (Hari Kerja/Jumlah Resi dst) diisi untuk komponen scheduled_variable yang berlaku. Isi dulu semua kombinasi di bawah ini lewat "Isi Data Periode" sebelum generate.',
+                'missing_quantities' => $missingQuantities,
+                'total_missing' => count($missingQuantities),
             ], 422);
         }
 
         $created = [];
         $skipped = [];
-        $createdByOffice = []; // office_location_id => [payslip_id, ...] - buat audit log per cabang
-        $periodCache = [];     // office_location_id => PayrollPeriod (resolve sekali, dipakai ulang)
-        $existingCache = [];   // office_location_id => Collection employee_id yang udah punya payslip di period itu
+        $createdByOffice = [];
 
         try {
 
-            // Chunking - biar gak nge-load ribuan employee sekaligus ke memory,
-            // dan gak nahan 1 transaksi raksasa buat semua data. Tiap chunk
-            // 200 karyawan punya transaksi sendiri. $periodCache/$existingCache
-            // dipakai LINTAS chunk (by reference) - period cabang yang sama
-            // cuma di-resolve sekali walau karyawannya kesebar di banyak chunk.
-            Employee::where('is_active', true)->chunkById(200, function ($employees) use (
-                $requiredComponents,
+            $activeEmployees->chunk(200)->each(function ($employees) use (
+                $fixedComponents,
+                $scheduledComponents,
                 $validated,
                 $request,
                 &$created,
                 &$skipped,
                 &$createdByOffice,
                 &$periodCache,
-                &$existingCache
+                &$existingCache,
+                $employeeOverridesMap,
+                $positionRatesMap
             ) {
 
                 DB::beginTransaction();
@@ -342,21 +477,6 @@ use ScopesOwnData;
                     foreach ($employees as $employee) {
 
                         $officeKey = $employee->office_location_id ?? 'null';
-
-                        if (!isset($periodCache[$officeKey])) {
-
-                            $periodCache[$officeKey] = PayrollPeriod::findOrCreateRegular(
-                                $validated['month'],
-                                $validated['year'],
-                                $request->user()->id,
-                                $employee->office_location_id
-                            );
-
-                            $existingCache[$officeKey] = Payslip::where('payroll_period_id', $periodCache[$officeKey]->id)
-                                ->pluck('employee_id')
-                                ->flip();
-                        }
-
                         $period = $periodCache[$officeKey];
 
                         if ($period->locked) {
@@ -369,21 +489,53 @@ use ScopesOwnData;
                             continue;
                         }
 
-                        // Hitung total DULU sebelum create payslip - biar gak
-                        // perlu query UPDATE terpisah sesudahnya. Di skala
-                        // 2000-10000 karyawan, ini motong 1 query/karyawan.
+                        // Resolusi tiap komponen fixed - null berarti gak
+                        // berlaku, di-skip (BUKAN item dengan amount 0).
+                        $resolvedFixed = [];
+                        foreach ($fixedComponents as $component) {
+                            $rate = $this->resolveComponentRate($component, $employee, $employeeOverridesMap, $positionRatesMap);
+                            if ($rate !== null) {
+                                $resolvedFixed[] = ['component' => $component, 'amount' => $rate];
+                            }
+                        }
+
+                        // scheduled_variable - tarif x quantity (quantity
+                        // dijamin ADA dari pre-flight check di atas).
+                        $resolvedScheduled = [];
+                        foreach ($scheduledComponents as $component) {
+                            $rate = $this->resolveComponentRate($component, $employee, $employeeOverridesMap, $positionRatesMap);
+                            if ($rate === null) {
+                                continue;
+                            }
+
+                            $quantityRow = PayrollPeriodEmployeeQuantity::where('payroll_period_id', $period->id)
+                                ->where('employee_id', $employee->id)
+                                ->where('salary_component_id', $component->id)
+                                ->first();
+
+                            $quantity = $quantityRow ? (float) $quantityRow->quantity : 0;
+
+                            $resolvedScheduled[] = ['component' => $component, 'amount' => $rate * $quantity];
+                        }
+
+                        $allResolved = array_merge($resolvedFixed, $resolvedScheduled);
+
+                        if (empty($allResolved)) {
+                            // Karyawan ini gak punya komponen fixed/scheduled_variable
+                            // apapun yang berlaku (jabatannya belum diatur di Komponen
+                            // Gaji sama sekali) - skip, jangan bikin payslip kosong.
+                            $skipped[] = $employee->id;
+                            continue;
+                        }
+
                         $grossEarning = 0;
                         $totalDeduction = 0;
 
-                        foreach ($requiredComponents as $component) {
-                            $amount = $component->code === 'BASIC'
-                                ? $employee->basic_salary
-                                : $component->default_amount;
-
-                            if ($component->type === 'earning') {
-                                $grossEarning += $amount;
+                        foreach ($allResolved as $entry) {
+                            if ($entry['component']->type === 'earning') {
+                                $grossEarning += $entry['amount'];
                             } else {
-                                $totalDeduction += $amount;
+                                $totalDeduction += $entry['amount'];
                             }
                         }
 
@@ -403,11 +555,9 @@ use ScopesOwnData;
                         $itemRows = [];
                         $now = now();
 
-                        foreach ($requiredComponents as $index => $component) {
+                        foreach ($allResolved as $index => $entry) {
 
-                            $amount = $component->code === 'BASIC'
-                                ? $employee->basic_salary
-                                : $component->default_amount;
+                            $component = $entry['component'];
 
                             $itemRows[] = [
                                 'payslip_id' => $payslip->id,
@@ -415,7 +565,7 @@ use ScopesOwnData;
                                 'component_code' => $component->code,
                                 'component_name' => $component->name,
                                 'component_type' => $component->type,
-                                'amount' => $amount,
+                                'amount' => $entry['amount'],
                                 'notes' => 'Auto-generated (payroll massal)',
                                 'sort_order' => $index + 1,
                                 'created_at' => $now,
@@ -423,9 +573,6 @@ use ScopesOwnData;
                             ];
                         }
 
-                        // Bulk insert semua item sekaligus (1 query per payslip,
-                        // bukan 1 query per komponen) - ini yang paling nolong
-                        // waktu komponen wajibnya banyak.
                         PayslipItem::insert($itemRows);
 
                         $created[] = $payslip->id;

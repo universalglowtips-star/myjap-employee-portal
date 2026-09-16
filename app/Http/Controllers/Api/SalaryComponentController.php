@@ -20,7 +20,9 @@ class SalaryComponentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $components = SalaryComponent::query()
+            ->with('positionRates.position')
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->type))
+            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
             ->when($request->has('is_active'), fn ($q) => $q->where('is_active', $request->boolean('is_active')))
             ->orderBy('name')
             ->get();
@@ -35,7 +37,7 @@ class SalaryComponentController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $component = SalaryComponent::findOrFail($id);
+        $component = SalaryComponent::with('positionRates.position')->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -50,6 +52,9 @@ class SalaryComponentController extends Controller
             'code' => 'required|string|max:20|unique:salary_components,code',
             'name' => 'required|string|max:100',
             'type' => 'required|in:earning,deduction',
+            // Task 15b - fixed/scheduled_variable/situational, default 'fixed'
+            // kalau gak dikirim (konsisten sama default kolom DB).
+            'category' => 'sometimes|in:fixed,scheduled_variable,situational',
             'default_amount' => 'nullable|numeric|min:0',
             'is_taxable' => 'boolean',
             'is_required' => 'boolean',
@@ -57,13 +62,20 @@ class SalaryComponentController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        // situational TIDAK PERNAH is_required=true (di-enforce di kode,
+        // bukan constraint DB) - komponen ini emang gak boleh otomatis
+        // ikut generateBulk() sama sekali, apapun yang dikirim klien.
+        if (($validated['category'] ?? 'fixed') === 'situational') {
+            $validated['is_required'] = false;
+        }
+
         $component = SalaryComponent::create($validated);
 
         AuditLogService::log(
             $component,
             'created',
             null,
-            $component->only(['code', 'name', 'type', 'is_required']),
+            $component->only(['code', 'name', 'type', 'category', 'is_required']),
             $request->user()->id,
             'Komponen gaji baru dibuat'
         );
@@ -83,6 +95,7 @@ class SalaryComponentController extends Controller
             'code' => 'sometimes|string|max:20|unique:salary_components,code,' . $component->id,
             'name' => 'sometimes|string|max:100',
             'type' => 'sometimes|in:earning,deduction',
+            'category' => 'sometimes|in:fixed,scheduled_variable,situational',
             'default_amount' => 'nullable|numeric|min:0',
             'is_taxable' => 'boolean',
             'is_required' => 'boolean',
@@ -90,7 +103,13 @@ class SalaryComponentController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $oldValues = $component->only(['code', 'name', 'type', 'is_required', 'is_active']);
+        $effectiveCategory = $validated['category'] ?? $component->category;
+
+        if ($effectiveCategory === 'situational') {
+            $validated['is_required'] = false;
+        }
+
+        $oldValues = $component->only(['code', 'name', 'type', 'category', 'is_required', 'is_active']);
 
         $component->update($validated);
 
@@ -98,7 +117,7 @@ class SalaryComponentController extends Controller
             $component,
             'updated',
             $oldValues,
-            $component->only(['code', 'name', 'type', 'is_required', 'is_active']),
+            $component->only(['code', 'name', 'type', 'category', 'is_required', 'is_active']),
             $request->user()->id,
             'Update komponen gaji'
         );

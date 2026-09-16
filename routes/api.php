@@ -29,6 +29,9 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\PayrollPeriodController;
 use App\Http\Controllers\Api\ApprovalWorkflowController;
 use App\Http\Controllers\Api\SystemWarningController;
+use App\Http\Controllers\Api\SalaryComponentPositionController;
+use App\Http\Controllers\Api\EmployeeSalaryComponentController;
+use App\Http\Controllers\Api\PayrollPeriodQuantityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -180,6 +183,19 @@ $apiRoutes = function () {
         ->middleware('permission:employee.update');
 
     // =========================
+    // Task 15b - override nominal/tarif komponen gaji per karyawan
+    // (misal senioritas), TIMPA default per jabatan kalau ada baris
+    // =========================
+    Route::get('employees/{id}/salary-components', [EmployeeSalaryComponentController::class, 'index'])
+        ->middleware('permission:employee.update');
+
+    Route::post('employees/{id}/salary-components', [EmployeeSalaryComponentController::class, 'store'])
+        ->middleware('permission:employee.update');
+
+    Route::delete('employees/{id}/salary-components/{salaryComponentId}', [EmployeeSalaryComponentController::class, 'destroy'])
+        ->middleware('permission:employee.update');
+
+    // =========================
     // TRANSACTION
     // =========================
 
@@ -253,6 +269,21 @@ $apiRoutes = function () {
 
     Route::apiResource('salary-components', SalaryComponentController::class)
         ->only(['destroy'])->middleware('permission:salary-component.delete');
+
+    // =========================
+    // Task 15b - jabatan mana aja yang dapat komponen ini + nominal/tarif
+    // default-nya (fixed/scheduled_variable saja - situational gak punya
+    // default tersimpan). Gate permission SAMA kayak edit komponennya
+    // sendiri, bukan permission baru.
+    // =========================
+    Route::get('salary-components/{id}/positions', [SalaryComponentPositionController::class, 'index'])
+        ->middleware('permission:salary-component.update');
+
+    Route::post('salary-components/{id}/positions', [SalaryComponentPositionController::class, 'store'])
+        ->middleware('permission:salary-component.update');
+
+    Route::delete('salary-components/{id}/positions/{positionId}', [SalaryComponentPositionController::class, 'destroy'])
+        ->middleware('permission:salary-component.update');
 
     // Sengaja dashboard.view (bukan payslip.view) - endpoint ini rekap
     // AGREGAT semua karyawan dalam 1 periode, admin-level only.
@@ -411,6 +442,18 @@ $apiRoutes = function () {
 
     Route::post('payroll-periods/{id}/reject', [PayrollPeriodController::class, 'reject'])
         ->middleware('permission:payroll-period.reject');
+
+    // =========================
+    // Task 15b - "Isi Data Periode": Jumlah (Hari Kerja/Jumlah Resi dst)
+    // per karyawan per komponen scheduled_variable, WAJIB diisi sebelum
+    // generateBulk() bisa jalan buat komponen itu. Gate permission SAMA
+    // dengan yang boleh generate (HRD) - bukan permission baru.
+    // =========================
+    Route::get('payroll-periods/{id}/quantities', [PayrollPeriodQuantityController::class, 'index'])
+        ->middleware('permission:payroll.generate-bulk');
+
+    Route::put('payroll-periods/{id}/quantities', [PayrollPeriodQuantityController::class, 'update'])
+        ->middleware('permission:payroll.generate-bulk');
 
     // =========================
     // APPROVAL WORKFLOW CONFIG (HRD/SUPER_ADMIN only - ini yang atur

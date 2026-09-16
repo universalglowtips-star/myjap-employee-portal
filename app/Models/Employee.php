@@ -166,4 +166,15 @@ class Employee extends Authenticatable
         return $this->hasMany(Payslip::class);
     }
 
+    /**
+     * Task 15b - override nominal/tarif komponen gaji individu (misal
+     * karena senioritas), TIMPA default dari jabatan (lihat
+     * PositionSalaryComponent) kalau ada baris untuk kombinasi komponen
+     * yang sama.
+     */
+    public function salaryComponentOverrides(): HasMany
+    {
+        return $this->hasMany(EmployeeSalaryComponent::class);
+    }
+
 }

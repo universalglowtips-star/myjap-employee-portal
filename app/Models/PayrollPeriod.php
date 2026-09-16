@@ -72,6 +72,15 @@ class PayrollPeriod extends Model
         return $this->hasMany(Payslip::class);
     }
 
+    /**
+     * Task 15b - "Jumlah" per karyawan per komponen scheduled_variable
+     * (Hari Kerja/Jumlah Resi dst) yang diisi HRD sebelum generateBulk().
+     */
+    public function employeeQuantities(): HasMany
+    {
+        return $this->hasMany(PayrollPeriodEmployeeQuantity::class);
+    }
+
     public function officeLocation(): BelongsTo
     {
         return $this->belongsTo(OfficeLocation::class)->withTrashed();
