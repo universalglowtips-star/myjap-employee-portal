@@ -10,10 +10,44 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use RuntimeException;
 
 class Employee extends Authenticatable
 {
     use HasApiTokens, Notifiable, SoftDeletes;
+
+    /**
+     * Guard force-delete vs payslip Published. payslips.employee_id
+     * cascadeOnDelete() (migration Task 12 lama) - tanpa guard ini,
+     * force-delete Employee diam-diam ikut menghapus PERMANEN payslip
+     * (termasuk item-nya, cascade lagi dari payslips.id) lewat FK di
+     * level database, sama sekali TIDAK lewat forceDeleting() guard
+     * milik Payslip/PayslipItem sendiri (guard itu cuma nyantol ke
+     * pemanggilan Eloquent forceDelete() langsung, bukan ke DELETE
+     * yang dipicu cascade). Payslip Draft TETAP boleh ikut kebuang -
+     * cuma yang sudah Published (dokumen finansial final) yang diblokir,
+     * sesuai keputusan Bagus. withTrashed() SENGAJA dipakai - payslip
+     * Published yang entah-bagaimana sudah soft-deleted (harusnya
+     * gak pernah kejadian lewat alur normal, tapi jangan diasumsikan)
+     * tetap harus diblokir, bukan cuma yang masih aktif.
+     *
+     * TIDAK ADA endpoint/UI produksi yang memanggil Employee::forceDelete()
+     * sama sekali (dikonfirmasi grep menyeluruh) - selama ini cuma
+     * dipakai manual lewat tinker buat bersih-bersih data uji. Guard di
+     * event model (bukan cek di controller) tetap dipilih supaya
+     * proteksi ini konsisten berlaku dari jalur manapun (tinker,
+     * command, atau kalau suatu saat ada endpoint baru), sama pola
+     * persis Payslip/PayslipItem/PayrollPeriod.
+     */
+    protected static function booted(): void
+    {
+        static::forceDeleting(function (self $employee) {
+
+            if ($employee->payslips()->withTrashed()->where('status', 'Published')->exists()) {
+                throw new RuntimeException('Karyawan ini masih memiliki slip gaji yang sudah dipublikasikan dan tidak dapat dihapus permanen.');
+            }
+        });
+    }
 
     protected $fillable = [
 
