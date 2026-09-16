@@ -25,6 +25,10 @@ class PayslipItem extends Model
 
     'amount',
 
+    'rate',
+
+    'quantity',
+
     'notes',
 
     'sort_order',
@@ -36,6 +40,10 @@ class PayslipItem extends Model
         return [
 
             'amount' => 'decimal:2',
+
+            'rate' => 'decimal:2',
+
+            'quantity' => 'decimal:2',
 
         ];
     }

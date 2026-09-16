@@ -515,7 +515,13 @@ use ScopesOwnData;
 
                             $quantity = $quantityRow ? (float) $quantityRow->quantity : 0;
 
-                            $resolvedScheduled[] = ['component' => $component, 'amount' => $rate * $quantity];
+                            // rate/quantity ikut disimpan (bukan cuma amount) -
+                            // dibutuhkan Detail Slip Gaji buat nampilin breakdown
+                            // "Rp{rate} x {quantity} = Rp{amount}" (gap Fase 2
+                            // C.6+E.3 yang kelewat waktu build awal). fixed
+                            // SENGAJA gak ikut nyimpen rate/quantity di bawah -
+                            // gak ada konsep perkalian buat kategori itu.
+                            $resolvedScheduled[] = ['component' => $component, 'amount' => $rate * $quantity, 'rate' => $rate, 'quantity' => $quantity];
                         }
 
                         $allResolved = array_merge($resolvedFixed, $resolvedScheduled);
@@ -566,6 +572,11 @@ use ScopesOwnData;
                                 'component_name' => $component->name,
                                 'component_type' => $component->type,
                                 'amount' => $entry['amount'],
+                                // null buat fixed (gak ada di $resolvedFixed sama
+                                // sekali) - breakdown formula CUMA muncul buat
+                                // scheduled_variable, sesuai desain.
+                                'rate' => $entry['rate'] ?? null,
+                                'quantity' => $entry['quantity'] ?? null,
                                 'notes' => 'Auto-generated (payroll massal)',
                                 'sort_order' => $index + 1,
                                 'created_at' => $now,
@@ -1083,6 +1094,13 @@ use ScopesOwnData;
                         'component_name'      => $component->name,
                         'component_type'      => $component->type,
                         'amount'              => $item['amount'],
+                        // rate/quantity OPSIONAL di request ini (nullable) -
+                        // caller (mis. tambah item Situasional) WAJIB kirim
+                        // balik rate/quantity milik item scheduled_variable
+                        // yang udah ada kalau gak mau breakdown-nya hilang,
+                        // karena update() ini full-replace seluruh items.
+                        'rate'                => $item['rate'] ?? null,
+                        'quantity'            => $item['quantity'] ?? null,
                         'notes'               => $item['notes'] ?? null,
                         'sort_order'          => $index + 1,
                         'created_at'          => $now,

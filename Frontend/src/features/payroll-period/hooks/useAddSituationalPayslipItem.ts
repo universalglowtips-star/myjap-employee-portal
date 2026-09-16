@@ -19,6 +19,13 @@ export interface AddSituationalPayslipItemInput {
  * "ambil item terbaru sesaat sebelum submit" gak mungkin kelewat
  * kepakai state basi - race condition antar tab/user lain gak bisa
  * bikin item lain HILANG diam-diam.
+ *
+ * rate/quantity item existing WAJIB ikut dikirim balik apa adanya
+ * (bukan cuma salary_component_id/amount/notes) - full-replace berarti
+ * field yang gak disertakan balik null, jadi tanpa ini breakdown
+ * formula item scheduled_variable yang SUDAH ADA bakal hilang diam-diam
+ * begitu HRD nambah 1 item Situasional (gap yang ketahuan pas nutup
+ * Fase 2 C.6+E.3).
  */
 export function useAddSituationalPayslipItem(payrollPeriodId: number) {
   const queryClient = useQueryClient()
@@ -30,6 +37,8 @@ export function useAddSituationalPayslipItem(payrollPeriodId: number) {
       const existingItems = (freshPayslip.items ?? []).map((item) => ({
         salary_component_id: item.salary_component_id,
         amount: Number(item.amount),
+        rate: item.rate === null ? null : Number(item.rate),
+        quantity: item.quantity === null ? null : Number(item.quantity),
         notes: item.notes,
       }))
 

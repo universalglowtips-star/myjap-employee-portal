@@ -19,6 +19,16 @@ export interface PayslipItem {
   component_name: string
   component_type: 'earning' | 'deduction'
   amount: string
+  /**
+   * Task 15b (gap Fase 2 C.6+E.3, ditutup belakangan) - rate x quantity
+   * yang DIPAKAI generateBulk() buat hasilin amount ini, CUMA terisi
+   * buat item kategori scheduled_variable. NULL buat item fixed/situational
+   * (gak ada konsep perkalian) DAN buat semua item lama yang dibuat
+   * sebelum kolom ini ada (termasuk 6 payslip Published pertama) -
+   * kolom nullable non-destruktif, bukan di-backfill.
+   */
+  rate: string | null
+  quantity: string | null
   sort_order: number
   notes: string | null
 }
@@ -92,6 +102,9 @@ export interface UpdatePayslipRequest {
   items: Array<{
     salary_component_id: number
     amount: number
+    /** Task 15b - WAJIB dikirim balik utuh buat item scheduled_variable existing, karena update() full-replace seluruh items - kalau di-skip, breakdown formula item itu hilang (rate/quantity balik null). */
+    rate?: number | null
+    quantity?: number | null
     notes?: string | null
   }>
 }

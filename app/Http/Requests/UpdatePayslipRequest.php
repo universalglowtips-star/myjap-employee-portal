@@ -31,6 +31,12 @@ class UpdatePayslipRequest extends FormRequest
         'items.*.amount'
             => 'required_with:items|numeric',
 
+        'items.*.rate'
+            => 'nullable|numeric',
+
+        'items.*.quantity'
+            => 'nullable|numeric',
+
         'items.*.notes'
             => 'nullable|string|max:255',
 

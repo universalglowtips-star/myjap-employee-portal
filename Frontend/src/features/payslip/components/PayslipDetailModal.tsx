@@ -3,6 +3,7 @@ import { Modal } from '../../../components/ui/Modal'
 import { Button } from '../../../components/ui/Button'
 import { StatusBadge } from '../../../components/ui/StatusBadge'
 import { formatCurrency } from '../../../lib/formatCurrency'
+import { formatNumber } from '../../../lib/formatNumber'
 import { formatMonthYear } from '../lib/payslipFormat'
 import { usePayslip } from '../hooks/usePayslip'
 import { useDownloadPayslipPdf } from '../hooks/useDownloadPayslipPdf'
@@ -15,11 +16,32 @@ interface PayslipDetailModalProps {
   showEmployeeName?: boolean
 }
 
+/**
+ * Task 15b (gap Fase 2 C.6+E.3, ditutup belakangan) - rate/quantity
+ * CUMA terisi buat item kategori scheduled_variable (Uang Harian, Bonus
+ * DLV dst) - item fixed/situational selalu null, tampil polos kayak
+ * sebelumnya. Baris di-stack 2 tingkat (BUKAN 1 baris justify-between
+ * kayak sebelumnya) - formula "Rp55.000 x 25 = Rp1.375.000" jauh lebih
+ * panjang dari nominal polos, stack vertikal ini yang paling aman dari
+ * potongan/overflow di layar 390px tanpa perlu breakpoint khusus.
+ * TIDAK ada label satuan ("HK"/"Resi") - gak ada kolom buat nyimpen itu
+ * di data model, dipaksain nebak dari nama komponen bakal jadi rapuh
+ * begitu ada komponen scheduled_variable baru yang polanya beda.
+ */
 function ItemRow({ item }: { item: PayslipItem }) {
+  const hasBreakdown = item.rate !== null && item.quantity !== null
+
   return (
-    <div className="flex items-center justify-between py-1.5">
-      <span className="font-body text-sm text-neutral-900">{item.component_name}</span>
-      <span className="font-mono text-sm text-neutral-900">{formatCurrency(item.amount)}</span>
+    <div className="flex flex-col gap-0.5 py-1.5">
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-body text-sm text-neutral-900">{item.component_name}</span>
+        <span className="font-mono text-sm text-neutral-900 text-right">{formatCurrency(item.amount)}</span>
+      </div>
+      {hasBreakdown && (
+        <p className="text-right font-mono text-xs text-neutral-600">
+          {formatCurrency(item.rate as string)} &times; {formatNumber(item.quantity as string)} = {formatCurrency(item.amount)}
+        </p>
+      )}
     </div>
   )
 }
