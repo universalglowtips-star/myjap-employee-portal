@@ -76,3 +76,92 @@ export interface PayslipDetailResponse {
   message: string
   data: Payslip
 }
+
+/**
+ * PUT /payslips/{id} - verifikasi PayslipController::update(). Kirim
+ * `items` = FULL REPLACE (backend delete() semua item lama lalu
+ * insert ulang dari array ini, recompute gross_earning/total_deduction/
+ * net_salary dari total array baru) - BUKAN partial/append. Task 15b
+ * pakai ini buat nambah item Situasional: WAJIB fetch payslip TERBARU
+ * (GET /payslips/{id}) sesaat sebelum submit, gabung item existing +
+ * item baru, baru PUT - JANGAN pakai state/cache lama dari hasil
+ * generate awal (race condition => kehilangan item lain yang mungkin
+ * udah ditambah user lain/tab lain duluan).
+ */
+export interface UpdatePayslipRequest {
+  items: Array<{
+    salary_component_id: number
+    amount: number
+    notes?: string | null
+  }>
+}
+
+/**
+ * POST /payroll/generate-bulk - verifikasi PayslipController::generateBulk()
+ * (ditulis ulang total Task 15b). month/year SAJA (payroll_period_id
+ * detail internal - backend resolve/bikin PayrollPeriod per cabang
+ * sendiri lewat findOrCreateRegular()). SATU panggilan ini BISA
+ * menyentuh BEBERAPA periode sekaligus (1 per cabang yang punya
+ * karyawan aktif), TIDAK cuma periode yang lagi dibuka di halaman
+ * Detail Periode - `periods[]` di respons mencantumkan semua yang
+ * kesentuh.
+ */
+export interface GenerateBulkRequest {
+  month: number
+  year: number
+}
+
+export interface GenerateBulkResponse {
+  success: true
+  message: string
+  periods: Array<{ id: number; period_code: string; office_location_id: number | null }>
+  total_created: number
+  total_skipped: number
+  created_payslip_ids: number[]
+  skipped_employee_ids: number[]
+}
+
+/**
+ * 422 dari generateBulk() - pre-flight quantity check GAGAL (bukan
+ * error umum). Dikembalikan SEBELUM ada payslip apapun disentuh -
+ * daftar ini persis kombinasi employee+komponen yang belum diisi
+ * "Jumlah"-nya lewat PUT payroll-periods/{id}/quantities.
+ */
+export interface GenerateBulkMissingQuantitiesError {
+  success: false
+  message: string
+  missing_quantities: Array<{
+    employee_id: number
+    employee_name: string
+    salary_component_id: number
+    salary_component_name: string
+    payroll_period_id: number
+    period_code: string
+  }>
+  total_missing: number
+}
+
+/** POST /payroll/publish-bulk - verifikasi PayslipController::publishBulk(). period_code ATAU month+year (+office_location_id opsional). */
+export interface PublishBulkRequest {
+  period_code?: string
+  month?: number
+  year?: number
+  office_location_id?: number
+}
+
+export interface PublishBulkResponse {
+  success: boolean
+  message: string
+  total_periods_processed: number
+  periods: Array<{
+    period_id: number
+    period_code: string
+    office_location_id: number | null
+    success: boolean
+    message: string
+    total_published: number
+    total_failed: number
+    published_payslip_ids?: number[]
+    failed_payslip_ids?: number[]
+  }>
+}

@@ -122,7 +122,15 @@ export function Modal({ open, onClose, title, children, footer, role = 'dialog' 
         <h2 id={titleId} className="font-display text-lg font-semibold text-neutral-900">
           {title}
         </h2>
-        <div className="mt-4">{children}</div>
+        {/* max-h+overflow BARU (Task 15b) - inert buat semua Modal existing
+            (isinya selalu jauh lebih pendek dari 75vh, jadi gak pernah
+            kepotong/dapet scrollbar), tapi WAJIB buat SalaryComponentFormModal
+            mode edit yang sekarang punya form + section Nominal per
+            Jabatan sekaligus - tanpa ini kontennya bisa overflow keluar
+            viewport di layar pendek/mobile, footer Simpan/Batal ikut
+            ke-scroll keluar (gak reachable). title & footer TETAP di luar
+            div scroll ini biar selalu kelihatan. */}
+        <div className="mt-4 max-h-[75vh] overflow-y-auto">{children}</div>
         {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
       </div>
     </div>,

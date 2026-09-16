@@ -10,6 +10,7 @@ import { useEmployee } from '../hooks/useEmployee'
 import { EmployeeInfoTab } from '../components/EmployeeInfoTab'
 import { EmployeeAttendanceOverrideTab } from '../components/EmployeeAttendanceOverrideTab'
 import { EmployeeOfficeScopeTab } from '../components/EmployeeOfficeScopeTab'
+import { EmployeeSalaryComponentTab } from '../components/EmployeeSalaryComponentTab'
 
 /**
  * Route BARU /employees/:id (Task 8d) - view-only, BEDA dari
@@ -24,6 +25,7 @@ const TABS = [
   { key: 'info', label: 'Info' },
   { key: 'override', label: 'Pengecualian Lokasi Absensi' },
   { key: 'office-scope', label: 'Wewenang Cabang' },
+  { key: 'salary-components', label: 'Komponen Gaji' },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -96,6 +98,7 @@ export function EmployeeDetailPage() {
         {activeTab === 'info' && <EmployeeInfoTab employee={employee} isLoading={isLoading} isError={isError} />}
         {activeTab === 'override' && <EmployeeAttendanceOverrideTab employeeId={employeeId} />}
         {activeTab === 'office-scope' && <EmployeeOfficeScopeTab employeeId={employeeId} />}
+        {activeTab === 'salary-components' && <EmployeeSalaryComponentTab employeeId={employeeId} />}
       </PermissionGate>
     </AppShell>
   )

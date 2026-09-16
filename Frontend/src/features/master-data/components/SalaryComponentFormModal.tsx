@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Modal } from '../../../components/ui/Modal'
@@ -7,6 +7,7 @@ import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Label } from '../../../components/ui/Label'
+import { SalaryComponentPositionRatesSection } from './SalaryComponentPositionRatesSection'
 import type { SalaryComponent, SalaryComponentCreateRequest } from '../../../api/types/salaryComponent'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -24,6 +25,7 @@ const salaryComponentSchema = z.object({
   code: z.string().min(1, 'Kode wajib diisi'),
   name: z.string().min(1, 'Nama komponen wajib diisi'),
   type: z.string().min(1, 'Tipe wajib dipilih'),
+  category: z.string().min(1, 'Kategori wajib dipilih'),
   default_amount: z
     .string()
     .min(1, 'Jumlah default wajib diisi')
@@ -51,6 +53,23 @@ const typeOptions = [
   { value: 'deduction', label: 'Potongan' },
 ]
 
+/**
+ * Task 15b - kategori BARU yang menentukan cara komponen dihitung di
+ * generateBulk(). Urutan opsi SENGAJA fixed -> scheduled_variable ->
+ * situational, ngikutin urutan tabel final instruksi (bagian B).
+ */
+const categoryOptions = [
+  { value: 'fixed', label: 'Tetap (Fixed)' },
+  { value: 'scheduled_variable', label: 'Variabel Terjadwal' },
+  { value: 'situational', label: 'Situasional' },
+]
+
+const categoryCaption: Record<string, string> = {
+  fixed: 'Nominal tetap per jabatan/karyawan - diatur di bagian "Nominal per Jabatan" di bawah setelah komponen ini disimpan. Kode BASIC (Gaji Pokok) khusus selalu pakai kolom Gaji Pokok karyawan, bukan bagian ini.',
+  scheduled_variable: 'Tarif per jabatan/karyawan diatur di bagian "Tarif per Jabatan" di bawah setelah disimpan. Jumlah (Hari Kerja/Jumlah Resi dst) diisi manual tiap periode HRD lewat "Isi Data Periode" di halaman Detail Periode Payroll - tidak ada rumus otomatis.',
+  situational: 'Tidak ada nominal default tersimpan - komponen ini tidak ikut generate otomatis sama sekali. Ditambahkan manual per karyawan setelah payroll digenerate (mis. bonus dadakan).',
+}
+
 const yesNoOptions = [
   { value: 'true', label: 'Ya' },
   { value: 'false', label: 'Tidak' },
@@ -73,8 +92,16 @@ export function SalaryComponentFormModal({
     handleSubmit,
     reset,
     setError,
+    control,
     formState: { errors },
   } = useForm<SalaryComponentFormValues>({ resolver: zodResolver(salaryComponentSchema) })
+
+  const category = useWatch({ control, name: 'category' })
+  // situational DIPAKSA is_required=false di backend (store()/update() -
+  // lihat SalaryComponentController) terlepas dari apa yang dikirim -
+  // Select is_required di-disable + dipaksa 'false' di SINI JUGA biar
+  // UI gak nyasar (HRD pilih "Ya" tapi backend diam-diam nyimpen "Tidak").
+  const isSituational = category === 'situational'
 
   // is_taxable/is_required/is_active model-nya PUNYA $casts eksplisit
   // 'boolean' (beda dari Position/WorkShift/OfficeLocation yang gak
@@ -87,6 +114,7 @@ export function SalaryComponentFormModal({
         code: salaryComponent?.code ?? '',
         name: salaryComponent?.name ?? '',
         type: salaryComponent?.type ?? '',
+        category: salaryComponent?.category ?? 'fixed',
         default_amount: salaryComponent ? salaryComponent.default_amount : '0',
         is_taxable: salaryComponent ? (salaryComponent.is_taxable ? 'true' : 'false') : 'false',
         is_required: salaryComponent ? (salaryComponent.is_required ? 'true' : 'false') : 'false',
@@ -102,9 +130,10 @@ export function SalaryComponentFormModal({
         code: values.code,
         name: values.name,
         type: values.type as 'earning' | 'deduction',
+        category: values.category as 'fixed' | 'scheduled_variable' | 'situational',
         default_amount: Number(values.default_amount),
         is_taxable: values.is_taxable === 'true',
-        is_required: values.is_required === 'true',
+        is_required: values.category === 'situational' ? false : values.is_required === 'true',
         is_active: values.is_active === 'true',
         description: values.description || null,
       })
@@ -116,6 +145,7 @@ export function SalaryComponentFormModal({
             field === 'code' ||
             field === 'name' ||
             field === 'type' ||
+            field === 'category' ||
             field === 'default_amount' ||
             field === 'is_taxable' ||
             field === 'is_required' ||
@@ -198,6 +228,24 @@ export function SalaryComponentFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
+          <Label htmlFor="category">
+            Kategori
+          </Label>
+          <Select
+            id="category"
+            className="py-2"
+            options={categoryOptions}
+            placeholder="Pilih Kategori"
+            error={errors.category?.message}
+            {...register('category')}
+          />
+        </div>
+
+        {category && (
+          <p className="font-body text-xs text-neutral-600 sm:col-span-2">{categoryCaption[category]}</p>
+        )}
+
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="is_active">
             Status
           </Label>
@@ -232,8 +280,12 @@ export function SalaryComponentFormModal({
             className="py-2"
             options={yesNoOptions}
             error={errors.is_required?.message}
+            disabled={isSituational}
             {...register('is_required')}
           />
+          {isSituational && (
+            <p className="font-body text-xs text-neutral-600">Otomatis "Tidak" untuk komponen Situasional.</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -243,6 +295,19 @@ export function SalaryComponentFormModal({
           <Input id="description" className="py-2" error={errors.description?.message} {...register('description')} />
         </div>
       </form>
+
+      {/* Section "Nominal/Tarif per Jabatan" - CUMA mode edit (butuh
+          salaryComponent.id yang udah ada) + category fixed/scheduled_variable
+          (situational gak punya konsep default tersimpan sama sekali,
+          lihat categoryCaption). Live-list terpisah dari <form> di atas -
+          instant save per baris (pola EmployeeOfficeScopeTab), BUKAN ikut
+          tombol Simpan modal ini. */}
+      {salaryComponent && category && category !== 'situational' && (
+        <SalaryComponentPositionRatesSection
+          salaryComponentId={salaryComponent.id}
+          category={category as 'fixed' | 'scheduled_variable'}
+        />
+      )}
     </Modal>
   )
 }

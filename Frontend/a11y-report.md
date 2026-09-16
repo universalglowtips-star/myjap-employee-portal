@@ -1,6 +1,6 @@
 # Laporan A11y Sweep - MyJAP Employee Portal
 
-Dibuat: 2026-09-14T05:42:21.028Z
+Dibuat: 2026-09-16T00:56:07.695Z
 
 Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`)
 
@@ -33,6 +33,10 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Tambah | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Wewenang Cabang (terisi) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Hapus | `/employees/25` | Discan | 0 |
+| Detail Karyawan - Komponen Gaji (kosong) | `/employees/25` | Discan | 0 |
+| Detail Karyawan - Komponen Gaji - Dialog Konfirmasi Tambah Override | `/employees/25` | Discan | 0 |
+| Detail Karyawan - Komponen Gaji (override terisi) | `/employees/25` | Discan | 0 |
+| Detail Karyawan - Komponen Gaji - Dialog Konfirmasi Cabut Override | `/employees/25` | Discan | 0 |
 | Departemen | `/departments` | Discan | 0 |
 | Jabatan | `/positions` | Discan | 0 |
 | Role - List | `/roles` | Discan | 0 |
@@ -42,6 +46,11 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Lokasi Kantor - Modal Edit (Tab Info) | `/office-locations` | Discan | 0 |
 | Lokasi Kantor - Modal Edit (Tab Supervisor) | `/office-locations` | Discan | 0 |
 | Komponen Gaji | `/payroll/salary-components` | Discan | 0 |
+| Komponen Gaji - Modal Tambah (Kategori situational) | `/payroll/salary-components` | Discan | 0 |
+| Komponen Gaji - Modal Edit (Nominal per Jabatan kosong) | `/payroll/salary-components` | Discan | 0 |
+| Komponen Gaji - Dialog Konfirmasi Tambah Nominal Jabatan | `/payroll/salary-components` | Discan | 0 |
+| Komponen Gaji - Modal Edit (Nominal per Jabatan terisi) | `/payroll/salary-components` | Discan | 0 |
+| Komponen Gaji - Dialog Konfirmasi Cabut Jabatan | `/payroll/salary-components` | Discan | 0 |
 | Monitoring Absensi - Rincian Harian (kosong) | `/attendance` | Discan | 0 |
 | Monitoring Absensi - Ringkasan per Karyawan (kosong) | `/attendance` | Discan | 0 |
 | Monitoring Absensi - Rincian Harian (terisi) | `/attendance` | Discan | 0 |
@@ -53,6 +62,7 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Periode Payroll - Admin - List Kosong | `/payroll/periods` | Discan | 0 |
 | Periode Payroll - Admin - List Terisi | `/payroll/periods` | Discan | 0 |
 | Periode Payroll - Admin - Detail (Draft) | `/payroll/periods/:id` | Discan | 0 |
+| Periode Payroll - Admin - Isi Data Periode (kosong) | `/payroll/periods/:id` | Discan | 0 |
 | Periode Payroll - Admin - Dialog Konfirmasi Submit | `/payroll/periods/:id` | Discan | 0 |
 | Slip Gaji - Admin - List Kosong | `/payroll/payslips` | Discan | 0 |
 | Slip Gaji - Admin - List Terisi | `/payroll/payslips` | Discan | 0 |
@@ -64,7 +74,7 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Alur Approval - Admin - Dialog Edit | `/payroll/approval-workflow` | Discan | 0 |
 | Alur Approval - Admin - Validasi Error | `/payroll/approval-workflow` | Discan | 0 |
 | Alur Approval - Admin - Dialog Konfirmasi Hapus | `/payroll/approval-workflow` | Discan | 0 |
-| Audit Log - List | `/audit-log` | Discan | 15 |
+| Audit Log - List | `/audit-log` | Discan | 14 |
 | Audit Log - Detail Modal | `/audit-log` | Discan | 0 |
 | Employee Home - State Awal | `/` | Discan | 0 |
 | Employee Home - Form Absen Masuk (dropdown + radius) | `/` | Discan | 0 |
@@ -73,7 +83,7 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Employee Home - Form Absen Masuk (is_unrestricted) | `/` | Discan | 0 |
 | Employee Home - State Error 422 (Ditolak) | `/` | Discan | 0 |
 | Riwayat Absensi - State Kosong | `/attendance` | Discan | 0 |
-| Riwayat Absensi - State Terisi (+ indikator luar radius) | `/attendance` | Discan | 0 |
+| Riwayat Absensi - State Terisi (+ indikator luar radius) | `/attendance` | ERROR (Cannot read properties of undefined (reading 'id')) | 0 |
 | Riwayat Absensi - Date Range Picker (fokus) | `/attendance` | Discan | 0 |
 | Riwayat Absensi - Date Range Picker (terisi rentang custom) | `/attendance` | Discan | 0 |
 | Cuti - Karyawan - Form Kosong + Kuota | `/leave` | Discan | 0 |
@@ -81,13 +91,13 @@ Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21
 | Slip Gaji - Karyawan - State Kosong | `/payroll/payslips` | Discan | 0 |
 | Slip Gaji - Karyawan - State Terisi + Detail | `/payroll/payslips` | ERROR (Cannot read properties of undefined (reading 'id')) | 0 |
 
-**Total violation di seluruh halaman: 15**
+**Total violation di seluruh halaman: 14**
 
 ## Dikelompokkan Berdasarkan Root Cause
 
-Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasarkan pasangan warna foreground/background PERSIS (class Tailwind yang sama selalu hasilin pasangan warna yang sama, di halaman mana pun dia dipakai).
+Ditemukan 3 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasarkan pasangan warna foreground/background PERSIS (class Tailwind yang sama selalu hasilin pasangan warna yang sama, di halaman mana pun dia dipakai).
 
-### 1. `color-contrast` - 8 kemunculan
+### 1. `color-contrast` - 7 kemunculan
 
 - **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
 - **Impact**: serious
@@ -99,12 +109,11 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(13) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(17) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(19) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(12) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
 
-### 2. `color-contrast` - 7 kemunculan
+### 2. `color-contrast` - 6 kemunculan
 
 - **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
 - **Impact**: serious
@@ -116,6 +125,15 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(3) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(16) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(18) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(9) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(11) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+
+### 3. `color-contrast` - 1 kemunculan
+
+- **Deskripsi**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+- **Impact**: serious
+- **Referensi**: https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright
+- **Foreground**: `#2563eb` | **Background**: `#e2e7f2` | **Contrast Ratio**: 4.17
+- **Muncul di halaman**:
+  - Audit Log - List (`/audit-log`)
+    - `.bg-status-submitted\/10`

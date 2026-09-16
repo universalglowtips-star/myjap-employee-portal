@@ -25,11 +25,26 @@
  * (bukan String()) buat konsistensi kode sama modul lain, meski secara
  * teknis String() juga aman di sini - gak ada downside pakai pola yang sama.
  */
+/**
+ * Task 15b - kategori BARU yang menentukan cara komponen ini dihitung
+ * di generateBulk(): 'fixed' (nominal tetap, termasuk Gaji Pokok pakai
+ * employees.basic_salary APA ADANYA - TIDAK dikali apapun), 'scheduled_variable'
+ * (tarif x quantity yang diisi manual HRD per periode lewat "Isi Data
+ * Periode"), 'situational' (gak ada default tersimpan sama sekali,
+ * gak pernah ikut generate otomatis - ditambah manual per payslip
+ * setelah generate). default_amount/is_required TETAP ADA di kolom DB
+ * (non-destruktif) tapi jadi vestigial buat fixed/scheduled_variable -
+ * applicability sekarang ditentukan category + ada/tidaknya baris
+ * position_salary_components/employee_salary_components, BUKAN is_required.
+ */
+export type SalaryComponentCategory = 'fixed' | 'scheduled_variable' | 'situational'
+
 export interface SalaryComponent {
   id: number
   code: string
   name: string
   type: 'earning' | 'deduction'
+  category: SalaryComponentCategory
   default_amount: string
   is_taxable: boolean
   is_required: boolean
@@ -52,6 +67,7 @@ export interface SalaryComponentCreateRequest {
   code: string
   name: string
   type: 'earning' | 'deduction'
+  category: SalaryComponentCategory
   default_amount: number
   is_taxable: boolean
   is_required: boolean

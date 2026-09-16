@@ -36,6 +36,14 @@ export interface NormalizedApiError {
   status: number | undefined
   message: string
   fieldErrors?: Record<string, string[]>
+  /**
+   * Field tambahan di luar message/errors standar Laravel (mis.
+   * missing_quantities+total_missing dari 422 generateBulk() - Task
+   * 15b) - passthrough GENERIK (bukan special-case per endpoint),
+   * biar caller spesifik yang butuh bisa baca detail terstruktur
+   * tanpa tiap error path baru harus ubah interceptor global ini lagi.
+   */
+  details?: Record<string, unknown>
 }
 
 apiClient.interceptors.response.use(
@@ -49,7 +57,8 @@ apiClient.interceptors.response.use(
     if (body && 'errors' in body) {
       normalized = { status, message: body.message, fieldErrors: body.errors }
     } else if (body && 'message' in body) {
-      normalized = { status, message: body.message }
+      const { message: _message, ...rest } = body
+      normalized = { status, message: body.message, details: Object.keys(rest).length > 0 ? rest : undefined }
     } else {
       normalized = { status, message: 'Tidak bisa terhubung ke server.' }
     }

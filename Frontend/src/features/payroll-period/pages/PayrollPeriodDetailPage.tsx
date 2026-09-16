@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Lock, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Lock, AlertTriangle, Plus } from 'lucide-react'
 import { AppShell } from '../../../components/layout/AppShell'
 import { PermissionGate } from '../../../components/forms/PermissionGate'
 import { Button } from '../../../components/ui/Button'
@@ -14,12 +14,15 @@ import { formatDate } from '../../../lib/formatDate'
 import { formatCurrency } from '../../../lib/formatCurrency'
 import { usePayrollPeriod } from '../hooks/usePayrollPeriod'
 import { useSubmitPayrollPeriod, useApprovePayrollPeriod, useRejectPayrollPeriod } from '../hooks/usePayrollPeriodMutations'
+import { usePublishBulkPayroll } from '../hooks/useBulkPayrollMutations'
 import { periodTypeLabel, formatPeriodRange } from '../lib/payrollPeriodFormat'
 import { ApprovalTimeline } from '../components/ApprovalTimeline'
+import { PayrollPeriodQuantitiesSection } from '../components/PayrollPeriodQuantitiesSection'
+import { PayslipSituationalItemModal } from '../components/PayslipSituationalItemModal'
 import type { Payslip } from '../../../api/types/payslip'
 import type { NormalizedApiError } from '../../../api/client'
 
-type ActionKind = 'submit' | 'approve' | 'reject'
+type ActionKind = 'submit' | 'approve' | 'reject' | 'publish'
 
 const ACTION_CONFIG: Record<
   ActionKind,
@@ -34,6 +37,12 @@ const ACTION_CONFIG: Record<
     reasonLabel: 'Alasan Penolakan',
     successMessage: 'Periode ditolak, kembali ke status Draft.',
   },
+  publish: {
+    title: 'Publish Periode Payroll',
+    confirmLabel: 'Ya, Publish',
+    variant: 'default',
+    successMessage: 'Payroll berhasil dipublish.',
+  },
 }
 
 /**
@@ -44,10 +53,14 @@ const ACTION_CONFIG: Record<
  * HANYA HRD yang punya - dikonfirmasi RolePermissionSeeder; approve/reject
  * MANAGER/FINANCE/HRD).
  *
- * TIDAK ADA tombol Publish di sini sama sekali - transisi Approved->
- * Published murni terjadi di PayslipController::publishBulk() (Task 15,
- * permission payroll.publish-bulk, halaman terpisah), PayrollPeriodController
- * SENGAJA gak punya method publish() (dikonfirmasi investigasi).
+ * Tombol Publish (Task 15b, MENGGANTIKAN rencana "halaman terpisah" Task
+ * 15 yang sudah outdated - instruksi G eksplisit "generate/publish-nya
+ * sudah jadi bagian alur baru ini") - panggil PayslipController::publishBulk()
+ * (BUKAN method di PayrollPeriodController, yang emang sengaja gak
+ * punya publish()) di-scope ke period_code periode INI SAJA (bukan
+ * month+year polos yang bisa nyerempet cabang lain kayak generate).
+ * Ditampilkan begitu status==='Approved' - guard final tetap di backend
+ * (assertPeriodReadyToPublish()), tombol ini murni UX gate.
  *
  * Tombol Approve/Reject SENGAJA ditampilkan ke SEMUA role yang punya
  * permission-nya begitu status==='Submitted', TANPA cek client-side
@@ -65,13 +78,15 @@ export function PayrollPeriodDetailPage() {
 
   const [actionKind, setActionKind] = useState<ActionKind | null>(null)
   const [toast, setToast] = useState<{ variant: 'success' | 'error'; message: string } | null>(null)
+  const [situationalTargetPayslip, setSituationalTargetPayslip] = useState<Payslip | null>(null)
 
   const { data, isLoading, isError } = usePayrollPeriod(periodId)
 
   const submitMutation = useSubmitPayrollPeriod()
   const approveMutation = useApprovePayrollPeriod()
   const rejectMutation = useRejectPayrollPeriod()
-  const isActing = submitMutation.isPending || approveMutation.isPending || rejectMutation.isPending
+  const publishMutation = usePublishBulkPayroll(periodId)
+  const isActing = submitMutation.isPending || approveMutation.isPending || rejectMutation.isPending || publishMutation.isPending
 
   const period = data?.data
   const summary = data?.summary
@@ -82,6 +97,15 @@ export function PayrollPeriodDetailPage() {
       if (actionKind === 'submit') await submitMutation.mutateAsync(periodId)
       else if (actionKind === 'approve') await approveMutation.mutateAsync({ id: periodId, notes: reason })
       else if (actionKind === 'reject') await rejectMutation.mutateAsync({ id: periodId, reason: reason ?? '' })
+      else if (actionKind === 'publish') {
+        const result = await publishMutation.mutateAsync({ period_code: period?.period_code })
+        if (!result.success) {
+          const detail = result.periods.find((p) => p.period_id === periodId)
+          setToast({ variant: 'error', message: detail?.message ?? result.message })
+          setActionKind(null)
+          return
+        }
+      }
       setToast({ variant: 'success', message: ACTION_CONFIG[actionKind].successMessage })
       setActionKind(null)
     } catch (err) {
@@ -153,6 +177,13 @@ export function PayrollPeriodDetailPage() {
                         </Button>
                       </PermissionGate>
                     )}
+                    {period.status === 'Approved' && (
+                      <PermissionGate code="payroll.publish-bulk">
+                        <Button size="small" onClick={() => setActionKind('publish')}>
+                          Publish
+                        </Button>
+                      </PermissionGate>
+                    )}
                   </div>
                 </div>
               </div>
@@ -185,6 +216,8 @@ export function PayrollPeriodDetailPage() {
               </Card>
             </div>
 
+            <PayrollPeriodQuantitiesSection period={period} />
+
             <ApprovalTimeline period={period} approvalHistoryByCycle={summary.approval_history_by_cycle} />
 
             <Card>
@@ -198,6 +231,30 @@ export function PayrollPeriodDetailPage() {
                     { key: 'employee_name', header: 'Nama Karyawan', render: (row) => row.employee?.full_name ?? '-' },
                     { key: 'net_salary', header: 'Gaji Bersih', align: 'right', mono: true, render: (row) => formatCurrency(row.net_salary) },
                     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
+                    {
+                      key: 'actions',
+                      header: '',
+                      align: 'right',
+                      // Task 15b - tambah item Situasional per payslip. Cuma
+                      // masuk akal selagi payslip-nya SENDIRI masih Draft
+                      // DAN periode induknya masih Draft (backend update()
+                      // ngeblock Published/Submitted/Approved - guard di
+                      // sini murni sembunyikan aksi yang bakal gagal, bukan
+                      // satu-satunya lapisan).
+                      render: (row) =>
+                        row.status === 'Draft' && period.status === 'Draft' ? (
+                          <PermissionGate code="payslip.update">
+                            <button
+                              type="button"
+                              onClick={() => setSituationalTargetPayslip(row)}
+                              aria-label={`Tambah item Situasional untuk ${row.employee?.full_name ?? 'karyawan ini'}`}
+                              className="rounded-sm p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                            >
+                              <Plus size={14} strokeWidth={2} />
+                            </button>
+                          </PermissionGate>
+                        ) : null,
+                    },
                   ]}
                 />
               </div>
@@ -215,6 +272,14 @@ export function PayrollPeriodDetailPage() {
           confirmLabel={actionKind ? ACTION_CONFIG[actionKind].confirmLabel : undefined}
           reasonLabel={actionKind ? ACTION_CONFIG[actionKind].reasonLabel : undefined}
           isConfirming={isActing}
+        />
+
+        <PayslipSituationalItemModal
+          open={!!situationalTargetPayslip}
+          onClose={() => setSituationalTargetPayslip(null)}
+          payslip={situationalTargetPayslip}
+          payrollPeriodId={periodId}
+          onSuccess={(message) => setToast({ variant: 'success', message })}
         />
 
         {toast && (

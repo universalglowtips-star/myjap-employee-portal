@@ -118,19 +118,16 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 1800s (bukan 1500s lagi) - sweep terus nambah (Task 13 Periode
-    // Payroll +4, Task 14 Alur Approval +5, 1 di antaranya blok gabungan
-    // create+edit+validasi+hapus yang genuinely paling lama di seluruh
-    // suite). Run yang nambahin Task 14 kena 26.4 menit, lewatin limit
-    // 1500s lama justru DI TENGAH blok Alur Approval itu sendiri meski
-    // blok yang sama, dites SENDIRIAN (file terpisah), cuma makan 1.2
-    // menit - akumulasi ~60+ state SEBELUMNYA yang bikin sisa budget pas
-    // sampai situ udah tipis, bukan bug di blok itu sendiri (dikonfirmasi
-    // ulang - 4 state statis Alur Approval lain semua tetap 0 violation
-    // sebelum blok ini kena limit). Ini bump ke-6, sama persis alasan
-    // bump-bump sebelumnya (300->600->900->1200->1500->1800) - pertimbangkan
+    // 2100s (bukan 1800s lagi) - Task 15b nambah 5 state baru, 2 di
+    // antaranya blok gabungan tambah+cabut (Nominal per Jabatan, Override
+    // Karyawan) yang masing-masing punya beberapa runAxe + fetch
+    // SEKUENSIAL (usePositionRatesForComponents/useScheduledComponentResolution,
+    // BUKAN Promise.all - lihat komentar hook-nya, N request paralel
+    // ber-Authorization-header ke php artisan serve single-threaded di
+    // dev HANG SELAMANYA). Ini bump ke-7, sama persis alasan bump-bump
+    // sebelumnya (300->600->900->1200->1500->1800->2100) - pertimbangkan
     // paralelisasi beneran kalau ini kejadian lagi, sesuai catatan lama.
-    test.setTimeout(1_800_000)
+    test.setTimeout(2_100_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -479,6 +476,40 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.getByText('belum memiliki wewenang cabang apa pun').waitFor({ state: 'visible', timeout: 15000 })
     })
 
+    // === Tab "Komponen Gaji" (Task 15b) - state kosong (referensi) ===
+    await safeStep('Detail Karyawan - Komponen Gaji (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.getByRole('button', { name: 'Komponen Gaji' }).click()
+      await page.getByText('Default Jabatan').waitFor({ state: 'visible', timeout: 15000 })
+      // usePositionRatesForComponents fetch SEKUENSIAL (bukan Promise.all -
+      // lihat komentar hook-nya, N request paralel ber-Authorization-header
+      // ke php artisan serve single-threaded di dev HANG SELAMANYA) lintas
+      // semua komponen eligible - timeout digedein buat ini.
+      await page.getByText('—').first().waitFor({ state: 'visible', timeout: 30000 })
+      await runAxe(page, 'Detail Karyawan - Komponen Gaji (kosong)', `/employees/${EMPLOYEE_EDIT_ID}`)
+    })
+
+    // === Komponen Gaji - tambah+cabut override (mutating, AMAN - employee_salary_components TIDAK punya immutability guard/soft-delete, pola sama Wewenang Cabang di atas) ===
+    await safeStep('Detail Karyawan - Komponen Gaji - Dialog Tambah/Cabut Override', `/employees/${EMPLOYEE_EDIT_ID}`, async () => {
+      await page.locator('#add_override_component').selectOption({ label: 'Bonus' })
+      await page.locator('#add_override_amount').fill('500000')
+      await page.getByRole('button', { name: 'Tambah Override' }).click()
+      const confirmAddDialog = page.getByRole('alertdialog')
+      await confirmAddDialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Komponen Gaji - Dialog Konfirmasi Tambah Override', `/employees/${EMPLOYEE_EDIT_ID}`, '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Ya, Simpan' }).click()
+      await confirmAddDialog.waitFor({ state: 'hidden', timeout: 10000 })
+      await page.getByText(/Rp\s*500\.000/).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Komponen Gaji (override terisi)', `/employees/${EMPLOYEE_EDIT_ID}`)
+
+      // Cabut lagi - balikin employee QA ke state kosong.
+      await page.getByRole('button', { name: /Cabut override/ }).click()
+      const confirmRemoveDialog = page.getByRole('alertdialog')
+      await confirmRemoveDialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Detail Karyawan - Komponen Gaji - Dialog Konfirmasi Cabut Override', `/employees/${EMPLOYEE_EDIT_ID}`, '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Ya, Cabut' }).click()
+      await confirmRemoveDialog.waitFor({ state: 'hidden', timeout: 10000 })
+    })
+
     // === /departments ===
     await safeStep('Departemen', '/departments', async () => {
       await gotoAndSettle(page, '/departments')
@@ -583,6 +614,55 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     await safeStep('Komponen Gaji', '/payroll/salary-components', async () => {
       await gotoAndSettle(page, '/payroll/salary-components')
       await runAxe(page, 'Komponen Gaji', '/payroll/salary-components')
+    })
+
+    // === Komponen Gaji - Modal Tambah, field Kategori baru (Task 15b) ===
+    // Non-mutating - buka modal, ganti Kategori (caption berubah per
+    // pilihan), Batal tanpa submit.
+    await safeStep('Komponen Gaji - Modal Tambah (field Kategori)', '/payroll/salary-components', async () => {
+      await page.getByRole('button', { name: 'Tambah Komponen Gaji' }).click()
+      await page.locator('#code').waitFor({ state: 'visible', timeout: 10000 })
+      await page.locator('#category').selectOption('situational')
+      await page.getByText(/Tidak ada nominal default tersimpan/).waitFor({ state: 'visible', timeout: 10000 })
+      // is_required otomatis disabled+dipaksa "Tidak" pas situational -
+      // state ini WAJIB discan (disabled Select punya kontras beda).
+      await runAxe(page, 'Komponen Gaji - Modal Tambah (Kategori situational)', '/payroll/salary-components', '[role="dialog"]')
+      await page.getByRole('button', { name: 'Batal' }).click()
+    })
+
+    // === Komponen Gaji - Modal Edit, section "Nominal per Jabatan" (Task 15b) ===
+    // Mutating tapi AMAN buat permanent suite - position_salary_components
+    // TIDAK punya immutability guard/soft-delete sama sekali (pola sama
+    // Alur Approval Task 14: destroy() nyata, seed-mutate-cleanup lengkap
+    // per run). Komponen "Bonus" (code BONUS, id asli/stabil) + jabatan
+    // "Sorter" - dipilih karena TIDAK dipakai employee real manapun
+    // (dikonfirmasi investigasi Task 15b), jadi nyalain rate ini sesaat
+    // gak mempengaruhi perhitungan payroll siapapun.
+    await safeStep('Komponen Gaji - Modal Edit (Nominal per Jabatan)', '/payroll/salary-components', async () => {
+      await page.getByRole('row', { name: 'Bonus', exact: false }).getByLabel(/Edit/).click()
+      await page.getByText('Nominal per Jabatan', { exact: true }).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Komponen Gaji - Modal Edit (Nominal per Jabatan kosong)', '/payroll/salary-components', '[role="dialog"]')
+
+      await page.locator('#add_position_rate_position').selectOption({ label: 'Sorter' })
+      await page.locator('#add_position_rate_amount').fill('100000')
+      await page.getByRole('button', { name: 'Tambah', exact: true }).click()
+      const confirmAddDialog = page.getByRole('alertdialog')
+      await confirmAddDialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Komponen Gaji - Dialog Konfirmasi Tambah Nominal Jabatan', '/payroll/salary-components', '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Ya, Simpan' }).click()
+      await confirmAddDialog.waitFor({ state: 'hidden', timeout: 10000 })
+      await page.getByText(/Rp\s*100\.000/).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Komponen Gaji - Modal Edit (Nominal per Jabatan terisi)', '/payroll/salary-components', '[role="dialog"]')
+
+      // Cabut lagi - balikin komponen Bonus ke state bersih (gak ada
+      // jabatan manapun) buat run sweep berikutnya.
+      await page.locator('button[aria-label^="Cabut"]').first().click()
+      const confirmRemoveDialog = page.getByRole('alertdialog')
+      await confirmRemoveDialog.waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Komponen Gaji - Dialog Konfirmasi Cabut Jabatan', '/payroll/salary-components', '[role="alertdialog"]')
+      await page.getByRole('button', { name: 'Ya, Cabut' }).click()
+      await page.getByText('Belum ada jabatan yang diatur untuk komponen ini.').waitFor({ state: 'visible', timeout: 10000 })
+      await page.getByRole('button', { name: 'Batal' }).click()
     })
 
     // === /attendance (Task 10) - Monitoring Absensi Admin, masih login
@@ -755,6 +835,16 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await draftRow.locator('button').first().click()
       await page.getByText('Alur Approval').waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Periode Payroll - Admin - Detail (Draft)', '/payroll/periods/:id')
+
+      // === "Isi Data Periode" (Task 15b) - READ-ONLY di sini (baseline
+      // gak ada posisi manapun yang punya komponen scheduled_variable
+      // diatur, jadi section ini pasti render state kosong "Tidak ada
+      // karyawan..." - aman, gak mutate apapun). Alur isi+generate penuh
+      // divalidasi terpisah lewat skrip walkthrough sekali-pakai, sama
+      // alasan alur Submit->Approve di atas.
+      await page.getByText('Isi Data Periode').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByText('Tidak ada karyawan dengan komponen Variabel Terjadwal').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Periode Payroll - Admin - Isi Data Periode (kosong)', '/payroll/periods/:id')
 
       const submitButton = page.getByRole('button', { name: 'Submit', exact: true })
       await submitButton.waitFor({ state: 'visible', timeout: 5000 })
