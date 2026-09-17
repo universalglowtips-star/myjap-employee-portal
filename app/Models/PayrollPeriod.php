@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\UniqueConstraintViolationException;
 use RuntimeException;
 
 class PayrollPeriod extends Model
@@ -121,7 +124,6 @@ class PayrollPeriod extends Model
      * load relasi approvals() (aman, gak ada closure dinamis) lalu
      * filter submission_cycle di PHP - lihat PayrollPeriodController.
      */
-
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'submitted_by')->withTrashed();
@@ -172,7 +174,7 @@ class PayrollPeriod extends Model
      */
     public static function findOrCreateRegular(int $month, int $year, ?int $createdBy = null, ?int $officeLocationId = null): self
     {
-        $start = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end = (clone $start)->endOfMonth();
 
         $officeCode = null;
@@ -181,12 +183,25 @@ class PayrollPeriod extends Model
             $officeCode = OfficeLocation::withTrashed()->find($officeLocationId)?->office_code ?? "LOC{$officeLocationId}";
         }
 
-        $code = 'REGULAR-' . $year . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT)
-            . ($officeCode ? '-' . $officeCode : '');
+        $code = 'REGULAR-'.$year.'-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT)
+            .($officeCode ? '-'.$officeCode : '');
 
-        $existing = self::where('period_code', $code)->first();
+        // withTrashed() WAJIB di sini - period_code punya unique index yang
+        // gak peduli soft-delete, dan period gak pernah bisa forceDelete
+        // (guard permanen). Kalau periode ini pernah di-generate lalu
+        // dihapus (soft-delete), period_code-nya masih "dipakai" di DB -
+        // exclude trashed di sini bikin create() di bawah selalu
+        // unique-constraint-violation, lalu recovery-nya (catch block)
+        // JUGA exclude trashed -> firstOrFail() gagal -> 500 gak jelas.
+        // Ketemu beneran waktu verifikasi "Mulai Periode Baru" nabrak sisa
+        // periode 2210 yang sudah di-soft-delete dari sesi sebelumnya.
+        $existing = self::withTrashed()->where('period_code', $code)->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
             return $existing;
         }
 
@@ -204,15 +219,27 @@ class PayrollPeriod extends Model
                 'created_by' => $createdBy,
             ]);
 
-        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+        } catch (UniqueConstraintViolationException $e) {
 
-            // Race condition: request lain sempat bikin period yang sama
-            // persis di antara pengecekan di atas dan insert ini. Ambil
-            // yang sudah kebuat itu, jangan dianggap error.
-            return self::where('period_code', $code)->firstOrFail();
+            // Race condition: request lain sempat bikin (atau restore)
+            // period yang sama persis di antara pengecekan di atas dan
+            // insert ini. Ambil yang sudah ada itu (withTrashed() - bisa
+            // saja masih dalam proses trashed kalau race-nya sama proses
+            // yang lagi menghapus), jangan dianggap error.
+            $existing = self::withTrashed()->where('period_code', $code)->first();
+
+            if (! $existing) {
+                throw $e;
+            }
+
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
+            return $existing;
         }
 
-        \App\Services\AuditLogService::log(
+        AuditLogService::log(
             $period,
             'created',
             null,
