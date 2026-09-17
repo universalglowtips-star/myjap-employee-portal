@@ -10,14 +10,21 @@ import type { NormalizedApiError } from '../../../api/client'
  * baru langsung kelihatan di halaman ini) + list periode (period lain
  * yang ikut ke-generate/publish baru muncul/berubah status kalau
  * user balik ke List).
+ *
+ * periodId OPSIONAL (gap "Mulai Periode Baru") - dipanggil juga dari
+ * PayrollBulkGeneratePage yang BELUM PUNYA periode existing sama
+ * sekali (justru itu tujuannya - bikin yang pertama). Di situ cuma
+ * invalidate list, gak ada periode spesifik buat di-invalidate.
  */
-export function useGenerateBulkPayroll(periodId: number) {
+export function useGenerateBulkPayroll(periodId?: number) {
   const queryClient = useQueryClient()
   return useMutation<GenerateBulkResponse, NormalizedApiError, GenerateBulkRequest>({
     mutationFn: (payload) => generateBulkPayroll(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payroll-periods'] })
-      queryClient.invalidateQueries({ queryKey: ['payroll-period', periodId] })
+      if (periodId !== undefined) {
+        queryClient.invalidateQueries({ queryKey: ['payroll-period', periodId] })
+      }
     },
   })
 }

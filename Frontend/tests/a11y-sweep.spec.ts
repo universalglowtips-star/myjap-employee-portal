@@ -127,7 +127,7 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // dev HANG SELAMANYA). Ini bump ke-7, sama persis alasan bump-bump
     // sebelumnya (300->600->900->1200->1500->1800->2100) - pertimbangkan
     // paralelisasi beneran kalau ini kejadian lagi, sesuai catatan lama.
-    test.setTimeout(2_100_000)
+    test.setTimeout(2_400_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -639,7 +639,11 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // (dikonfirmasi investigasi Task 15b), jadi nyalain rate ini sesaat
     // gak mempengaruhi perhitungan payroll siapapun.
     await safeStep('Komponen Gaji - Modal Edit (Nominal per Jabatan)', '/payroll/salary-components', async () => {
-      await page.getByRole('row', { name: 'Bonus', exact: false }).getByLabel(/Edit/).click()
+      // getByRole('row', {name: 'Bonus'}) SENGAJA dihindari - substring
+      // match-nya juga kena baris "UAT - Bonus DLV" (data UAT asli milik
+      // Bagus, permanen sejak investigasi Task 15b gap E). Cari langsung
+      // tombol Edit-nya by exact aria-label, gak ambigu.
+      await page.getByRole('button', { name: 'Edit Bonus', exact: true }).click()
       await page.getByText('Nominal per Jabatan', { exact: true }).waitFor({ state: 'visible', timeout: 10000 })
       await runAxe(page, 'Komponen Gaji - Modal Edit (Nominal per Jabatan kosong)', '/payroll/salary-components', '[role="dialog"]')
 
@@ -855,6 +859,49 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       // sebelum tombol "Ya, Submit" diklik, jadi periode existing ini TETAP
       // Draft sesudah step ini, aman buat run berikutnya tanpa cleanup.
       await page.keyboard.press('Escape')
+    })
+
+    // === "Mulai Periode Baru" (gap Task 15b - /payroll/bulk-process) ===
+    // SENGAJA gak pernah klik "Mulai Generate" di sini - itu beneran
+    // memicu generateBulk() (bisa bikin periode/payslip baru di data
+    // asli). Alur generate penuh (sukses & gagal-quantity) sudah
+    // divalidasi terpisah lewat skrip walkthrough tahun palsu 2210/2211,
+    // dibersihkan manual sesudahnya - bukan bagian permanent sweep ini.
+    await safeStep('Mulai Periode Baru - Form Kosong', '/payroll/bulk-process', async () => {
+      await gotoAndSettle(page, '/payroll/bulk-process')
+      await page.getByRole('heading', { name: 'Mulai Periode Baru' }).waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Mulai Periode Baru - Form Kosong', '/payroll/bulk-process')
+    })
+
+    await safeStep('Mulai Periode Baru - Kombinasi Sudah Ada', '/payroll/bulk-process', async () => {
+      // Bulan/tahun existing asli (REGULAR-2026-09) - baca-only, gak mutate.
+      await page.getByLabel('Bulan').selectOption('9')
+      await page.getByLabel('Tahun').fill('2026')
+      await page.getByText('Periode untuk bulan ini sudah ada').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Mulai Periode Baru - Kombinasi Sudah Ada', '/payroll/bulk-process')
+    })
+
+    await safeStep('Mulai Periode Baru - Preview Cabang', '/payroll/bulk-process', async () => {
+      // Tahun palsu jauh - kombinasi belum pernah ada, munculin preview
+      // cabang. TIDAK diklik submit-nya, cuma render state preview.
+      await page.getByLabel('Tahun').fill('2299')
+      await page.getByText(/Ini akan membuat periode untuk/).waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Mulai Periode Baru - Preview Cabang', '/payroll/bulk-process')
+    })
+
+    // Banner hasil generate (Periode Payroll List) - dipicu murni lewat
+    // query param URL langsung (gak generate beneran) buat nge-tes
+    // render/ARIA-nya doang, konsisten sama cara halaman ini baca state-nya.
+    await safeStep('Periode Payroll - Banner Generate Berhasil', '/payroll/periods', async () => {
+      await gotoAndSettle(page, '/payroll/periods?bulk=success&created=1&skipped=0&periods=4%3AREGULAR-2026-09')
+      await page.getByText('Generate payroll berhasil').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Periode Payroll - Banner Generate Berhasil', '/payroll/periods')
+    })
+
+    await safeStep('Periode Payroll - Banner Generate Gagal Sebagian', '/payroll/periods', async () => {
+      await gotoAndSettle(page, '/payroll/periods?bulk=missing&missing_count=1&periods=4%3AREGULAR-2026-09')
+      await page.getByText('Generate payroll gagal sebagian').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Periode Payroll - Banner Generate Gagal Sebagian', '/payroll/periods')
     })
 
     // === Slip Gaji - Admin (Task 12) - login masih SUPER_ADMIN aktif ===

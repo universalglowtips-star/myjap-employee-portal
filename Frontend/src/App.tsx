@@ -27,6 +27,7 @@ import { PayslipEmployeePage } from './features/payslip/pages/PayslipEmployeePag
 import { PayslipAdminPage } from './features/payslip/pages/PayslipAdminPage'
 import { PayrollPeriodListPage } from './features/payroll-period/pages/PayrollPeriodListPage'
 import { PayrollPeriodDetailPage } from './features/payroll-period/pages/PayrollPeriodDetailPage'
+import { PayrollBulkGeneratePage } from './features/payroll-period/pages/PayrollBulkGeneratePage'
 import { ApprovalWorkflowListPage } from './features/approval-workflow/pages/ApprovalWorkflowListPage'
 
 /**
@@ -128,9 +129,17 @@ function PayslipRoute() {
  * karena EMPLOYEE gak punya permission apapun di modul ini sama sekali -
  * cuma satu halaman per route, gate-nya `dashboard.view` PermissionGate di
  * dalam. Submit/Approve/Reject diekspos (masing-masing permission sendiri:
- * payroll-period.submit/approve/reject), TIDAK ADA tombol Publish/Create/
- * Edit/Delete - PayrollPeriodController.php sengaja gak punya route itu
- * (dikonfirmasi investigasi), Publish murni Task 15 punya), dan
+ * payroll-period.submit/approve/reject). PayrollPeriodController.php TETAP
+ * gak punya route create/publish sendiri (dikonfirmasi investigasi) - tapi
+ * Publish (gate `payroll.publish-bulk`) DITAMBAHKAN Task 15b lewat
+ * PayslipController::publishBulk() di halaman Detail (bukan controller
+ * period-nya sendiri), dan '/payroll/bulk-process' (gap Task 15b -
+ * "Mulai Periode Baru", satu-satunya entry point buat generate pertama
+ * kali untuk kombinasi bulan/tahun yang belum pernah ada periode-nya
+ * sama sekali - link sidebar-nya sempat mati/nyasar ke route yang gak
+ * pernah terdaftar sebelum halaman ini dibuat) - gate `payroll.generate-bulk`,
+ * sama persis tombol Generate di halaman Detail. TIDAK ADA percabangan
+ * Route buat keduanya (EMPLOYEE gak punya akses modul ini sama sekali). Dan
  * '/payroll/approval-workflow' (Task 14 - List+Modal CRUD, pola Master
  * Data BUKAN view-only, HRD-only permanen by design - MANAGER/FINANCE
  * yang jadi approver operasional TETAP TIDAK dapat akses ke modul
@@ -306,6 +315,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PayrollPeriodDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/bulk-process"
+        element={
+          <ProtectedRoute>
+            <PayrollBulkGeneratePage />
           </ProtectedRoute>
         }
       />
