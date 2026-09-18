@@ -8,6 +8,7 @@ import { ArrowLeft, AlertTriangle, Lock, User } from 'lucide-react'
 import { AppShell } from '../../../components/layout/AppShell'
 import { PermissionGate } from '../../../components/forms/PermissionGate'
 import { Input } from '../../../components/ui/Input'
+import { PasswordInput } from '../../../components/ui/PasswordInput'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Toast } from '../../../components/ui/Toast'
@@ -413,9 +414,8 @@ export function EmployeeFormPage() {
                 <Label htmlFor="password">
                   Password
                 </Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="new-password"
                   className="py-2"
                   placeholder={isEditMode ? 'Kosongkan jika tidak ingin mengubah password' : undefined}

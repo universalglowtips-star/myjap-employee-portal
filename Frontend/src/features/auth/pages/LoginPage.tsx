@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../../../stores/authStore'
 import type { NormalizedApiError } from '../../../api/client'
 import { Input } from '../../../components/ui/Input'
+import { PasswordInput } from '../../../components/ui/PasswordInput'
 import { Button } from '../../../components/ui/Button'
 import { Label } from '../../../components/ui/Label'
 
@@ -30,9 +30,6 @@ export function LoginPage() {
 
   // Error 401 (gagal login) - pesan APA ADANYA dari backend, gak dikarang ulang.
   const [generalError, setGeneralError] = useState<string | null>(null)
-
-  // Toggle show/hide password - visual saja, tidak menyentuh cara value dikirim ke backend.
-  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -121,26 +118,14 @@ export function LoginPage() {
             <Label htmlFor="password">
               Kata Sandi
             </Label>
-            {/* Toggle show/hide - lapisan visual di atas Input yang sudah ada, tidak mengubah Input.tsx (dipakai halaman lain juga) */}
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                error={errors.password?.message}
-                className="pr-10"
-                {...register('password')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                className="absolute right-3 top-[21px] -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
-              >
-                {showPassword ? <EyeOff size={16} strokeWidth={2} /> : <Eye size={16} strokeWidth={2} />}
-              </button>
-            </div>
+            <PasswordInput
+              id="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              error={errors.password?.message}
+              fieldLabel="kata sandi"
+              {...register('password')}
+            />
           </div>
 
           {generalError && (
