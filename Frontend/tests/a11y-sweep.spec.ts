@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -127,7 +127,7 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // dev HANG SELAMANYA). Ini bump ke-7, sama persis alasan bump-bump
     // sebelumnya (300->600->900->1200->1500->1800->2100) - pertimbangkan
     // paralelisasi beneran kalau ini kejadian lagi, sesuai catatan lama.
-    test.setTimeout(2_400_000)
+    test.setTimeout(2_700_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -1467,6 +1467,37 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
           headers: { Authorization: `Bearer ${superAdminToken}` },
         })
       }
+    })
+
+    // === Sidebar - Accordion kategori (gap "Sidebar Accordion + Scroll
+    // Handle") - Sidebar dipakai di SEMUA halaman, jadi state defaultnya
+    // (1 kategori aktif auto-expand, sisanya collapsed) SUDAH otomatis
+    // ke-scan berkali-kali sepanjang sweep di atas (tiap halaman render
+    // Sidebar yang sama). Dua step di bawah ini SENGAJA nge-tes state
+    // yang BELUM tercover state default itu: header di-klik manual
+    // (chevron ter-rotasi + panel manual-expanded), dan drawer mobile.
+    await safeStep('Sidebar - Kategori Expand Manual (chevron terbuka)', '/', async () => {
+      await gotoAndSettle(page, '/')
+      const payrollHeader = page.getByRole('button', { name: 'Payroll' })
+      await payrollHeader.click()
+      await expect(payrollHeader).toHaveAttribute('aria-expanded', 'true')
+      await page.getByRole('link', { name: 'Periode Payroll' }).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Sidebar - Kategori Expand Manual', '/', 'nav[aria-label="Navigasi utama"]')
+    })
+
+    // Viewport mobile SENGAJA di step PALING TERAKHIR (bukan disisipkan
+    // di tengah) - gak ada step lain sesudahnya yang butuh viewport
+    // desktop balik lagi, jadi gak perlu reset eksplisit.
+    await safeStep('Sidebar - Drawer Mobile + Accordion', '/', async () => {
+      await page.setViewportSize({ width: 390, height: 844 })
+      await gotoAndSettle(page, '/')
+      await page.getByRole('button', { name: /menu navigasi/ }).click()
+      await page.getByRole('button', { name: 'Overview' }).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Sidebar - Drawer Mobile (kategori aktif expand)', '/', 'nav[aria-label="Navigasi utama"]')
+
+      await page.getByRole('button', { name: 'People' }).click()
+      await page.getByRole('link', { name: 'Absensi' }).waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, 'Sidebar - Drawer Mobile (kategori manual expand)', '/', 'nav[aria-label="Navigasi utama"]')
     })
 
     writeReports()

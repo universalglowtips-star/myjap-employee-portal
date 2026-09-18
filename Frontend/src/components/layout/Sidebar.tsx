@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   Home,
   Users,
@@ -15,6 +17,7 @@ import {
   ShieldCheck,
   Bell,
   List,
+  ChevronDown,
 } from 'lucide-react'
 import { SidebarNavItem } from './SidebarNavItem'
 import { PermissionGate } from '../forms/PermissionGate'
@@ -89,6 +92,53 @@ interface NavGroup {
   items: NavItem[]
 }
 
+/**
+ * Kategori sidebar jadi accordion (permintaan Bagus, pola interaksi
+ * dicontoh dari app SiCepat - BUKAN warna/branding-nya). Aturan final
+ * Bagus:
+ * 1. Default SEMUA kategori collapsed, KECUALI kategori yang berisi
+ *    halaman aktif saat ini - itu auto-expand.
+ * 2. Expand manual kategori LAIN (di luar kategori aktif) disimpan ke
+ *    localStorage, bertahan lewat reload.
+ * 3. Auto-expand kategori aktif SELALU MENANG - localStorage cuma
+ *    dipakai buat kategori yang BUKAN kategori aktif saat ini.
+ *
+ * `isGroupExpanded()`/`toggleGroup()` di bawah mengimplementasikan
+ * OR sederhana (aktif || tersimpan) tiap render - toggle dihitung dari
+ * state EFEKTIF (yang keliatan), bukan nilai mentah tersimpan, supaya
+ * klik di kategori yang lagi dipaksa expand (karena aktif) tetap
+ * kesimpen sebagai "false" - gak kelihatan berubah SEKARANG (aktif
+ * masih menang), tapi begitu pindah ke kategori lain preferensi itu
+ * kepake.
+ */
+const SIDEBAR_EXPANDED_GROUPS_KEY = 'myjap-sidebar-expanded-groups'
+
+function loadStoredExpandedGroups(): Record<string, boolean> {
+  const raw = localStorage.getItem(SIDEBAR_EXPANDED_GROUPS_KEY)
+  if (!raw) return {}
+  try {
+    return JSON.parse(raw) as Record<string, boolean>
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Match "aktif" buat kepentingan auto-expand kategori BEDA dari
+ * `isActive` di SidebarNavItem (exact match doang, buat highlight biru
+ * item itu sendiri - TIDAK diubah, di luar scope instruksi ini).
+ * Di sini SENGAJA prefix-aware (`pathname` diawali `to + '/'` juga
+ * dianggap match) - biar halaman turunan/detail (mis. `/payroll/periods/4`,
+ * `/employees/new`) tetap ngenalin kategori induknya buat di-expand,
+ * bukan cuma pas persis di halaman list-nya. `to === '/'` dikecualikan
+ * (exact match doang) - kalau enggak, Overview bakal selalu "aktif"
+ * di halaman manapun (semua path diawali '/').
+ */
+function isItemActive(pathname: string, to: string): boolean {
+  if (to === '/') return pathname === '/'
+  return pathname === to || pathname.startsWith(`${to}/`)
+}
+
 function buildNavGroups(canViewDashboard: boolean): NavGroup[] {
   return [
     {
@@ -158,12 +208,29 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
   const isSuperAdmin = useAuthStore((s) => s.employee?.role?.role_code === 'SUPER_ADMIN')
   const canViewDashboard = evaluatePermission(permissions, isSuperAdmin, 'dashboard.view')
 
+  const location = useLocation()
+  const [storedExpanded, setStoredExpanded] = useState<Record<string, boolean>>(loadStoredExpandedGroups)
+
   const navGroups = buildNavGroups(canViewDashboard)
   const visibleGroups = navGroups.filter((group) =>
     group.items.some(
       (item) => item.permission === null || evaluatePermission(permissions, isSuperAdmin, item.permission)
     )
   )
+
+  const activeGroupLabel = visibleGroups.find((group) =>
+    group.items.some((item) => isItemActive(location.pathname, item.to))
+  )?.label
+
+  function isGroupExpanded(label: string): boolean {
+    return label === activeGroupLabel || (storedExpanded[label] ?? false)
+  }
+
+  function toggleGroup(label: string) {
+    const next = { ...storedExpanded, [label]: !isGroupExpanded(label) }
+    setStoredExpanded(next)
+    localStorage.setItem(SIDEBAR_EXPANDED_GROUPS_KEY, JSON.stringify(next))
+  }
 
   return (
     <>
@@ -191,67 +258,106 @@ export function Sidebar({ collapsed, mobileOpen, onClose }: SidebarProps) {
           // SidebarNavItem, w-16 fixed) kalau nilainya beda antara
           // collapsed/expanded. Item mulai PERSIS dari left-0 di kedua
           // state, biar icon rail-nya konsisten by construction.
-          'fixed bottom-0 left-0 top-[72px] z-50 flex w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white pt-6 transition-transform duration-200 ease-in-out lg:static lg:h-full lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
+          'sidebar-nav-scroll fixed bottom-0 left-0 top-[72px] z-50 flex w-[240px] flex-col gap-1 overflow-y-auto overflow-x-hidden border-r border-neutral-200 bg-white pt-6 transition-transform duration-200 ease-in-out lg:static lg:h-full lg:translate-x-0 lg:transition-[width] lg:duration-200 lg:ease-in-out',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           collapsed && 'lg:w-16'
         )}
       >
-        {visibleGroups.map((group, index) => (
-          <div key={group.label} className="mt-4 flex flex-col gap-1">
-            {/* Divider - CUMA muncul di collapsed (lg:block di-gate
-                `collapsed`, bukan cuma breakpoint) DAN cuma di antara
-                grup (index>0, gak ada divider sebelum grup pertama -
-                index di sini udah dihitung dari visibleGroups, jadi
-                "grup pertama" berarti pertama yang BENERAN kerender,
-                bukan posisi asli di navGroups).
-                Di expanded, `hidden` (default) tetap berlaku - label
-                grup di bawah ini yang jadi pemisah visual, JANGAN
-                dobel. mx-4+mb-2 kasih jarak dikit biar gak nempel ke
-                icon di atas/bawahnya. */}
-            {index > 0 && (
-              <div
-                aria-hidden="true"
-                className={cn('hidden', collapsed && 'lg:mx-4 lg:mb-2 lg:block lg:border-t lg:border-neutral-200')}
-              />
-            )}
-            {/* pl-16 (BUKAN px-4 kayak sebelumnya) - nyamain sama posisi
-                mulainya teks label item di bawahnya (w-16 icon rail +
-                label), bukan sama posisi icon.
-                text-neutral-600 (BUKAN neutral-400 - kontras 2.94:1
-                terhadap putih, GAGAL WCAG AA. neutral-600 = 7.19:1,
-                lolos jauh di atas ambang 4.5:1, dihitung pakai formula
-                WCAG standar - lihat commit message buat detail angka). */}
-            <span
-              className={cn(
-                'pl-16 pr-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-600',
-                collapsed && 'lg:hidden'
-              )}
-            >
-              {group.label}
-            </span>
-            {group.items.map((item) => {
-              const navItem = (
-                <SidebarNavItem
-                  key={item.to}
-                  to={item.to}
-                  label={item.label}
-                  icon={item.icon}
-                  collapsed={collapsed}
-                  onClick={onClose}
+        {visibleGroups.map((group, index) => {
+          const expanded = isGroupExpanded(group.label)
+          const groupContentId = `sidebar-group-${group.label.toLowerCase().replace(/\s+/g, '-')}`
+
+          return (
+            <div key={group.label} className="mt-4 flex flex-col gap-1">
+              {/* Divider - CUMA muncul di collapsed (lg:block di-gate
+                  `collapsed`, bukan cuma breakpoint) DAN cuma di antara
+                  grup (index>0, gak ada divider sebelum grup pertama -
+                  index di sini udah dihitung dari visibleGroups, jadi
+                  "grup pertama" berarti pertama yang BENERAN kerender,
+                  bukan posisi asli di navGroups).
+                  Di expanded, `hidden` (default) tetap berlaku - label
+                  grup di bawah ini yang jadi pemisah visual, JANGAN
+                  dobel. mx-4+mb-2 kasih jarak dikit biar gak nempel ke
+                  icon di atas/bawahnya. */}
+              {index > 0 && (
+                <div
+                  aria-hidden="true"
+                  className={cn('hidden', collapsed && 'lg:mx-4 lg:mb-2 lg:block lg:border-t lg:border-neutral-200')}
                 />
-              )
-              // Item tanpa permission spesifik (Notifikasi) TIDAK dibungkus
-              // PermissionGate sama sekali - render langsung.
-              return item.permission ? (
-                <PermissionGate key={item.to} code={item.permission}>
-                  {navItem}
-                </PermissionGate>
-              ) : (
-                navItem
-              )
-            })}
-          </div>
-        ))}
+              )}
+              {/* Header kategori jadi tombol accordion (permintaan Bagus,
+                  pola SiCepat). Di collapsed (icon-rail desktop) TETAP
+                  `lg:hidden` kayak span sebelumnya - gak ada ruang buat
+                  header+chevron di rail 64px, dan accordion gak relevan
+                  di situ (lihat grid-rows di bawah, dipaksa selalu
+                  terbuka lewat `lg:grid-rows-[1fr]`).
+                  pl-16 (BUKAN px-4) - nyamain sama posisi mulainya teks
+                  label item di bawahnya (w-16 icon rail + label).
+                  text-neutral-600 (BUKAN neutral-400 - kontras 2.94:1
+                  terhadap putih, GAGAL WCAG AA. neutral-600 = 7.19:1,
+                  lolos jauh di atas ambang 4.5:1). */}
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.label)}
+                aria-expanded={expanded}
+                aria-controls={groupContentId}
+                className={cn(
+                  'flex items-center justify-between gap-2 pl-16 pr-4 font-body text-[11px] font-medium uppercase tracking-wide text-neutral-600 transition-colors hover:text-neutral-900 focus:outline-none focus-visible:text-primary-700',
+                  collapsed && 'lg:hidden'
+                )}
+              >
+                <span>{group.label}</span>
+                <ChevronDown
+                  size={14}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                  className={cn('shrink-0 transition-transform duration-200 ease-in-out', !expanded && '-rotate-90')}
+                />
+              </button>
+              {/* Accordion collapse/expand murni CSS (grid-template-rows
+                  0fr<->1fr + overflow-hidden di wrapper dalam) - gak ada
+                  library animasi di project ini, dan trik ini gak butuh
+                  tau tinggi konten di muka (beda dari max-height magic
+                  number yang gampang salah kalau daftar item berubah).
+                  Base class (tanpa `lg:`) berlaku di SEMUA lebar TERMASUK
+                  desktop expanded - `lg:grid-rows-[1fr]` HANYA override
+                  pas collapsed (icon-rail), maksa selalu penuh kebuka
+                  karena gak ada header buat toggle di mode itu. */}
+              <div
+                id={groupContentId}
+                className={cn(
+                  'grid transition-[grid-template-rows] duration-200 ease-in-out',
+                  expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                  collapsed && 'lg:grid-rows-[1fr]'
+                )}
+              >
+                <div className="flex flex-col gap-1 overflow-hidden">
+                  {group.items.map((item) => {
+                    const navItem = (
+                      <SidebarNavItem
+                        key={item.to}
+                        to={item.to}
+                        label={item.label}
+                        icon={item.icon}
+                        collapsed={collapsed}
+                        onClick={onClose}
+                      />
+                    )
+                    // Item tanpa permission spesifik (Notifikasi) TIDAK dibungkus
+                    // PermissionGate sama sekali - render langsung.
+                    return item.permission ? (
+                      <PermissionGate key={item.to} code={item.permission}>
+                        {navItem}
+                      </PermissionGate>
+                    ) : (
+                      navItem
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </nav>
     </>
   )
