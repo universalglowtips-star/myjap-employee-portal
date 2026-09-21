@@ -48,11 +48,28 @@ export function LoginPage() {
       // manggil apiClient/login() endpoint langsung. Flow lengkap
       // (POST /login -> GET /me -> update state) ada di authStore,
       // bukan di sini.
-      await login(values)
+      const result = await login(values)
+
+      const from = (location.state as { from?: Location })?.from
+
+      // Fitur 2FA (2026-09-21) - 2 varian TAMBAHAN di luar sukses
+      // langsung. setupToken/challengeToken dibawa via router state
+      // (BUKAN authStore - bukan "auth state" beneran, cuma nilai
+      // sekali-pakai buat 1 langkah berikutnya) ke halaman setup/verify
+      // masing-masing, `from` ikut dibawa ke TwoFactorVerifyPage biar
+      // redirect-setelah-2FA tetap balik ke route asal yang sama.
+      if (result.status === 'requires_2fa_setup') {
+        navigate('/2fa/setup', { replace: true, state: { setupToken: result.setupToken } })
+        return
+      }
+
+      if (result.status === 'requires_2fa_code') {
+        navigate('/2fa/verify', { replace: true, state: { challengeToken: result.challengeToken, from } })
+        return
+      }
 
       // Redirect: balik ke route asal (disimpan ProtectedRoute lewat
       // location.state.from) kalau ada, fallback ke '/'.
-      const from = (location.state as { from?: Location })?.from
       navigate(from?.pathname ?? '/', { replace: true })
     } catch (err) {
       const apiError = err as NormalizedApiError

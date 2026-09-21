@@ -1,10 +1,52 @@
 {
-  "generatedAt": "2026-09-20T21:58:22.979Z",
-  "totalViolations": 11,
+  "generatedAt": "2026-09-21T20:42:56.615Z",
+  "totalViolations": 0,
   "pages": [
     {
       "label": "Login",
       "path": "/login",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "2FA - Setup Wajib (scan QR)",
+      "path": "/2fa/setup",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "2FA - Setup Wajib (kode salah)",
+      "path": "/2fa/setup",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "2FA - Setup Wajib (recovery codes tampil)",
+      "path": "/2fa/setup",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "2FA - Verifikasi Login (form kode)",
+      "path": "/2fa/verify",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "2FA - Verifikasi Login (kode salah)",
+      "path": "/2fa/verify",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "2FA - Verifikasi Login (form recovery code)",
+      "path": "/2fa/verify",
+      "status": "scanned",
+      "violations": []
+    },
+    {
+      "label": "Keamanan Akun - 2FA Aktif",
+      "path": "/security",
       "status": "scanned",
       "violations": []
     },
@@ -36,7 +78,8 @@
     {
       "label": "Notifikasi - Halaman Penuh (terisi)",
       "path": "/notifications",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Pengajuan Cuti Disetujui') to be visible\u001b[22m\n",
       "violations": []
     },
     {
@@ -174,13 +217,6 @@
     {
       "label": "Detail Karyawan - Komponen Gaji (kosong)",
       "path": "/employees/25",
-      "status": "error",
-      "note": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('—').first() to be visible\u001b[22m\n",
-      "violations": []
-    },
-    {
-      "label": "Detail Karyawan - Komponen Gaji - Dialog Konfirmasi Tambah Override",
-      "path": "/employees/25",
       "status": "scanned",
       "violations": []
     },
@@ -188,614 +224,366 @@
       "label": "Detail Karyawan - Komponen Gaji - Dialog Tambah/Cabut Override",
       "path": "/employees/25",
       "status": "error",
-      "note": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('alertdialog') to be hidden\u001b[22m\n\u001b[2m    19 × locator resolved to visible <div tabindex=\"-1\" aria-modal=\"true\" role=\"alertdialog\" aria-labelledby=\"modal-title-_r_j_\" class=\"relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-lg focus:outline-none\">…</div>\u001b[22m\n",
+      "note": "locator.selectOption: Test timeout of 3300000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#add_override_component')\u001b[22m\n\u001b[2m    - locator resolved to <select aria-invalid=\"false\" id=\"add_override_component\" class=\"w-full appearance-none rounded-sm border px-4 pr-9 text-sm font-body text-neutral-900 focus:outline-none focus:border-2 focus:border-primary-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-400 border-neutral-200 py-2\">…</select>\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    5556 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m         - did not find some options\u001b[22m\n\u001b[2m       - retrying select option action\u001b[22m\n\u001b[2m         - waiting 500ms\u001b[22m\n",
       "violations": []
     },
     {
       "label": "Departemen",
       "path": "/departments",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Jabatan",
       "path": "/positions",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Role - List",
       "path": "/roles",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Role - Permission Matrix",
-      "path": "/roles/2/permissions",
-      "status": "scanned",
+      "path": "/roles/:id/permissions",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Shift Kerja",
       "path": "/work-shifts",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Lokasi Kantor - List",
       "path": "/office-locations",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Lokasi Kantor - Modal Edit (Tab Info)",
       "path": "/office-locations",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.waitFor: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Lokasi Kantor - Modal Edit (Tab Supervisor)",
       "path": "/office-locations",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.click: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Komponen Gaji",
       "path": "/payroll/salary-components",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
-      "label": "Komponen Gaji - Modal Tambah (Kategori situational)",
+      "label": "Komponen Gaji - Modal Tambah (field Kategori)",
       "path": "/payroll/salary-components",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Komponen Gaji - Modal Edit (Nominal per Jabatan kosong)",
-      "path": "/payroll/salary-components",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Komponen Gaji - Dialog Konfirmasi Tambah Nominal Jabatan",
-      "path": "/payroll/salary-components",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.click: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Komponen Gaji - Modal Edit (Nominal per Jabatan)",
       "path": "/payroll/salary-components",
       "status": "error",
-      "note": "locator.waitFor: Error: strict mode violation: getByText(/Rp\\s*100\\.000/) resolved to 2 elements:\n    1) <td class=\"px-3 py-2 text-sm text-neutral-900 font-mono text-right\">Rp 100.000</td> aka getByRole('cell', { name: 'Rp 100.000' })\n    2) <span class=\"font-mono\">Rp 100.000</span> aka getByLabel('Edit Komponen Gaji').getByText('Rp 100.000')\n\nCall log:\n\u001b[2m  - waiting for getByText(/Rp\\s*100\\.000/) to be visible\u001b[22m\n",
+      "note": "locator.click: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Atur Tarif per Cabang - Kosong (belum pilih cabang)",
       "path": "/payroll/salary-rates-by-branch",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Atur Tarif per Cabang - Loading",
       "path": "/payroll/salary-rates-by-branch",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.route: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Atur Tarif per Cabang - Terisi",
       "path": "/payroll/salary-rates-by-branch",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.waitFor: Target page, context or browser has been closed",
       "violations": []
     },
     {
-      "label": "Monitoring Absensi - Rincian Harian (kosong)",
+      "label": "Monitoring Absensi - State Kosong (Rincian Harian & Ringkasan)",
       "path": "/attendance",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Monitoring Absensi - Ringkasan per Karyawan (kosong)",
-      "path": "/attendance",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Monitoring Absensi - State Terisi (Rincian Harian, Ringkasan, Dropdown Ekspor)",
       "path": "/attendance",
       "status": "error",
-      "note": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('table').getByText('QA Employee Test').first() to be visible\u001b[22m\n",
+      "note": "page.evaluate: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Cuti - Admin - List Kosong",
       "path": "/leave",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
-      "label": "Cuti - Admin - List Terisi",
+      "label": "Cuti - Admin - List Terisi + Dialog Tolak",
       "path": "/leave",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Cuti - Admin - Dialog Tolak (alasan wajib)",
-      "path": "/leave",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.evaluate: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Periode Payroll - Admin - List Kosong",
       "path": "/payroll/periods",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Periode Payroll - Admin - List Terisi",
-      "path": "/payroll/periods",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Periode Payroll - Admin - Detail (Draft)",
-      "path": "/payroll/periods/:id",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Periode Payroll - Admin - List Terisi + Detail + Dialog Submit",
       "path": "/payroll/periods",
       "status": "error",
-      "note": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Isi Data Periode') to be visible\u001b[22m\n",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Mulai Periode Baru - Form Kosong",
       "path": "/payroll/bulk-process",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Mulai Periode Baru - Kombinasi Sudah Ada",
       "path": "/payroll/bulk-process",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.selectOption: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Mulai Periode Baru - Preview Cabang",
       "path": "/payroll/bulk-process",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.fill: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Periode Payroll - Banner Generate Berhasil",
       "path": "/payroll/periods",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Periode Payroll - Banner Generate Gagal Sebagian",
       "path": "/payroll/periods",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Slip Gaji - Admin - List Kosong",
       "path": "/payroll/payslips",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
-      "label": "Slip Gaji - Admin - List Terisi",
+      "label": "Slip Gaji - Admin - List Terisi + Detail",
       "path": "/payroll/payslips",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Slip Gaji - Admin - Detail Modal",
-      "path": "/payroll/payslips",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Alur Approval - Admin - List Kosong",
       "path": "/payroll/approval-workflow",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Alur Approval - Admin - List Terisi",
       "path": "/payroll/approval-workflow",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Alur Approval - Admin - Dialog Tambah (kosong)",
       "path": "/payroll/approval-workflow",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.click: Target page, context or browser has been closed",
       "violations": []
     },
     {
-      "label": "Alur Approval - Admin - Dialog Tambah (terisi)",
+      "label": "Alur Approval - Admin - Dialog Tambah (terisi) + Edit + Validasi + Hapus",
       "path": "/payroll/approval-workflow",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Alur Approval - Admin - Dialog Edit",
-      "path": "/payroll/approval-workflow",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Alur Approval - Admin - Validasi Error",
-      "path": "/payroll/approval-workflow",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Alur Approval - Admin - Dialog Konfirmasi Hapus",
-      "path": "/payroll/approval-workflow",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.evaluate: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Audit Log - List",
       "path": "/audit-log",
-      "status": "scanned",
-      "violations": [
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(1) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
-          "fgColor": "#c53030",
-          "bgColor": "#f2e2df",
-          "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(2) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(3) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
-          "fgColor": "#c53030",
-          "bgColor": "#f2e2df",
-          "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
-          "fgColor": "#c53030",
-          "bgColor": "#f2e2df",
-          "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
-          "fgColor": "#c53030",
-          "bgColor": "#f2e2df",
-          "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>",
-          "fgColor": "#2a7851",
-          "bgColor": "#e3e9e3",
-          "contrastRatio": 4.36,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        },
-        {
-          "ruleId": "color-contrast",
-          "impact": "serious",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>",
-          "fgColor": "#c53030",
-          "bgColor": "#f2e2df",
-          "contrastRatio": 4.35,
-          "fontSize": "9.0pt (12px)",
-          "fontWeight": "normal"
-        }
-      ]
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
+      "violations": []
     },
     {
       "label": "Audit Log - Detail Modal",
       "path": "/audit-log",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.waitFor: Target page, context or browser has been closed",
+      "violations": []
+    },
+    {
+      "label": "Employee Home - Bersihkan absensi hari ini (persiapan)",
+      "path": "/",
+      "status": "error",
+      "note": "page.evaluate: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Employee Home - State Awal",
       "path": "/",
       "status": "error",
-      "note": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Absen Masuk' }) to be visible\u001b[22m\n",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Employee Home - Form Absen Masuk (dropdown + radius)",
       "path": "/",
       "status": "error",
-      "note": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#attendance-office') to be visible\u001b[22m\n",
+      "note": "browserContext.grantPermissions: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Employee Home - Setelah Foto Diambil",
       "path": "/",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.click: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Employee Home - Dialog Konfirmasi Absen Masuk",
       "path": "/",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.click: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Employee Home - Form Absen Masuk (is_unrestricted)",
       "path": "/",
-      "status": "scanned",
+      "status": "error",
+      "note": "apiRequestContext.put: Test timeout of 3300000ms exceeded.",
       "violations": []
     },
     {
       "label": "Employee Home - State Error 422 (Ditolak)",
       "path": "/",
-      "status": "scanned",
+      "status": "error",
+      "note": "apiRequestContext.delete: Test timeout of 3300000ms exceeded.",
+      "violations": []
+    },
+    {
+      "label": "Riwayat Absensi - Bersihkan riwayat 90 hari (persiapan)",
+      "path": "/attendance",
+      "status": "error",
+      "note": "apiRequestContext.get: Test timeout of 3300000ms exceeded.",
       "violations": []
     },
     {
       "label": "Riwayat Absensi - State Kosong",
       "path": "/attendance",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Riwayat Absensi - State Terisi (+ indikator luar radius)",
       "path": "/attendance",
       "status": "error",
-      "note": "Cannot read properties of undefined (reading 'id')",
+      "note": "apiRequestContext.put: Test timeout of 3300000ms exceeded.",
       "violations": []
     },
     {
       "label": "Riwayat Absensi - Date Range Picker (fokus)",
       "path": "/attendance",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Riwayat Absensi - Date Range Picker (terisi rentang custom)",
       "path": "/attendance",
-      "status": "scanned",
+      "status": "error",
+      "note": "locator.fill: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Cuti - Karyawan - Form Kosong + Kuota",
       "path": "/leave",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Cuti - Karyawan - Riwayat Terisi",
       "path": "/leave",
-      "status": "scanned",
+      "status": "error",
+      "note": "apiRequestContext.post: Test timeout of 3300000ms exceeded.",
       "violations": []
     },
     {
       "label": "Slip Gaji - Karyawan - State Kosong",
       "path": "/payroll/payslips",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
       "label": "Slip Gaji - Karyawan - State Terisi + Detail",
       "path": "/payroll/payslips",
       "status": "error",
-      "note": "Cannot read properties of undefined (reading 'id')",
+      "note": "apiRequestContext.post: Test timeout of 3300000ms exceeded.",
       "violations": []
     },
     {
       "label": "Sidebar - Kategori Expand Manual (chevron terbuka)",
       "path": "/",
       "status": "error",
-      "note": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Periode Payroll' }) to be visible\u001b[22m\n",
+      "note": "page.goto: Target page, context or browser has been closed",
       "violations": []
     },
     {
-      "label": "Sidebar - Drawer Mobile (kategori aktif expand)",
+      "label": "Sidebar - Drawer Mobile + Accordion",
       "path": "/",
-      "status": "scanned",
-      "violations": []
-    },
-    {
-      "label": "Sidebar - Drawer Mobile (kategori manual expand)",
-      "path": "/",
-      "status": "scanned",
+      "status": "error",
+      "note": "page.setViewportSize: Target page, context or browser has been closed",
       "violations": []
     }
   ],
-  "groupedByRootCause": [
-    {
-      "signature": "color-contrast|#2a7851|#e3e9e3",
-      "ruleId": "color-contrast",
-      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-      "fgColor": "#2a7851",
-      "bgColor": "#e3e9e3",
-      "contrastRatio": 4.36,
-      "occurrenceCount": 6,
-      "occurrences": [
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(2) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\\/10.text-status-approved.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-approved/10 text-status-approved\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dibuat</span>"
-        }
-      ]
-    },
-    {
-      "signature": "color-contrast|#c53030|#f2e2df",
-      "ruleId": "color-contrast",
-      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
-      "fgColor": "#c53030",
-      "bgColor": "#f2e2df",
-      "contrastRatio": 4.35,
-      "occurrenceCount": 5,
-      "occurrences": [
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(1) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(3) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
-        },
-        {
-          "label": "Audit Log - List",
-          "path": "/audit-log",
-          "selector": ".cursor-pointer.focus\\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-rejected\\/10.text-status-rejected.px-2",
-          "html": "<span class=\"inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-body text-xs font-medium bg-status-rejected/10 text-status-rejected\"><span class=\"h-1.5 w-1.5 rounded-full bg-current\" aria-hidden=\"true\"></span>Dihapus</span>"
-        }
-      ]
-    }
-  ]
+  "groupedByRootCause": []
 }

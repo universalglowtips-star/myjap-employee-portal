@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Employee } from '../api/types/employee'
-import type { LoginRequest } from '../api/types/auth'
+import type { LoginRequest, LoginResult } from '../api/types/auth'
 import { login as loginApi, logout as logoutApi, fetchMe } from '../api/endpoints/auth'
 
 interface AuthState {
@@ -12,7 +12,24 @@ interface AuthState {
   /** true selama app baru load & belum tau status login - dipakai ProtectedRoute buat nahan render sebelum redirect prematur. */
   isRestoring: boolean
 
-  login: (payload: LoginRequest) => Promise<void>
+  /**
+   * Fitur 2FA (2026-09-21) - balikin LoginResult (bukan cuma
+   * Promise<void> lagi), caller (LoginPage) yang mutusin mau redirect
+   * ke mana berdasarkan status-nya. Varian 'success' otomatis
+   * memanggil completeLogin() di dalam sini (persis behavior lama) -
+   * dua varian 2FA TIDAK menyentuh state store sama sekali (token
+   * masih null), murni ngoper setup_token/challenge_token balik ke
+   * caller buat dibawa ke halaman setup/verify.
+   */
+  login: (payload: LoginRequest) => Promise<LoginResult>
+  /**
+   * Dipanggil setelah access_token "asli" didapat - baik dari login()
+   * langsung, ATAU dari TwoFactorController::confirm()/verifyTwoFactor()
+   * (dua-duanya balikin access_token+employee bentuk sama). SATU-
+   * SATUNYA tempat yang nyimpen token+fetch /me, dipakai ulang oleh
+   * SEMUA jalur completion (bukan diduplikasi 3x).
+   */
+  completeLogin: (accessToken: string) => Promise<void>
   logout: () => Promise<void>
   restoreSession: () => Promise<void>
 }
@@ -42,14 +59,29 @@ export const useAuthStore = create<AuthState>()(
       isRestoring: true,
 
       login: async (payload) => {
+        const result = await loginApi(payload)
+
+        if (result.status === 'success') {
+          await get().completeLogin(result.accessToken)
+        }
+
+        // Varian requires_2fa_setup/requires_2fa_code SENGAJA gak
+        // menyentuh state store sama sekali - token masih null,
+        // employee/permissions masih kosong. Caller (LoginPage) yang
+        // bawa setupToken/challengeToken ke halaman berikutnya lewat
+        // router state, BUKAN disimpan di sini (bukan "auth state"
+        // beneran, cuma nilai sekali-pakai buat 1 langkah berikutnya).
+        return result
+      },
+
+      completeLogin: async (accessToken) => {
         // POST /login TIDAK mengembalikan permissions/office_scopes sama
         // sekali (sudah diverifikasi ke kode di Langkah 2) - jadi
         // GET /me kedua ini BUKAN kenyamanan, itu SATU-SATUNYA cara
         // dapetin permissions/officeScopes setelah login. 2 request ini
         // konsekuensi langsung dari bentuk response backend, bukan
         // desain yang saya karang sendiri.
-        const loginData = await loginApi(payload)
-        set({ token: loginData.access_token })
+        set({ token: accessToken })
 
         const me = await fetchMe()
         set({

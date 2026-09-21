@@ -6,12 +6,37 @@ export interface LoginRequest {
   password: string
 }
 
-/** RESPONSE - data di dalam field 'data' dari POST /login. employee di sini TIDAK ada relasi role (lihat catatan di employee.ts). */
+/** RESPONSE - data di dalam field 'data' dari POST /login (varian sukses langsung) ATAU dari POST /two-factor/confirm/POST /login/verify-2fa. employee di sini TIDAK ada relasi role (lihat catatan di employee.ts). */
 export interface LoginResponseData {
   access_token: string
   token_type: 'Bearer'
   employee: Employee
 }
+
+/**
+ * Fitur 2FA (2026-09-21) - bentuk RAW response POST /login, 3 varian
+ * tergantung role+status 2FA employee. Verifikasi: AuthController::login().
+ * Field yang ADA tergantung varian mana yang balik - request cuma dapat
+ * SATU dari: `data`, ATAU `requires_2fa_setup`+`setup_token`, ATAU
+ * `requires_2fa_code`+`challenge_token`. Dipetakan ke LoginResult yang
+ * lebih rapi di endpoints/auth.ts - authStore/LoginPage TIDAK PERNAH
+ * baca bentuk raw ini langsung.
+ */
+export interface LoginApiResponse {
+  success: true
+  message: string
+  data?: LoginResponseData
+  requires_2fa_setup?: true
+  setup_token?: string
+  requires_2fa_code?: true
+  challenge_token?: string
+}
+
+/** Hasil login yang SUDAH dinormalisasi (dipetakan dari LoginApiResponse di endpoints/auth.ts). */
+export type LoginResult =
+  | { status: 'success'; accessToken: string; employee: Employee }
+  | { status: 'requires_2fa_setup'; setupToken: string }
+  | { status: 'requires_2fa_code'; challengeToken: string }
 
 /**
  * RESPONSE - data di dalam field 'data' dari GET /me.

@@ -55,6 +55,13 @@ export interface Employee {
   basic_salary: string
   photo: string | null
   is_active: boolean
+  /**
+   * Fitur 2FA (2026-09-21) - null berarti belum aktif/belum selesai
+   * setup. two_factor_secret/two_factor_recovery_codes SENGAJA TIDAK
+   * ada di sini - $hidden di Employee model, gak pernah muncul di
+   * response API manapun (sama kayak password).
+   */
+  two_factor_confirmed_at: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null

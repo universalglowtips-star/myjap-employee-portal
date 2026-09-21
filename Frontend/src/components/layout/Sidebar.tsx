@@ -19,6 +19,7 @@ import {
   Bell,
   List,
   ChevronDown,
+  KeyRound,
 } from 'lucide-react'
 import { SidebarNavItem } from './SidebarNavItem'
 import { PermissionGate } from '../forms/PermissionGate'
@@ -182,6 +183,13 @@ function buildNavGroups(canViewDashboard: boolean): NavGroup[] {
         { to: '/roles', label: 'Role & Permission', icon: ShieldCheck, permission: 'role.view' },
         { to: '/notifications', label: 'Notifikasi', icon: Bell, permission: null },
         { to: '/audit-log', label: 'Audit Log', icon: List, permission: 'audit-log.view' },
+        // Fitur 2FA (2026-09-21) - permission: null (tampil ke SEMUA role,
+        // sama pola Notifikasi) SENGAJA, bukan permission code baru -
+        // gating akses SEBENARNYA 100% di backend (403 kalau role gak
+        // wajib 2FA), SecurityPage sendiri yang nampilin pesan "belum
+        // tersedia" buat role yang gak cocok. Konsisten "1 halaman
+        // Keamanan Akun buat semua orang", bukan menu yang muncul-hilang.
+        { to: '/security', label: 'Keamanan Akun', icon: KeyRound, permission: null },
       ],
     },
   ]

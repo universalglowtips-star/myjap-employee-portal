@@ -3,8 +3,48 @@ import AxeBuilder from '@axe-core/playwright'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import crypto from 'node:crypto'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+/**
+ * Fitur 2FA (2026-09-21) - generator TOTP (RFC 6238) murni Node
+ * crypto, DIVERIFIKASI cocok persis sama engine backend
+ * (PragmaRX\Google2FAQRCode\Google2FA::getCurrentOtp(), sama secret ->
+ * sama kode 6 digit, dites langsung side-by-side bukan asumsi). Sweep
+ * ini jalan di proses Node/Playwright murni, gak ada akses shell ke
+ * `php artisan tinker` dari dalam test - ini SATU-SATUNYA cara generate
+ * kode valid tanpa nambah endpoint testing-only apapun ke backend
+ * (ironis kalau fitur KEAMANAN nambah backdoor testing, dihindari).
+ */
+function generateTotp(secretBase32: string, timeStep = 30, digits = 6): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  let bits = ''
+  for (const char of secretBase32.toUpperCase().replace(/=+$/, '')) {
+    const val = alphabet.indexOf(char)
+    if (val === -1) continue
+    bits += val.toString(2).padStart(5, '0')
+  }
+  const bytes: number[] = []
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.slice(i, i + 8), 2))
+  }
+  const key = Buffer.from(bytes)
+
+  const counter = Math.floor(Date.now() / 1000 / timeStep)
+  const counterBuf = Buffer.alloc(8)
+  counterBuf.writeBigUInt64BE(BigInt(counter))
+
+  const hmac = crypto.createHmac('sha1', key).update(counterBuf).digest()
+  const offset = hmac[hmac.length - 1] & 0xf
+  const binary =
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff)
+
+  return (binary % 10 ** digits).toString().padStart(digits, '0')
+}
 
 /**
  * Sweep a11y otomatis SELURUH halaman yang sudah dibangun - baseline
@@ -32,6 +72,17 @@ const EMPLOYEE_EDIT_ID = 25
 const EMPLOYEE_EMAIL = 'qa-employee-test@myjap.com'
 const EMPLOYEE_PASSWORD = 'QaEmployeeTest123!'
 const EMPLOYEE_TEST_ID = 27
+
+/**
+ * Employee id=30 = akun QA HRD Test, role HRD (salah satu dari 4 role
+ * wajib 2FA - dipakai buat semua state fitur 2FA di bawah). Password
+ * DIRESET khusus buat testing fitur 2FA (2026-09-21) - akun ini
+ * sebelumnya sudah ada duluan (QA fixture existing, dipakai role-check
+ * lain), password lama gak pernah diketahui sesi ini.
+ */
+const HRD_EMAIL = 'qa-hrd-test@myjap.com'
+const HRD_PASSWORD = 'QaHrdTwoFa123!'
+
 const API_BASE = 'http://127.0.0.1:8000/api'
 
 const REPORT_JSON_PATH = path.resolve(__dirname, '..', 'a11y-report.json')
@@ -118,14 +169,14 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 3000s (bukan 2700s lagi) - Task 16 nambah 6 state baru: 3 di
-    // Karyawan (filter Cabang fokus/terisi/kosong) + 3 di "Atur Tarif per
-    // Cabang" (kosong/loading/terisi, yang loading-nya sengaja pakai
-    // page.route() delay 1500ms biar skeleton beneran ketangkep). Bump
-    // ke-8, sama persis alasan bump-bump sebelumnya
-    // (300->600->900->1200->1500->1800->2100->2700) - pertimbangkan
+    // 3300s (bukan 3000s lagi) - Fitur 2FA nambah ~9 state baru + 3x
+    // full login/logout roundtrip (login QA HRD -> [setup+confirm+
+    // logout+login lagi] -> verify -> logout -> login balik
+    // SUPER_ADMIN), masing-masing nunggu navigasi penuh (bukan cuma
+    // fetch). Bump ke-9, sama persis alasan bump-bump sebelumnya
+    // (300->600->900->1200->1500->1800->2100->2700->3000) - pertimbangkan
     // paralelisasi beneran kalau ini kejadian lagi, sesuai catatan lama.
-    test.setTimeout(3_000_000)
+    test.setTimeout(3_300_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -154,6 +205,174 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       // langsung ke /api/login selalu 200 OK cepat di kondisi yang sama).
       // 15s ketat buat kondisi ini, 60s ngasih ruang tanpa nutupin
       // kegagalan asli (network/aplikasi beneran down tetap bakal timeout).
+      await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 })
+    })
+
+    // === Fitur 2FA (TOTP, 2026-09-21) - wajib SUPER_ADMIN/HRD/FINANCE/
+    // DIRECTOR. Login sebagai QA HRD Test (id=30) MENGGANTIKAN sesi
+    // SUPER_ADMIN sementara - section ini SELF-CONTAINED, balik login
+    // sebagai SUPER_ADMIN lagi di step TERAKHIRNYA sendiri (bukan
+    // nunggu section lain) - state SETELAH section ini identik SEBELUM
+    // section ini, aman disisipkan di sini tanpa ganggu section
+    // manapun sesudahnya.
+    //
+    // Branching WAJIB (bukan asumsi 1 state tetap): TIDAK ADA endpoint
+    // self-service "cabut 2FA" (by design, cuma SOP tinker manual,
+    // lihat TwoFactorController) jadi sweep TIDAK BISA reset akun ini
+    // balik ke "belum setup" sendirian tiap run. Run PERTAMA (setelah
+    // akun ini direset manual via tinker sebelum sweep dijalankan) ->
+    // scan SEMUA state (setup+kode salah+recovery codes+verify+selesai
+    // pakai recovery code). Run BERIKUTNYA (akun sudah confirmed dari
+    // run sebelumnya) -> otomatis skip ke state verify form-only (gak
+    // ada cara ambil secret/recovery code akun yang sudah confirmed
+    // dari proses Playwright murni, SENGAJA gak ditambah endpoint
+    // testing-only ke backend fitur KEAMANAN) - TETAP jalan tanpa
+    // error, cuma cakupannya lebih sedikit di run itu.
+    let hrdSecret: string | null = null
+    let hrdRecoveryCode: string | null = null
+
+    await safeStep('2FA - Login QA HRD (deteksi state)', '/login', async () => {
+      await page.goto('/login')
+      await page.locator('#email').fill(HRD_EMAIL)
+      await page.locator('#password').fill(HRD_PASSWORD)
+      await page.getByRole('button', { name: 'Masuk' }).click()
+      await Promise.race([
+        page.waitForURL('**/2fa/setup', { timeout: 30000 }),
+        page.waitForURL('**/2fa/verify', { timeout: 30000 }),
+      ])
+    })
+
+    if (page.url().includes('/2fa/setup')) {
+      await safeStep('2FA - Setup Wajib (scan QR)', '/2fa/setup', async () => {
+        await page.waitForSelector('img[alt="QR code setup 2FA"]', { timeout: 15000 })
+        hrdSecret = await page.locator('p.font-mono').innerText()
+        await runAxe(page, '2FA - Setup Wajib (scan QR)', '/2fa/setup')
+      })
+
+      await safeStep('2FA - Setup Wajib (kode salah)', '/2fa/setup', async () => {
+        await page.locator('#two-factor-code').fill('000000')
+        await page.getByRole('button', { name: 'Konfirmasi & Aktifkan 2FA' }).click()
+        await page.getByText('Kode 2FA tidak valid').waitFor({ state: 'visible', timeout: 10000 })
+        await runAxe(page, '2FA - Setup Wajib (kode salah)', '/2fa/setup')
+      })
+
+      await safeStep('2FA - Setup Wajib (recovery codes tampil)', '/2fa/setup', async () => {
+        // Retry sampai 3x, kode DI-REGENERATE tiap percobaan (BUKAN
+        // submit ulang kode yang SAMA - itu gak akan pernah berhasil
+        // kalau memang sudah lewat window) - TOTP window 30 detik, di
+        // server yang lagi berat (single-threaded, numpuk request dari
+        // sweep sepanjang ini) delay pemrosesan request BISA nyebrang
+        // window walau kode di-generate detik itu juga.
+        //
+        // confirmButton.isVisible() dicek DULU tiap iterasi SEBELUM
+        // coba klik lagi - guard WAJIB, bukan opsional: percobaan
+        // SEBELUMNYA bisa aja SEBENARNYA sukses tapi cek teks sukses di
+        // bawah keburu timeout duluan (server lambat) SEBELUM elemen
+        // teksnya beneran nongol - tanpa guard ini, iterasi berikutnya
+        // nyoba klik tombol yang UDAH GAK ADA LAGI (komponen sudah
+        // pindah ke step recovery-codes), locator.click() nunggu
+        // elemen yang gak akan pernah muncul lagi -> hang sampai
+        // test.setTimeout global (ketemu beneran, bukan dugaan).
+        let confirmed = false
+        for (let attempt = 0; attempt < 3 && !confirmed; attempt++) {
+          const confirmButton = page.getByRole('button', { name: 'Konfirmasi & Aktifkan 2FA' })
+          if (!(await confirmButton.isVisible().catch(() => false))) {
+            break
+          }
+          const code = generateTotp(hrdSecret as string)
+          await page.locator('#two-factor-code').fill('')
+          await page.locator('#two-factor-code').fill(code)
+          await confirmButton.click()
+          confirmed = await page
+            .getByText('2FA berhasil diaktifkan')
+            .waitFor({ state: 'visible', timeout: 10000 })
+            .then(() => true)
+            .catch(() => false)
+        }
+        // Fallback terakhir - cek lebih lama sebelum beneran nyerah,
+        // nutup skenario "percobaan terakhir loop di atas SEBENARNYA
+        // sukses, cuma render teksnya lebih lambat dari 10s".
+        if (!confirmed) {
+          await page.getByText('2FA berhasil diaktifkan').waitFor({ state: 'visible', timeout: 15000 })
+        }
+
+        const codes = await page.locator('.grid.grid-cols-2 span').allInnerTexts()
+        hrdRecoveryCode = codes[0]
+        await runAxe(page, '2FA - Setup Wajib (recovery codes tampil)', '/2fa/setup')
+
+        await page.getByRole('button', { name: 'Saya sudah simpan, lanjutkan' }).click()
+        await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 })
+      })
+
+      // page.goto('/login') LANGSUNG (BUKAN klik avatar+"Keluar" Topbar) -
+      // pola SAMA PERSIS switch akun SUPER_ADMIN->EMPLOYEE di section
+      // "Employee Home" di bawah (satu-satunya preseden switch akun
+      // mid-sweep di file ini yang TERBUKTI reliable). Token QA HRD lama
+      // gak direvoke server-side (goto doang, bukan logout beneran) -
+      // TIDAK masalah, login ulang di step ini sendiri otomatis
+      // menghapus SEMUA token lama employee ini (AuthController::login()).
+      await safeStep('2FA - Login ulang buat scan Verify', '/', async () => {
+        await page.goto('/login')
+        await page.locator('#email').fill(HRD_EMAIL)
+        await page.locator('#password').fill(HRD_PASSWORD)
+        await page.getByRole('button', { name: 'Masuk' }).click()
+        // 30000 (bukan 15000) - login QA HRD di titik ini nembak
+        // AuthController::login() yang JUGA hapus token lama + audit
+        // log write sebelum balik requires_2fa_code, di server yang
+        // udah numpuk request sepanjang sweep - pola sama alasan bump
+        // timeout lain di file ini (single-threaded server kena beban).
+        await page.waitForURL('**/2fa/verify', { timeout: 30000 })
+      })
+    }
+
+    await safeStep('2FA - Verifikasi Login (form kode)', '/2fa/verify', async () => {
+      await page.waitForSelector('#code', { timeout: 15000 })
+      await runAxe(page, '2FA - Verifikasi Login (form kode)', '/2fa/verify')
+    })
+
+    await safeStep('2FA - Verifikasi Login (kode salah)', '/2fa/verify', async () => {
+      await page.locator('#code').fill('111111')
+      await page.getByRole('button', { name: 'Masuk' }).click()
+      await page.getByText('Kode 2FA tidak valid').waitFor({ state: 'visible', timeout: 10000 })
+      await runAxe(page, '2FA - Verifikasi Login (kode salah)', '/2fa/verify')
+    })
+
+    await safeStep('2FA - Verifikasi Login (form recovery code)', '/2fa/verify', async () => {
+      await page.getByRole('button', { name: 'Pakai recovery code' }).click()
+      await page.waitForSelector('#recoveryCode', { timeout: 5000 })
+      await runAxe(page, '2FA - Verifikasi Login (form recovery code)', '/2fa/verify')
+    })
+
+    // Selesaikan login QA HRD pakai recovery code yang di-capture dari
+    // branch setup di atas - CUMA bisa kalau baru aja setup di run yang
+    // SAMA. Run berikutnya (branch already-confirmed, hrdRecoveryCode
+    // null) -> LEWATI, gak ada cara ambil recovery code akun yang udah
+    // confirmed sebelumnya (encrypted+hashed di DB, sengaja gak ada
+    // endpoint buat baca balik).
+    if (hrdRecoveryCode) {
+      await safeStep('2FA - Verifikasi Login selesai (recovery code) + status di Keamanan Akun', '/2fa/verify', async () => {
+        await page.locator('#recoveryCode').fill(hrdRecoveryCode as string)
+        await page.getByRole('button', { name: 'Masuk' }).click()
+        await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 })
+
+        // State "2FA aktif" di halaman Keamanan Akun (SecurityPage) -
+        // cuma bisa discan kalau login QA HRD beneran selesai (di titik
+        // ini), gak tercover branch already-confirmed di atas.
+        await gotoAndSettle(page, '/security')
+        await page.getByText(/2FA aktif sejak/).waitFor({ state: 'visible', timeout: 10000 })
+        await runAxe(page, 'Keamanan Akun - 2FA Aktif', '/security')
+      })
+    }
+
+    await safeStep('2FA - Login balik SUPER_ADMIN', '/', async () => {
+      // page.goto('/login') LANGSUNG - pola sama persis step di atas,
+      // jalan APAPUN state login QA HRD saat ini (baik masih nyangkut
+      // di /2fa/verify branch already-confirmed, maupun session normal
+      // aktif branch setup selesai) - gak perlu percabangan.
+      await page.goto('/login')
+      await page.locator('#email').fill(QA_EMAIL)
+      await page.locator('#password').fill(QA_PASSWORD)
+      await page.getByRole('button', { name: 'Masuk' }).click()
       await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 })
     })
 

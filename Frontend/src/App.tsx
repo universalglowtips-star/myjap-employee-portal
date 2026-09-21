@@ -4,6 +4,9 @@ import { useAuthStore } from './stores/authStore'
 import { usePermission } from './lib/permissions'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { LoginPage } from './features/auth/pages/LoginPage'
+import { TwoFactorSetupPage } from './features/auth/pages/TwoFactorSetupPage'
+import { TwoFactorVerifyPage } from './features/auth/pages/TwoFactorVerifyPage'
+import { SecurityPage } from './features/auth/pages/SecurityPage'
 import { DepartmentListPage } from './features/master-data/pages/DepartmentListPage'
 import { PositionListPage } from './features/master-data/pages/PositionListPage'
 import { RoleListPage } from './features/master-data/pages/RoleListPage'
@@ -159,6 +162,16 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/2fa/setup" element={<TwoFactorSetupPage />} />
+      <Route path="/2fa/verify" element={<TwoFactorVerifyPage />} />
+      <Route
+        path="/security"
+        element={
+          <ProtectedRoute>
+            <SecurityPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/"
         element={
