@@ -48,9 +48,15 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | Audit Keamanan Tahap 1 (C.13) - SEBELUMNYA null (token gak pernah
+    | expired otomatis, cuma bisa "mati" lewat logout manual atau login
+    | ulang yang hapus token lama). Sekarang 4320 menit = 3 x 24 jam (72
+    | jam), keputusan Bagus - kalau device dicuri/token bocor, jendela
+    | eksploitasi maksimal 72 jam, bukan selamanya.
+    |
     */
 
-    'expiration' => null,
+    'expiration' => 4320, // 72 jam (3 hari) - 3 * 24 * 60 menit
 
     /*
     |--------------------------------------------------------------------------
