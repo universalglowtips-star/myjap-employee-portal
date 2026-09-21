@@ -33,6 +33,8 @@ use App\Http\Controllers\Api\SalaryComponentPositionController;
 use App\Http\Controllers\Api\EmployeeSalaryComponentController;
 use App\Http\Controllers\Api\PayrollPeriodQuantityController;
 use App\Http\Controllers\Api\OfficeLocationSalaryRateController;
+use App\Http\Controllers\Api\TwoFactorController;
+use App\Http\Middleware\EnforceTwoFactorTokenScope;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +48,15 @@ use App\Http\Controllers\Api\OfficeLocationSalaryRateController;
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 Route::post('/v1/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+// Fitur 2FA - step 2 login (challenge_token dari POST /login + kode 6
+// digit/recovery code). PUBLIC SENGAJA (bukan auth:sanctum) -
+// challenge_token diresolve manual di controller, employee belum resmi
+// "authenticated" sebelum kode benar. throttle:5,1 SAMA PERSIS /login -
+// ruang kode 6 digit rawan brute-force kalau gak dibatasi.
+Route::post('/login/verify-2fa', [AuthController::class, 'verifyTwoFactor'])->middleware('throttle:5,1');
+
+Route::post('/v1/login/verify-2fa', [AuthController::class, 'verifyTwoFactor'])->middleware('throttle:5,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +97,20 @@ $apiRoutes = function () {
             ],
         ]);
     });
+
+    // =========================
+    // Fitur 2FA (TOTP) - dipakai dari 2 jalur: paksa setup (setup_token
+    // restricted dari AuthController::login(), direstrict
+    // EnforceTwoFactorTokenScope) ATAU sukarela (token normal biasa,
+    // user sudah login, buka halaman Keamanan Akun). Endpoint-nya SAMA
+    // PERSIS buat dua-duanya. throttle:5,1 di confirm() - validasi kode
+    // 6 digit, rawan brute-force sama seperti verify-2fa (di luar
+    // permintaan eksplisit instruksi, tapi kelas risiko yang sama persis
+    // jadi ditambah konsisten - dilaporkan di sini, bukan diam-diam).
+    // =========================
+    Route::post('two-factor/enable', [TwoFactorController::class, 'enable']);
+
+    Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:5,1');
 
     // =========================
     // MASTER DATA
@@ -501,10 +526,16 @@ $apiRoutes = function () {
 // (dan konsumen lain yang udah pernah dibuat) tetap jalan tanpa perlu
 // ganti semua URL. Dianggap "deprecated", akan dilepas di masa depan
 // setelah semua konsumen resmi pindah ke /api/v1.
-Route::middleware('auth:sanctum')->group($apiRoutes);
+//
+// EnforceTwoFactorTokenScope ditambah di SINI (bukan nyentuh satupun
+// definisi route individual di atas) - token setup_token/challenge_token
+// (abilities terbatas, fitur 2FA) otomatis kena batasan di SEMUA 61
+// route yang sudah ada tanpa perlu ubah satupun. Token normal ('*')
+// lolos cepat, nol dampak ke perilaku existing.
+Route::middleware(['auth:sanctum', EnforceTwoFactorTokenScope::class])->group($apiRoutes);
 
 // Route BARU dengan versioning - pakai ini untuk semua development baru
 // (Website Admin, Flutter app) supaya kalau ada breaking change nanti,
 // /api/v1 tetap stabil dan kita bikin /api/v2 terpisah tanpa mendadak
 // merusak konsumen lama.
-Route::prefix('v1')->middleware('auth:sanctum')->group($apiRoutes);
+Route::prefix('v1')->middleware(['auth:sanctum', EnforceTwoFactorTokenScope::class])->group($apiRoutes);

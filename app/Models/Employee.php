@@ -86,9 +86,18 @@ class Employee extends Authenticatable
         'is_active'
 
     ];
+    /**
+     * two_factor_secret/two_factor_recovery_codes SENGAJA disembunyikan
+     * (fitur 2FA) - secret TOTP dan hash recovery code gak pernah boleh
+     * nampil di response API manapun, sama alasannya kayak password.
+     * two_factor_confirmed_at TIDAK disembunyikan - cuma timestamp
+     * status (aktif/belum), frontend butuh baca ini buat nentuin UI.
+     */
     protected $hidden = [
     'password',
     'remember_token',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -108,6 +117,17 @@ class Employee extends Authenticatable
         'created_at' => 'datetime:Y-m-d H:i:s',
 
         'updated_at' => 'datetime:Y-m-d H:i:s',
+
+        // Fitur 2FA - dienkripsi at-rest (Laravel encrypted cast, APP_KEY).
+        // two_factor_recovery_codes isinya array HASH (Hash::make() tiap
+        // kode, lihat TwoFactorService) - jadi 2 lapis proteksi (encrypted
+        // cast DI LUAR, hash bcrypt DI DALAM tiap kode), sama kayak kenapa
+        // password di-hash walau DB-nya sendiri gak dienkripsi kolom-per-kolom.
+        'two_factor_secret' => 'encrypted',
+
+        'two_factor_recovery_codes' => 'encrypted:array',
+
+        'two_factor_confirmed_at' => 'datetime:Y-m-d H:i:s',
 
     ];
 }
