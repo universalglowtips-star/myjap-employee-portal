@@ -6,10 +6,13 @@ import { PermissionGate } from '../../../components/forms/PermissionGate'
 import { usePermission } from '../../../lib/permissions'
 import { Table } from '../../../components/ui/Table'
 import { Button } from '../../../components/ui/Button'
+import { Select } from '../../../components/ui/Select'
+import { Label } from '../../../components/ui/Label'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { Toast } from '../../../components/ui/Toast'
 import { useEmployeesPaginated } from '../hooks/useEmployeesPaginated'
 import { useArchiveEmployee } from '../hooks/useEmployeeArchiveMutations'
+import { useOfficeLocationsForFilter } from '../../attendance/hooks/useOfficeLocationsForFilter'
 import type { Employee } from '../../../api/types/employee'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -22,14 +25,18 @@ const PER_PAGE = 15
  * semua data. Page state disimpan di URL (useSearchParams) - pola
  * persis AuditLogListPage, biar refresh gak kehilangan posisi halaman.
  *
- * TIDAK ADA filter card (Departemen/Posisi/Status) di halaman ini -
- * dikonfirmasi langsung ke EmployeeController::index() (bukan
- * diasumsikan): controller CUMA baca query param `per_page`, gak ada
- * dukungan filter department_id/position_id/is_active sama sekali.
- * Filter client-side juga gak masuk akal dipasang di sini karena data
- * PAGINATED server-side (filter cuma bakal ngefek ke 15 baris yang
- * lagi kebuka, bukan ke seluruh data - UX menyesatkan). Temuan ini
- * dilaporkan ke user, bukan dipaksa-buat dengan cara yang salah.
+ * Filter Departemen/Posisi/Status TETAP TIDAK ada di halaman ini -
+ * dikonfirmasi langsung ke EmployeeController::index(): controller
+ * masih cuma baca `per_page` untuk field-field itu, gak ada dukungan
+ * department_id/position_id/is_active sama sekali. Filter client-side
+ * juga gak masuk akal dipasang di sini karena data PAGINATED
+ * server-side (filter cuma bakal ngefek ke 15 baris yang lagi kebuka,
+ * bukan ke seluruh data - UX menyesatkan).
+ *
+ * Filter+kolom "Cabang" (Task 16) DIKECUALIKAN dari batasan di atas -
+ * office_location_id BENERAN didukung server-side (pola sama persis
+ * PayslipController::index()), reuse useOfficeLocationsForFilter.ts
+ * (Task 10, attendance feature) apa adanya, sama seperti PayslipAdminPage.
  *
  * Tombol "Tambah Karyawan" & "Edit" (di kolom Aksi) SENGAJA arahkan ke
  * ROUTE terpisah (/employees/new, /employees/:id/edit) - BUKAN modal
@@ -40,9 +47,18 @@ export function EmployeeListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
+  const officeLocationId = searchParams.get('office_location_id') ?? ''
 
   const canView = usePermission('employee.view')
-  const { data, isLoading, isError, error } = useEmployeesPaginated({ per_page: PER_PAGE, page }, canView)
+  const { data, isLoading, isError, error } = useEmployeesPaginated(
+    {
+      per_page: PER_PAGE,
+      page,
+      office_location_id: officeLocationId ? Number(officeLocationId) : undefined,
+    },
+    canView
+  )
+  const { data: officeLocations, isError: isOfficeLocationsError } = useOfficeLocationsForFilter()
   const archiveMutation = useArchiveEmployee()
 
   const [archivingEmployee, setArchivingEmployee] = useState<Employee | null>(null)
@@ -55,6 +71,21 @@ export function EmployeeListPage() {
       return next
     })
   }
+
+  function handleOfficeLocationChange(value: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (value) next.set('office_location_id', value)
+      else next.delete('office_location_id')
+      next.delete('page')
+      return next
+    })
+  }
+
+  const officeLocationOptions = [
+    { value: '', label: 'Semua Cabang' },
+    ...(officeLocations ?? []).map((o) => ({ value: String(o.id), label: o.office_name })),
+  ]
 
   async function handleConfirmArchive() {
     if (!archivingEmployee) return
@@ -100,6 +131,18 @@ export function EmployeeListPage() {
           </div>
         }
       >
+        <div className="mb-4 flex flex-col gap-1.5 rounded-md bg-white p-4 shadow-sm sm:max-w-xs">
+          <Label htmlFor="filter-office-location">Cabang</Label>
+          <Select
+            id="filter-office-location"
+            options={officeLocationOptions}
+            disabled={isOfficeLocationsError}
+            value={officeLocationId}
+            onChange={(e) => handleOfficeLocationChange(e.target.value)}
+          />
+          {isOfficeLocationsError && <p className="font-body text-xs text-status-rejected">Gagal memuat daftar cabang.</p>}
+        </div>
+
         {isError ? (
           // Error (403/network/500) TIDAK boleh nyamar jadi "Belum ada
           // karyawan" - itu 2 kondisi yang beda total.
@@ -154,6 +197,7 @@ export function EmployeeListPage() {
               { key: 'email', header: 'Email', render: (row) => row.email },
               { key: 'department', header: 'Departemen', render: (row) => row.department?.department_name ?? '—' },
               { key: 'position', header: 'Posisi', render: (row) => row.position?.position_name ?? '—' },
+              { key: 'office_location', header: 'Cabang', render: (row) => row.office_location?.office_name ?? '—' },
               {
                 key: 'status',
                 header: 'Status',

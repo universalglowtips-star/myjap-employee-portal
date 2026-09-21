@@ -260,6 +260,47 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await runAxe(page, 'Karyawan - List', '/employees')
     })
 
+    // === /employees - Filter Cabang (Task 16) - dropdown fokus ===
+    // <select> NATIVE (bukan MultiSelect custom) - pola sama persis
+    // Dropdown Tambah Cabang (Task 8e)/Date Picker Kehadiran: popup opsi
+    // native dirender browser di LUAR DOM, axe gak bisa "lihat" beda dari
+    // state tertutup. State fokus yang di-scan, proxy DOM-scannable terdekat.
+    await safeStep('Karyawan - Filter Cabang (fokus)', '/employees', async () => {
+      await page.locator('#filter-office-location').focus()
+      await runAxe(page, 'Karyawan - Filter Cabang (fokus)', '/employees')
+    })
+
+    // === /employees - Filter Cabang - hasil terisi (Task 16) ===
+    // Penajam Branch (id=3) - 1 karyawan aktif (UAT Kurir Motor), data
+    // existing PERMANEN dari investigasi Task 15b/16 - TIDAK perlu seed baru.
+    //
+    // Timeout 30000 (BUKAN 15000) - dikonfirmasi via reproduksi manual
+    // langsung (bukan dugaan): ganti filter Cabang balik-balik nembak
+    // GET /employees baru tiap kali, dan php artisan serve single-threaded
+    // di dev BENERAN butuh ~2-3 detik buat balas di kondisi idle (apalagi
+    // makin lambat setelah ratusan request menumpuk di sweep yang jalan
+    // 45+ menit) - root cause SAMA PERSIS catatan
+    // usePositionRatesForComponents/useScheduledComponentResolution di
+    // atas, cuma beda gejala (network delay biasa, bukan hang selamanya
+    // karena di sini cuma 1 request sekuensial per step, bukan N paralel).
+    await safeStep('Karyawan - Filter Cabang (hasil terisi)', '/employees', async () => {
+      await page.locator('#filter-office-location').selectOption({ label: 'Penajam Branch' })
+      await page.locator('td', { hasText: 'UAT Kurir Motor' }).waitFor({ state: 'visible', timeout: 30000 })
+      await runAxe(page, 'Karyawan - Filter Cabang (hasil terisi)', '/employees?office_location_id=3')
+    })
+
+    // === /employees - Filter Cabang - hasil kosong (Task 16) ===
+    // Paser Branch (id=4) - 0 karyawan aktif, PERMANEN (dikonfirmasi
+    // investigasi Fase 1 Task 16) - state emptyMessage Table.tsx
+    // ("Belum ada karyawan.") yang sebelumnya gak pernah kejadian di
+    // halaman ini (baseline data selalu >=1 baris tanpa filter). Timeout
+    // 30000 - alasan SAMA PERSIS step "hasil terisi" di atas.
+    await safeStep('Karyawan - Filter Cabang (hasil kosong)', '/employees', async () => {
+      await page.locator('#filter-office-location').selectOption({ label: 'Paser Branch' })
+      await page.getByText('Belum ada karyawan.').waitFor({ state: 'visible', timeout: 30000 })
+      await runAxe(page, 'Karyawan - Filter Cabang (hasil kosong)', '/employees?office_location_id=4')
+    })
+
     // === /employees/new ===
     await safeStep('Karyawan - Form Tambah', '/employees/new', async () => {
       await gotoAndSettle(page, '/employees/new')

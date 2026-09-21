@@ -1,6 +1,6 @@
 # Laporan A11y Sweep - MyJAP Employee Portal
 
-Dibuat: 2026-09-18T04:33:32.262Z
+Dibuat: 2026-09-20T21:58:22.992Z
 
 Ruleset: WCAG 2.1 A + AA (axe-core, tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`)
 
@@ -20,6 +20,9 @@ Call log:
 | Notifikasi - Halaman Penuh (kosong) | `/notifications?page=2` | Discan | 0 |
 | Notifikasi - Dialog Konfirmasi Hapus | `/notifications` | Discan | 0 |
 | Karyawan - List | `/employees` | Discan | 0 |
+| Karyawan - Filter Cabang (fokus) | `/employees` | Discan | 0 |
+| Karyawan - Filter Cabang (hasil terisi) | `/employees?office_location_id=3` | Discan | 0 |
+| Karyawan - Filter Cabang (hasil kosong) | `/employees?office_location_id=4` | Discan | 0 |
 | Karyawan - Form Tambah | `/employees/new` | Discan | 0 |
 | Karyawan - Form Edit | `/employees/25/edit` | Discan | 0 |
 | Karyawan - Arsip | `/employees/archive` | Discan | 0 |
@@ -29,16 +32,11 @@ Call log:
 | Detail Karyawan - MultiSelect Cabang Check-In (terbuka) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Tab Pengecualian - 2 Blok Arah (SPECIFIC_BRANCHES) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Dialog Konfirmasi Submit | `/employees/25` | Discan | 0 |
-| Detail Karyawan - Dialog Konfirmasi Submit | `/employees/25` | ERROR (locator.waitFor: Timeout 15000ms exceeded.
-Call log:
-[2m  - waiting for getByText('berhasil disimpan') to be visible[22m
-) | 0 |
 | Detail Karyawan - Tab Pengecualian (terisi) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Dialog Konfirmasi Hapus | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Wewenang Cabang (kosong) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Dropdown Tambah Cabang (fokus) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Tambah | `/employees/25` | Discan | 0 |
-| Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Tambah | `/employees/25` | ERROR (page.waitForResponse: Timeout 10000ms exceeded while waiting for event "response") | 0 |
 | Detail Karyawan - Wewenang Cabang (terisi) | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Wewenang Cabang - Dialog Konfirmasi Hapus | `/employees/25` | Discan | 0 |
 | Detail Karyawan - Komponen Gaji (kosong) | `/employees/25` | ERROR (locator.waitFor: Timeout 30000ms exceeded.
@@ -63,13 +61,22 @@ Call log:
 | Komponen Gaji - Modal Tambah (Kategori situational) | `/payroll/salary-components` | Discan | 0 |
 | Komponen Gaji - Modal Edit (Nominal per Jabatan kosong) | `/payroll/salary-components` | Discan | 0 |
 | Komponen Gaji - Dialog Konfirmasi Tambah Nominal Jabatan | `/payroll/salary-components` | Discan | 0 |
-| Komponen Gaji - Modal Edit (Nominal per Jabatan terisi) | `/payroll/salary-components` | Discan | 0 |
-| Komponen Gaji - Dialog Konfirmasi Cabut Jabatan | `/payroll/salary-components` | Discan | 0 |
+| Komponen Gaji - Modal Edit (Nominal per Jabatan) | `/payroll/salary-components` | ERROR (locator.waitFor: Error: strict mode violation: getByText(/Rp\s*100\.000/) resolved to 2 elements:
+    1) <td class="px-3 py-2 text-sm text-neutral-900 font-mono text-right">Rp 100.000</td> aka getByRole('cell', { name: 'Rp 100.000' })
+    2) <span class="font-mono">Rp 100.000</span> aka getByLabel('Edit Komponen Gaji').getByText('Rp 100.000')
+
+Call log:
+[2m  - waiting for getByText(/Rp\s*100\.000/) to be visible[22m
+) | 0 |
+| Atur Tarif per Cabang - Kosong (belum pilih cabang) | `/payroll/salary-rates-by-branch` | Discan | 0 |
+| Atur Tarif per Cabang - Loading | `/payroll/salary-rates-by-branch` | Discan | 0 |
+| Atur Tarif per Cabang - Terisi | `/payroll/salary-rates-by-branch` | Discan | 0 |
 | Monitoring Absensi - Rincian Harian (kosong) | `/attendance` | Discan | 0 |
 | Monitoring Absensi - Ringkasan per Karyawan (kosong) | `/attendance` | Discan | 0 |
-| Monitoring Absensi - Rincian Harian (terisi) | `/attendance` | Discan | 0 |
-| Monitoring Absensi - Ringkasan per Karyawan (terisi) | `/attendance` | Discan | 0 |
-| Monitoring Absensi - Dropdown Ekspor (terbuka) | `/attendance` | Discan | 0 |
+| Monitoring Absensi - State Terisi (Rincian Harian, Ringkasan, Dropdown Ekspor) | `/attendance` | ERROR (locator.waitFor: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('table').getByText('QA Employee Test').first() to be visible[22m
+) | 0 |
 | Cuti - Admin - List Kosong | `/leave` | Discan | 0 |
 | Cuti - Admin - List Terisi | `/leave` | Discan | 0 |
 | Cuti - Admin - Dialog Tolak (alasan wajib) | `/leave` | Discan | 0 |
@@ -101,13 +108,16 @@ Call log:
 Call log:
 [2m  - waiting for getByRole('button', { name: 'Absen Masuk' }) to be visible[22m
 ) | 0 |
-| Employee Home - Form Absen Masuk (dropdown + radius) | `/` | Discan | 0 |
+| Employee Home - Form Absen Masuk (dropdown + radius) | `/` | ERROR (locator.waitFor: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('#attendance-office') to be visible[22m
+) | 0 |
 | Employee Home - Setelah Foto Diambil | `/` | Discan | 0 |
 | Employee Home - Dialog Konfirmasi Absen Masuk | `/` | Discan | 0 |
 | Employee Home - Form Absen Masuk (is_unrestricted) | `/` | Discan | 0 |
 | Employee Home - State Error 422 (Ditolak) | `/` | Discan | 0 |
 | Riwayat Absensi - State Kosong | `/attendance` | Discan | 0 |
-| Riwayat Absensi - State Terisi (+ indikator luar radius) | `/attendance` | Discan | 0 |
+| Riwayat Absensi - State Terisi (+ indikator luar radius) | `/attendance` | ERROR (Cannot read properties of undefined (reading 'id')) | 0 |
 | Riwayat Absensi - Date Range Picker (fokus) | `/attendance` | Discan | 0 |
 | Riwayat Absensi - Date Range Picker (terisi rentang custom) | `/attendance` | Discan | 0 |
 | Cuti - Karyawan - Form Kosong + Kuota | `/leave` | Discan | 0 |
@@ -137,10 +147,10 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
   - Audit Log - List (`/audit-log`)
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(2) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(4) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(6) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(8) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(9) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(11) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(15) > .text-left:nth-child(3) > .bg-status-approved\/10.text-status-approved.px-2`
 
 ### 2. `color-contrast` - 5 kemunculan
 
@@ -152,6 +162,6 @@ Ditemukan 2 root cause unik. Untuk rule `color-contrast`, dikelompokkan berdasar
   - Audit Log - List (`/audit-log`)
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(1) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(3) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(5) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
     - `.cursor-pointer.focus\:bg-neutral-50:nth-child(7) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
-    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(10) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(14) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`
+    - `.cursor-pointer.focus\:bg-neutral-50:nth-child(20) > .text-left:nth-child(3) > .bg-status-rejected\/10.text-status-rejected.px-2`

@@ -45,9 +45,9 @@ export async function fetchEmployeesForSupervisorSelection(): Promise<Employee[]
  * (bukan array flat kayak Department/Position). Balikin response
  * LENGKAP (bukan cuma `.data.data`) karena caller butuh `pagination`
  * buat kontrol Table pagination - pola sama persis fetchAuditLogs.
- * TIDAK ADA filter query param yang didukung backend (dikonfirmasi ke
- * EmployeeController::index() - cuma baca `per_page`), jadi params
- * di sini SENGAJA cuma per_page/page, gak ada department_id dst.
+ * Filter department_id/position_id/is_active TETAP TIDAK didukung
+ * backend - `office_location_id` (Task 16) satu-satunya filter yang ada
+ * di luar per_page/page (dikonfirmasi ke EmployeeController::index()).
  */
 export async function fetchEmployeesPaginated(params: EmployeeQueryParams): Promise<EmployeeListResponse> {
   const res = await apiClient.get<EmployeeListResponse>('/employees', { params })

@@ -83,13 +83,15 @@ export interface EmployeeListResponse {
 }
 
 /**
- * Query params GET /employees - TERKONFIRMASI cuma `per_page` yang
- * dibaca controller (dicek langsung ke kode, bukan diasumsikan).
- * TIDAK ADA filter department_id/position_id/is_active sama sekali -
- * kalau dikirim, bakal diabaikan diam-diam oleh backend. `page`
- * didukung implisit lewat Laravel paginate(), pola sama AuditLog.
+ * Query params GET /employees. Task 16 - `office_location_id` ditambah
+ * (dikonfirmasi langsung ke EmployeeController::index(), pola sama
+ * PayslipController::index()). Filter department_id/position_id/
+ * is_active TETAP TIDAK didukung - kalau dikirim, bakal diabaikan diam-
+ * diam oleh backend. `page` didukung implisit lewat Laravel paginate(),
+ * pola sama AuditLog.
  */
 export interface EmployeeQueryParams {
   per_page?: number
   page?: number
+  office_location_id?: number
 }

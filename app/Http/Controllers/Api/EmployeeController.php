@@ -23,7 +23,9 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Menampilkan seluruh data karyawan
+     * Menampilkan seluruh data karyawan. Task 16 - filter office_location_id
+     * ditambahkan (pola sama persis PayslipController::index()), opsional -
+     * gak dikirim = tampilkan semua cabang seperti sebelumnya.
      */
     public function index(Request $request): JsonResponse
     {
@@ -34,6 +36,9 @@ class EmployeeController extends Controller
             'workShift',
             'officeLocation'
         ])
+        ->when($request->filled('office_location_id'), function ($q) use ($request) {
+            $q->where('office_location_id', $request->office_location_id);
+        })
         ->orderBy('full_name', 'asc')
         ->paginate($request->integer('per_page', 15));
 
