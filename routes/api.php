@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\SystemWarningController;
 use App\Http\Controllers\Api\SalaryComponentPositionController;
 use App\Http\Controllers\Api\EmployeeSalaryComponentController;
 use App\Http\Controllers\Api\PayrollPeriodQuantityController;
+use App\Http\Controllers\Api\OfficeLocationSalaryRateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -193,6 +194,19 @@ $apiRoutes = function () {
         ->middleware('permission:employee.update');
 
     Route::delete('employees/{id}/salary-components/{salaryComponentId}', [EmployeeSalaryComponentController::class, 'destroy'])
+        ->middleware('permission:employee.update');
+
+    // =========================
+    // Task 16 - "Atur Tarif per Cabang": HRD pilih 1 cabang, isi/override
+    // tarif banyak karyawan x banyak komponen sekaligus, batch save 1x
+    // (bukan N request per-sel). Permission SAMA employee.update - endpoint
+    // ini murni cara cepat mengisi employee_salary_components +
+    // employees.basic_salary yang sudah ada, bukan mekanisme baru.
+    // =========================
+    Route::get('office-locations/{officeLocation}/salary-rates', [OfficeLocationSalaryRateController::class, 'index'])
+        ->middleware('permission:employee.update');
+
+    Route::put('office-locations/{officeLocation}/salary-rates', [OfficeLocationSalaryRateController::class, 'update'])
         ->middleware('permission:employee.update');
 
     // =========================

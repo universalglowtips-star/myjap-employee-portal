@@ -118,16 +118,14 @@ async function gotoAndSettle(page: Page, pathname: string): Promise<void> {
 
 test.describe.serial('a11y sweep - seluruh halaman', () => {
   test('scan semua halaman yang sudah dibangun', async ({ page }) => {
-    // 2100s (bukan 1800s lagi) - Task 15b nambah 5 state baru, 2 di
-    // antaranya blok gabungan tambah+cabut (Nominal per Jabatan, Override
-    // Karyawan) yang masing-masing punya beberapa runAxe + fetch
-    // SEKUENSIAL (usePositionRatesForComponents/useScheduledComponentResolution,
-    // BUKAN Promise.all - lihat komentar hook-nya, N request paralel
-    // ber-Authorization-header ke php artisan serve single-threaded di
-    // dev HANG SELAMANYA). Ini bump ke-7, sama persis alasan bump-bump
-    // sebelumnya (300->600->900->1200->1500->1800->2100) - pertimbangkan
+    // 3000s (bukan 2700s lagi) - Task 16 nambah 6 state baru: 3 di
+    // Karyawan (filter Cabang fokus/terisi/kosong) + 3 di "Atur Tarif per
+    // Cabang" (kosong/loading/terisi, yang loading-nya sengaja pakai
+    // page.route() delay 1500ms biar skeleton beneran ketangkep). Bump
+    // ke-8, sama persis alasan bump-bump sebelumnya
+    // (300->600->900->1200->1500->1800->2100->2700) - pertimbangkan
     // paralelisasi beneran kalau ini kejadian lagi, sesuai catatan lama.
-    test.setTimeout(2_700_000)
+    test.setTimeout(3_000_000)
 
     // Distash SEKALI di step "Employee Home - Bersihkan..." (masih login
     // SUPER_ADMIN saat itu) - dipakai ULANG di step is_unrestricted/422 di
@@ -667,6 +665,46 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.getByRole('button', { name: 'Ya, Cabut' }).click()
       await page.getByText('Belum ada jabatan yang diatur untuk komponen ini.').waitFor({ state: 'visible', timeout: 10000 })
       await page.getByRole('button', { name: 'Batal' }).click()
+    })
+
+    // === /payroll/salary-rates-by-branch (Task 16) - "Atur Tarif per
+    // Cabang" - state kosong (belum pilih cabang, sebelum tabel dirender
+    // sama sekali) ===
+    await safeStep('Atur Tarif per Cabang - Kosong (belum pilih cabang)', '/payroll/salary-rates-by-branch', async () => {
+      await gotoAndSettle(page, '/payroll/salary-rates-by-branch')
+      await page.getByText('Pilih cabang dulu untuk menampilkan tabel tarif.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Atur Tarif per Cabang - Kosong (belum pilih cabang)', '/payroll/salary-rates-by-branch')
+    })
+
+    // === Atur Tarif per Cabang - state loading (skeleton Table.tsx) ===
+    // GET .../salary-rates DIPERLAMBAT SENGAJA (route intercept, delay
+    // 1500ms) SUPAYA skeleton isLoading beneran ketangkep di-scan - tanpa
+    // ini response backend lokal biasanya udah balik SEBELUM axe sempat
+    // analyze() (race condition, pola sama persis catatan bug Supervisor
+    // tab di atas: state basi/transisi gak boleh ke-scan "kebetulan").
+    // unroute() di akhir step - request yang UDAH telanjur di-intercept
+    // tetap lanjut normal di background (route.continue() dipanggil
+    // setelah delay), cukup buat state "Terisi" di bawah nunggu sampai
+    // beneran resolve (timeout 15s-nya jauh lebih dari cukup).
+    await safeStep('Atur Tarif per Cabang - Loading', '/payroll/salary-rates-by-branch', async () => {
+      await page.route('**/api/office-locations/*/salary-rates', async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await route.continue()
+      })
+      await page.locator('#filter-office-location').selectOption({ label: 'Penajam Branch' })
+      await page.locator('tbody tr td .animate-pulse').first().waitFor({ state: 'visible', timeout: 5000 })
+      await runAxe(page, 'Atur Tarif per Cabang - Loading', '/payroll/salary-rates-by-branch')
+      await page.unroute('**/api/office-locations/*/salary-rates')
+    })
+
+    // === Atur Tarif per Cabang - state terisi (Task 16) ===
+    // Penajam Branch (id=3) - UAT Kurir Motor, data existing PERMANEN
+    // (investigasi Task 16 Fase 1/2) - Gaji Pokok/Uang Harian/Bonus DLV
+    // sama-sama applicable, mencakup sel override (highlight biru) DAN
+    // default jabatan sekaligus dalam 1 scan.
+    await safeStep('Atur Tarif per Cabang - Terisi', '/payroll/salary-rates-by-branch', async () => {
+      await page.getByText('UAT Kurir Motor').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'Atur Tarif per Cabang - Terisi', '/payroll/salary-rates-by-branch')
     })
 
     // === /attendance (Task 10) - Monitoring Absensi Admin, masih login

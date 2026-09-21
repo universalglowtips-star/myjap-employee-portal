@@ -11,6 +11,7 @@ import { PermissionMatrixPage } from './features/master-data/pages/PermissionMat
 import { WorkShiftListPage } from './features/master-data/pages/WorkShiftListPage'
 import { OfficeLocationListPage } from './features/master-data/pages/OfficeLocationListPage'
 import { SalaryComponentListPage } from './features/master-data/pages/SalaryComponentListPage'
+import { SalaryRatesByBranchPage } from './features/master-data/pages/SalaryRatesByBranchPage'
 import { EmployeeListPage } from './features/employees/pages/EmployeeListPage'
 import { EmployeeArchiveListPage } from './features/employees/pages/EmployeeArchiveListPage'
 import { EmployeeFormPage } from './features/employees/pages/EmployeeFormPage'
@@ -219,6 +220,14 @@ function App() {
         element={
           <ProtectedRoute>
             <SalaryComponentListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll/salary-rates-by-branch"
+        element={
+          <ProtectedRoute>
+            <SalaryRatesByBranchPage />
           </ProtectedRoute>
         }
       />

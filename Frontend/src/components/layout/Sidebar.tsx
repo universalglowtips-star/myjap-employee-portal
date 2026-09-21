@@ -12,6 +12,7 @@ import {
   DollarSign,
   FileText,
   SlidersHorizontal,
+  Landmark,
   Layers,
   Workflow,
   ShieldCheck,
@@ -163,6 +164,7 @@ function buildNavGroups(canViewDashboard: boolean): NavGroup[] {
         { to: '/work-shifts', label: 'Shift Kerja', icon: Timer, permission: 'work-shift.view' },
         { to: '/office-locations', label: 'Lokasi Kantor', icon: MapPin, permission: 'office-location.view' },
         { to: '/payroll/salary-components', label: 'Komponen Gaji', icon: SlidersHorizontal, permission: 'salary-component.view' },
+        { to: '/payroll/salary-rates-by-branch', label: 'Tarif per Cabang', icon: Landmark, permission: 'employee.update' },
       ],
     },
     {
