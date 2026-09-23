@@ -25,8 +25,19 @@ function readTokenFromStorage(): string | null {
 }
 
 apiClient.interceptors.request.use((config) => {
+  // !config.headers.Authorization WAJIB - tanpa ini, token normal dari
+  // localStorage selalu MENIMPA header Authorization yang sudah sengaja
+  // di-set eksplisit oleh caller (mis. enableTwoFactor()/confirmTwoFactor()
+  // pakai overrideToken=setup_token/challenge_token, lihat twoFactor.ts).
+  // Bug nyata: browser yang masih nyimpen token dari sesi login SEBELUMNYA
+  // (myjap-auth belum ke-clear - alur 2FA paksa sengaja gak nyentuh token
+  // store sama sekali sebelum konfirmasi kelar, lihat authStore.ts) bikin
+  // request /two-factor/enable|confirm ke-kirim pakai token LAMA itu,
+  // bukan setup_token yang baru - auth:sanctum nolak token lama (kalau
+  // sudah revoked/beda employee) -> "Unauthenticated." padahal setup_token
+  // baru-nya sendiri masih valid & belum kepakai sama sekali.
   const token = readTokenFromStorage()
-  if (token) {
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
