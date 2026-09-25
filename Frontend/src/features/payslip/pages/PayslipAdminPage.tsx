@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Lock } from 'lucide-react'
 import { AppShell } from '../../../components/layout/AppShell'
@@ -12,6 +11,7 @@ import { StatusBadge } from '../../../components/ui/StatusBadge'
 import { formatCurrency } from '../../../lib/formatCurrency'
 import { formatMonthYear, MONTH_NAMES } from '../lib/payslipFormat'
 import { usePayslips } from '../hooks/usePayslips'
+import { usePayslipDetailTarget } from '../hooks/usePayslipDetailTarget'
 import { useActiveEmployeesForFilter } from '../../attendance/hooks/useActiveEmployeesForFilter'
 import { useOfficeLocationsForFilter } from '../../attendance/hooks/useOfficeLocationsForFilter'
 import { useDepartments } from '../../master-data/hooks/useDepartments'
@@ -48,7 +48,7 @@ const STATUS_OPTIONS = [
  */
 export function PayslipAdminPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [detailId, setDetailId] = useState<number | null>(null)
+  const { detailId, openDetail, closeDetail } = usePayslipDetailTarget()
 
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
   const employeeId = searchParams.get('employee_id') ?? ''
@@ -216,7 +216,7 @@ export function PayslipAdminPage() {
                 key: 'aksi',
                 header: 'Aksi',
                 render: (row) => (
-                  <Button size="small" variant="ghost" onClick={() => setDetailId(row.id)}>
+                  <Button size="small" variant="ghost" onClick={() => openDetail(row.id)}>
                     Lihat Detail
                   </Button>
                 ),
@@ -225,7 +225,7 @@ export function PayslipAdminPage() {
           />
         )}
 
-        <PayslipDetailModal payslipId={detailId} onClose={() => setDetailId(null)} showEmployeeName />
+        <PayslipDetailModal payslipId={detailId} onClose={closeDetail} showEmployeeName />
       </PermissionGate>
     </AppShell>
   )

@@ -4,7 +4,10 @@ import { Bell } from 'lucide-react'
 import { usePermission } from '../../../lib/permissions'
 import { useUnreadNotificationCount } from '../hooks/useUnreadNotificationCount'
 import { useNotifications } from '../hooks/useNotifications'
+import { useMarkNotificationAsRead } from '../hooks/useNotificationMutations'
 import { NotificationContent } from './NotificationContent'
+import { getNotificationTargetPath } from '../lib/notificationTypeMeta'
+import type { Notification } from '../../../api/types/notification'
 
 const PREVIEW_COUNT = 10
 
@@ -18,10 +21,17 @@ const PREVIEW_COUNT = 10
  * terus-terusan tiap 30 detik kayak count-nya, cuma pas beneran
  * dilihat user.
  *
- * Item di dalam dropdown SENGAJA gak clickable individual (gak ada
- * mark-as-read di sini) - instruksi tugas cuma nyebut itu buat
- * halaman penuh (Bagian B), dropdown ini murni preview + tombol
- * "Lihat Semua".
+ * Item di dalam dropdown DULUNYA sengaja gak clickable (dropdown ini
+ * murni preview + tombol "Lihat Semua"). Sekarang tiap item jadi
+ * <button> beneran: klik = mark-as-read + navigasi ke halaman terkait
+ * + nutup dropdown. Pakai <button> (BUKAN div + onClick) supaya
+ * keyboard Enter/Space + focus ring jalan gratis dari elemen native,
+ * pola sama kayak onRowClick Table.tsx di halaman penuh.
+ *
+ * NotificationContent dibungkus, BUKAN diubah - komponen itu tetap
+ * presentational murni dan dipakai identik di dua tempat (dropdown
+ * ini + halaman penuh), jadi gak ada 2 versi rendering yang bisa
+ * beda-beda.
  */
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
@@ -31,6 +41,31 @@ export function NotificationBell() {
 
   const { data: unreadCount } = useUnreadNotificationCount(canView)
   const { data: notifications, isLoading, isError } = useNotifications({ page: 1, per_page: PREVIEW_COUNT }, canView && open)
+  const markAsReadMutation = useMarkNotificationAsRead()
+
+  /**
+   * Dropdown SELALU ditutup duluan - baik notifikasi ini punya tujuan
+   * navigasi maupun enggak. Kalau cuma mark-as-read tanpa nutup,
+   * dropdown-nya nyangkut kebuka di atas halaman yang gak berubah dan
+   * kerasa kayak klik-nya gak ngefek.
+   *
+   * Error mark-as-read sengaja gak di-surface di sini (beda dari
+   * halaman penuh yang punya Toast): dropdown-nya udah keburu ketutup,
+   * gak ada tempat wajar buat naruh pesan error, dan gagal nandain
+   * "sudah dibaca" bukan alasan buat ngeblok navigasi. Badge unread
+   * bakal tetap keliatan - itu sendiri udah jadi sinyal jujur bahwa
+   * status baca-nya belum berubah.
+   */
+  function handleNotificationClick(notification: Notification) {
+    setOpen(false)
+
+    if (!notification.is_read) {
+      markAsReadMutation.mutate(notification.id)
+    }
+
+    const targetPath = getNotificationTargetPath(notification)
+    if (targetPath) navigate(targetPath)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -102,7 +137,16 @@ export function NotificationBell() {
             ) : (notifications?.data.length ?? 0) === 0 ? (
               <p className="p-3 text-center font-body text-sm text-neutral-600">Tidak ada notifikasi.</p>
             ) : (
-              notifications?.data.map((n) => <NotificationContent key={n.id} notification={n} />)
+              notifications?.data.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => handleNotificationClick(n)}
+                  className="block w-full rounded-sm text-left hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+                >
+                  <NotificationContent notification={n} />
+                </button>
+              ))
             )}
           </div>
           <div className="border-t border-neutral-200 p-2">

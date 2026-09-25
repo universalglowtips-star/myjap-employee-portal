@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { AppShell } from '../../../components/layout/AppShell'
@@ -9,6 +8,7 @@ import { Label } from '../../../components/ui/Label'
 import { formatCurrency } from '../../../lib/formatCurrency'
 import { formatMonthYear, MONTH_NAMES } from '../lib/payslipFormat'
 import { usePayslips } from '../hooks/usePayslips'
+import { usePayslipDetailTarget } from '../hooks/usePayslipDetailTarget'
 import { PayslipDetailModal } from '../components/PayslipDetailModal'
 import type { Payslip } from '../../../api/types/payslip'
 
@@ -34,7 +34,7 @@ const MONTH_OPTIONS = MONTH_NAMES.map((label, i) => ({ value: String(i + 1), lab
  */
 export function PayslipEmployeePage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [detailId, setDetailId] = useState<number | null>(null)
+  const { detailId, openDetail, closeDetail } = usePayslipDetailTarget()
 
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
   const month = searchParams.get('month') ?? ''
@@ -114,7 +114,7 @@ export function PayslipEmployeePage() {
               key: 'aksi',
               header: 'Aksi',
               render: (row) => (
-                <Button size="small" variant="ghost" onClick={() => setDetailId(row.id)}>
+                <Button size="small" variant="ghost" onClick={() => openDetail(row.id)}>
                   Lihat Detail
                 </Button>
               ),
@@ -123,7 +123,7 @@ export function PayslipEmployeePage() {
         />
       )}
 
-      <PayslipDetailModal payslipId={detailId} onClose={() => setDetailId(null)} showEmployeeName={false} />
+      <PayslipDetailModal payslipId={detailId} onClose={closeDetail} showEmployeeName={false} />
     </AppShell>
   )
 }

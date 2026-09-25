@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CheckCheck, Trash2, AlertTriangle, Lock } from 'lucide-react'
 import { AppShell } from '../../../components/layout/AppShell'
 import { PermissionGate } from '../../../components/forms/PermissionGate'
@@ -15,6 +15,7 @@ import {
   useDeleteNotification,
 } from '../hooks/useNotificationMutations'
 import { NotificationContent } from '../components/NotificationContent'
+import { getNotificationTargetPath } from '../lib/notificationTypeMeta'
 import type { Notification } from '../../../api/types/notification'
 import type { NormalizedApiError } from '../../../api/client'
 
@@ -27,13 +28,19 @@ const PER_PAGE = 15
  * PERSIS SAMA di dropdown Topbar), 1 kolom aksi hapus.
  *
  * Klik baris = mark-as-read - REUSE onRowClick bawaan Table.tsx
- * (udah handle keyboard Enter/Space + tabIndex + focus-visible),
- * BUKAN navigasi ke mana pun (instruksi eksplisit: halaman tujuan
- * Cuti/Slip Gaji/Payroll Period belum dibangun). Tombol hapus di
- * kolom aksi pakai stopPropagation - klik hapus TIDAK ikut trigger
- * mark-as-read dari row click di baris yang sama.
+ * (udah handle keyboard Enter/Space + tabIndex + focus-visible).
+ * Tombol hapus di kolom aksi pakai stopPropagation - klik hapus
+ * TIDAK ikut trigger mark-as-read dari row click di baris yang sama.
+ *
+ * Klik baris SEKARANG JUGA NAVIGASI ke halaman terkait (utang teknis
+ * Task 9 yang ditunda sampai Task 11/12/13 jadi - halaman tujuannya
+ * dulu belum ada, sekarang sudah). Mapping type -> path ada di
+ * lib/notificationTypeMeta.ts, bukan di sini. Notifikasi yang gak
+ * punya tujuan relevan (type gak dikenal / `data` null) tetap
+ * mark-as-read doang, gak dipaksa navigasi ke tempat asal.
  */
 export function NotificationListPage() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
 
@@ -54,11 +61,31 @@ export function NotificationListPage() {
     })
   }
 
+  /**
+   * Mark-as-read (perilaku lama, DIPERTAHANKAN) + navigasi ke halaman
+   * terkait kalau notifikasi ini punya tujuan yang relevan.
+   *
+   * Urutan sengaja: mark-as-read di-fire DULU baru navigate, dan
+   * navigate TIDAK nunggu mutation selesai - kalau nunggu, user nahan
+   * klik sampai request balik (halaman tujuan kerasa lelet tanpa
+   * alasan). Kalau mark-as-read-nya gagal, navigasi TETAP jalan dan
+   * error-nya sengaja gak nampilin toast di sini: toast-nya bakal
+   * ke-unmount seketika begitu pindah halaman (jadi mubazir), dan
+   * gagal nandain "sudah dibaca" bukan alasan buat ngeblok user
+   * lihat data yang dia klik. Notifikasi yang gak punya tujuan tetap
+   * pakai jalur lama lengkap dengan toast error-nya.
+   */
   function handleRowClick(row: Notification) {
-    if (row.is_read) return
-    markAsReadMutation.mutate(row.id, {
-      onError: (err) => setToast({ variant: 'error', message: err.message }),
-    })
+    const targetPath = getNotificationTargetPath(row)
+
+    if (!row.is_read) {
+      markAsReadMutation.mutate(
+        row.id,
+        targetPath ? undefined : { onError: (err) => setToast({ variant: 'error', message: err.message }) }
+      )
+    }
+
+    if (targetPath) navigate(targetPath)
   }
 
   async function handleMarkAllAsRead() {

@@ -51,3 +51,54 @@ const DEFAULT_TYPE_META: NotificationTypeMeta = { icon: Bell, colorClass: 'text-
 export function getNotificationTypeMeta(type: string): NotificationTypeMeta {
   return NOTIFICATION_TYPE_META[type] ?? DEFAULT_TYPE_META
 }
+
+/**
+ * Kunci id di `data` per kelompok type + path tujuannya. Dipisah dari
+ * NOTIFICATION_TYPE_META di atas SENGAJA - meta itu murni presentasi
+ * (icon/warna), ini murni navigasi; type baru bisa dapat salah satunya
+ * tanpa wajib dua-duanya.
+ *
+ * Path DIVERIFIKASI ke App.tsx (bukan ditebak): '/leave',
+ * '/payroll/payslips', '/payroll/periods/:id'.
+ */
+const NOTIFICATION_TARGET: Record<string, { key: string; toPath: (id: number) => string }> = {
+  leave_approved: { key: 'leave_id', toPath: () => '/leave' },
+  leave_rejected: { key: 'leave_id', toPath: () => '/leave' },
+  leave_cancelled: { key: 'leave_id', toPath: () => '/leave' },
+
+  // payslip_id dikirim sebagai query param - PayslipEmployeePage/
+  // PayslipAdminPage buka PayslipDetailModal (yang SUDAH ada, keyed by
+  // id) langsung ke payslip itu, bukan cuma mendarat di list mentah.
+  payslip_published: { key: 'payslip_id', toPath: (id) => `/payroll/payslips?payslip_id=${id}` },
+  payslip_unpublished: { key: 'payslip_id', toPath: (id) => `/payroll/payslips?payslip_id=${id}` },
+
+  payroll_pending_approval: { key: 'payroll_period_id', toPath: (id) => `/payroll/periods/${id}` },
+  payroll_fully_approved: { key: 'payroll_period_id', toPath: (id) => `/payroll/periods/${id}` },
+  payroll_rejected: { key: 'payroll_period_id', toPath: (id) => `/payroll/periods/${id}` },
+  payroll_period_reverted: { key: 'payroll_period_id', toPath: (id) => `/payroll/periods/${id}` },
+}
+
+/**
+ * Path tujuan klik notifikasi, atau null kalau notifikasi ini memang
+ * gak punya tujuan yang relevan - mark-as-read tetap jalan, TIDAK
+ * dipaksa navigasi ke tempat yang gak nyambung.
+ *
+ * null dikembalikan buat 3 kasus, semuanya WAJAR (bukan error):
+ * 1. `type` gak dikenal (string bebas di DB, bisa muncul type baru
+ *    kapan saja tanpa rilis FE baru - pola defensive yang sama persis
+ *    dipakai getNotificationTypeMeta() di atas).
+ * 2. `data` null (baris notifikasi lama/seed sebelum payload id ada).
+ * 3. `data` ada tapi id-nya hilang/bukan angka positif - gak mau
+ *    ngarahin ke '/payroll/periods/NaN' atau '/payroll/periods/0'.
+ */
+export function getNotificationTargetPath(notification: { type: string; data: Record<string, unknown> | null }): string | null {
+  const target = NOTIFICATION_TARGET[notification.type]
+  if (!target || !notification.data) return null
+
+  const rawId = notification.data[target.key]
+  const id = typeof rawId === 'number' ? rawId : Number(rawId)
+
+  if (!Number.isInteger(id) || id <= 0) return null
+
+  return target.toPath(id)
+}
