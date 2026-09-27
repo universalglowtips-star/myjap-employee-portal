@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { qaSweepTotp } from './helpers/totp'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -152,6 +153,45 @@ function recordError(label: string, pathname: string, err: unknown): void {
   console.log(`  [error] ${label} (${pathname}) -> ${message}`)
 }
 
+/**
+ * Lewatin step 2FA buat akun SUPER_ADMIN QA (dipanggil SETELAH submit
+ * email+password). Akun ini kena wajib 2FA sejak fitur TOTP (2026-09-21)
+ * dan sekarang sudah confirmed, jadi login-nya SELALU mampir ke
+ * /2fa/verify dulu - tanpa ini seluruh sweep mentok di situ (semua step
+ * sesudahnya gagal karena sesi belum beneran authenticated).
+ *
+ * Kode-nya di-generate dari secret di .env.test.local, BUKAN hardcode -
+ * kode TOTP cuma valid 30 detik.
+ *
+ * Ditulis defensif terhadap 3 kemungkinan URL sesudah submit, bukan
+ * asumsi 1 state tetap:
+ * - /2fa/verify  -> isi kode (jalur normal akun confirmed).
+ * - /2fa/setup   -> 2FA akun ini ke-reset dan secret di env jadi basi;
+ *                   dilempar error yang nyebut langkah perbaikannya,
+ *                   BUKAN dibiarkan timeout misterius di step lain.
+ * - selain itu   -> kill switch TWO_FACTOR_ENFORCED mati / role gak lagi
+ *                   wajib; langsung lolos tanpa ngapa-ngapain.
+ */
+async function passSuperAdminTwoFactor(page: Page): Promise<void> {
+  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 })
+
+  if (page.url().includes('/2fa/setup')) {
+    throw new Error(
+      '2FA akun QA sweep ke-reset (mendarat di /2fa/setup). Setup ulang via tinker lalu ' +
+        'perbarui QA_SWEEP_TOTP_SECRET di Frontend/.env.test.local.'
+    )
+  }
+
+  if (!page.url().includes('/2fa/verify')) return
+
+  await page.locator('#code').fill(qaSweepTotp())
+  // Tombol submit form kode bunyinya 'Masuk' (BUKAN 'Verifikasi') -
+  // dicek langsung ke TwoFactorVerifyPage.tsx. exact:true biar gak
+  // ketuker sama tombol 'Pakai recovery code' di form yang sama.
+  await page.getByRole('button', { name: 'Masuk', exact: true }).click()
+  await page.waitForURL((url) => !url.pathname.includes('/2fa/'), { timeout: 60000 })
+}
+
 /** Bungkus tiap langkah halaman - kegagalan satu halaman TIDAK BOLEH gugurin sisa sweep. */
 async function safeStep(label: string, pathname: string, fn: () => Promise<void>): Promise<void> {
   try {
@@ -197,6 +237,7 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.locator('#email').fill(QA_EMAIL)
       await page.locator('#password').fill(QA_PASSWORD)
       await page.getByRole('button', { name: 'Masuk' }).click()
+      await passSuperAdminTwoFactor(page)
       // 60000 (bukan 15000 lagi) - 3x gagal berturut-turut PERSIS di step
       // ini pas mesin lagi tekanan RAM tinggi (Discord+beberapa window
       // VSCode+Excel+sesi Claude lain jalan bareng, free RAM sempat cuma
@@ -373,6 +414,7 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await page.locator('#email').fill(QA_EMAIL)
       await page.locator('#password').fill(QA_PASSWORD)
       await page.getByRole('button', { name: 'Masuk' }).click()
+      await passSuperAdminTwoFactor(page)
       await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 })
     })
 

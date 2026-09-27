@@ -1,4 +1,16 @@
 import { defineConfig } from '@playwright/test'
+import dotenv from 'dotenv'
+
+/**
+ * Kredensial/secret test dibaca dari .env.test.local (ter-cover pola
+ * `*.local` di .gitignore, jadi gak ikut ke-commit). Playwright TIDAK
+ * baca file .env otomatis, jadi harus di-load eksplisit di sini -
+ * dipakai tests/helpers/totp.ts buat QA_SWEEP_TOTP_SECRET.
+ *
+ * quiet: true - dotenv v17 default-nya nge-print banner ke stdout tiap
+ * run, bikin output sweep berisik tanpa guna.
+ */
+dotenv.config({ path: '.env.test.local', quiet: true })
 
 /**
  * Config Playwright PERTAMA di project ini (belum ada infrastruktur
