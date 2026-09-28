@@ -922,10 +922,18 @@ class PayslipController extends Controller
             ], 422);
         }
 
-        if (Payslip::where('payroll_period_id', $period->id)
+        // withTrashed() WAJIB di sini - unique index payslips_period_employee_unique
+        // gak peduli soft-delete, dan Payslip gak pernah bisa forceDelete (guard
+        // permanen, dokumen finansial). Payslip yang sudah di-soft-delete BUKAN
+        // "udah punya payslip" secara bisnis - harus bisa dibuat ulang bersih,
+        // bukan ditolak "sudah ada" selamanya. Pola sama persis generateBulk()
+        // (baris ~579) & PayrollPeriod::findOrCreateRegular() (commit affa296).
+        $existingPayslip = Payslip::withTrashed()
+            ->where('payroll_period_id', $period->id)
             ->where('employee_id', $validated['employee_id'])
-            ->exists()
-        ) {
+            ->first();
+
+        if ($existingPayslip && ! $existingPayslip->trashed()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Slip gaji pada periode tersebut sudah ada.',
@@ -936,22 +944,52 @@ class PayslipController extends Controller
 
         try {
 
-            $payslip = Payslip::create([
+            if ($existingPayslip) {
 
-                'payroll_period_id' => $period->id,
-                'employee_id' => $validated['employee_id'],
-                // Snapshot - departemen/kantor karyawan SAAT slip ini dibuat
-                'department_id' => $employee->department_id,
-                'office_location_id' => $employee->office_location_id,
-                'month' => $validated['month'],
-                'year' => $validated['year'],
-                'status' => 'Draft',
-                'file_pdf' => $validated['file_pdf'] ?? null,
-                'gross_earning' => 0,
-                'total_deduction' => 0,
-                'net_salary' => 0,
+                // $existingPayslip pasti trashed di sini (kasus aktif sudah
+                // di-return 409 di atas). restore() + timpa data lama, BUKAN
+                // insert baris baru - reuse payslip_id yang sama.
+                $existingPayslip->restore();
+                $existingPayslip->update([
+                    'department_id' => $employee->department_id,
+                    'office_location_id' => $employee->office_location_id,
+                    'month' => $validated['month'],
+                    'year' => $validated['year'],
+                    'status' => 'Draft',
+                    'file_pdf' => $validated['file_pdf'] ?? null,
+                    'gross_earning' => 0,
+                    'total_deduction' => 0,
+                    'net_salary' => 0,
+                ]);
 
-            ]);
+                // PayslipItem TIDAK ikut ke-cascade soft-delete waktu induknya
+                // di-trash (dikonfirmasi lewat repro nyata - item lama masih
+                // deleted_at=null setelah payslip-nya sendiri di-soft-delete).
+                // Kalau gak dibersihkan dulu, restore ini bakal dobel: item
+                // lama nyisa bareng item baru yang diinsert di bawah.
+                $existingPayslip->items()->delete();
+
+                $payslip = $existingPayslip;
+
+            } else {
+
+                $payslip = Payslip::create([
+
+                    'payroll_period_id' => $period->id,
+                    'employee_id' => $validated['employee_id'],
+                    // Snapshot - departemen/kantor karyawan SAAT slip ini dibuat
+                    'department_id' => $employee->department_id,
+                    'office_location_id' => $employee->office_location_id,
+                    'month' => $validated['month'],
+                    'year' => $validated['year'],
+                    'status' => 'Draft',
+                    'file_pdf' => $validated['file_pdf'] ?? null,
+                    'gross_earning' => 0,
+                    'total_deduction' => 0,
+                    'net_salary' => 0,
+
+                ]);
+            }
 
             $grossEarning = 0;
             $totalDeduction = 0;
