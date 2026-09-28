@@ -62,13 +62,33 @@ export function Table<T>({
     align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
 
   return (
-    // Fragment (BUKAN div wrapper) - table.tsx cuma nambah <div> pagination
-    // sebagai SIBLING pas prop `pagination` diisi, gak pernah bungkus
-    // <table> dalam elemen tambahan apapun. Jadi pas pagination gak
-    // dipassing (Departemen/Posisi sekarang), output DOM PERSIS sama
-    // kayak sebelum prop ini ada - nol elemen extra, nol perubahan CSS
-    // cascade ke parent manapun.
+    // Fragment (BUKAN div wrapper) - <div> pagination tetap SIBLING dari
+    // wrapper overflow di bawah, bukan ikut dibungkus di dalamnya
+    // (pagination gak boleh ikut ke-scroll horizontal bareng isi tabel).
+    //
+    // overflow-x-auto (fix mobile overflow, item #9 Kelompok C,
+    // 2026-09-29) - <table> TANPA wrapper sebelumnya bikin lebar alami
+    // kolom (table-layout: auto browser, bukan class min-w eksplisit)
+    // yang gak bisa menyusut lolos ke <main> (AppShell.tsx, cuma
+    // min-w-0, gak ada overflow boundary) lalu ke seluruh halaman -
+    // yang ke-scroll horizontal di mobile jadi SELURUH HALAMAN (header,
+    // filter, dst ikut geser), bukan cuma tabelnya. Wrapper ini
+    // menangkap overflow di sini, SEBELUM sempat lolos ke atas. TIDAK
+    // ada styling lain ditambahkan (rounded/shadow/dst) - beberapa
+    // halaman (mis. PermissionMatrixPage.tsx) sudah punya wrapper
+    // overflow-x-auto sendiri di level halaman (dibuat sebelum fix
+    // terpusat ini) - dibiarkan apa adanya (keputusan eksplisit Bagus,
+    // redundan tapi gak merusak, di luar scope task ini buat disentuh).
     <>
+      {/* tabIndex=0 + role="region" + aria-label WAJIB - tanpa ini
+          wrapper scroll ini gak bisa di-scroll pakai keyboard sama
+          sekali kalau isinya lebih lebar dari viewport (axe rule
+          scrollable-region-focusable, ketauan pas verifikasi nyata -
+          pola sama persis NotificationBell.tsx). aria-label generik
+          ("Tabel data") SENGAJA, bukan per-halaman - Table.tsx dipakai
+          25+ tempat, nambah prop baru wajib buat label spesifik di
+          luar scope fix overflow murni ini. */}
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabel data">
       <table className="w-full border-collapse">
       <thead>
         <tr>
@@ -155,6 +175,7 @@ export function Table<T>({
         )}
       </tbody>
     </table>
+      </div>
     {pagination && (
       <div className="flex items-center justify-between border-t border-neutral-200 px-3 py-3">
         <p className="font-body text-xs text-neutral-500">
