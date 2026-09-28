@@ -26,9 +26,19 @@ class SystemWarning extends Model
         ];
     }
 
+    /**
+     * withTrashed() WAJIB - entitas terkait (mis. PayrollPeriod) bisa
+     * saja sudah di-soft-delete SETELAH warning-nya dibuat (dikonfirmasi
+     * nyata: satu-satunya baris data existing nunjuk ke PayrollPeriod
+     * yang sudah trashed) - tanpa ini morphTo() default Eloquent
+     * nerapin global scope SoftDeletingScope milik model tujuan, balik
+     * null biarpun related_type/related_id valid. Pola sama persis
+     * relasi lintas-entitas lain di app ini (Payslip::employee(),
+     * Leave::employee(), dst - semua withTrashed()).
+     */
     public function related(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo()->withTrashed();
     }
 
     public function resolver(): BelongsTo

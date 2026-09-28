@@ -12,10 +12,17 @@ class SystemWarningController extends Controller
     /**
      * List warning operasional - default cuma yang BELUM di-resolve,
      * biar HRD/SUPER_ADMIN langsung lihat yang butuh perhatian.
+     *
+     * `related` (morphTo) ikut di-eager-load (Fase 2, halaman manajemen
+     * System Warnings) - frontend butuh data entitas terkait (mis.
+     * PayrollPeriod.period_code) buat bikin deep-link, bukan cuma
+     * related_type/related_id mentah. Aman kalau null (baris tanpa
+     * entitas terkait) - Eloquent morphTo yang null cuma balik null,
+     * gak error.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = SystemWarning::with('resolver')
+        $query = SystemWarning::with(['related', 'resolver'])
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->type))
             ->when(!$request->boolean('include_resolved'), fn ($q) => $q->where('is_resolved', false))
             ->latest();

@@ -33,6 +33,7 @@ import { PayrollPeriodListPage } from './features/payroll-period/pages/PayrollPe
 import { PayrollPeriodDetailPage } from './features/payroll-period/pages/PayrollPeriodDetailPage'
 import { PayrollBulkGeneratePage } from './features/payroll-period/pages/PayrollBulkGeneratePage'
 import { ApprovalWorkflowListPage } from './features/approval-workflow/pages/ApprovalWorkflowListPage'
+import { SystemWarningListPage } from './features/system-warnings/pages/SystemWarningListPage'
 
 /**
  * Percabangan halaman "/" (Task 9.5 Bagian A): DashboardPage kalau
@@ -150,7 +151,18 @@ function PayslipRoute() {
  * konfigurasi ini, mereka lihat alurnya lewat ApprovalTimeline di halaman
  * Periode Payroll Task 13 saja. TIDAK ADA percabangan Route - satu
  * halaman, gate `approval-workflow.view` PermissionGate di dalam)
- * sudah ada. Route lain masih belum dibuat, nunggu giliran masing-masing.
+ * sudah ada. Dan '/system-warnings' (Fase 2, 2026-09-28 - halaman
+ * manajemen System Warnings, backend-nya SUDAH lengkap sebelum halaman
+ * ini dibangun, dikonfirmasi Fase 1 investigasi. HRD+SUPER_ADMIN saja
+ * by design (permission `system-warning.view` sudah ter-assign begitu
+ * sebelum Fase 2 ini, TIDAK diubah) - TIDAK ADA percabangan Route,
+ * gate PermissionGate di dalam, sama pola Alur Approval. Diakses lewat
+ * klik KPI card "Peringatan Sistem" di Dashboard (sekarang clickable,
+ * KpiCard.tsx dapat prop `to` opsional) ATAU entry Sidebar sendiri
+ * (grup System) - dikasih keduanya karena semua halaman list
+ * permission-gated lain di app ini juga selalu punya Sidebar entry
+ * langsung, bukan cuma dicapai lewat 1 jalur).
+ * Route lain masih belum dibuat, nunggu giliran masing-masing.
  */
 function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession)
@@ -353,6 +365,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ApprovalWorkflowListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/system-warnings"
+        element={
+          <ProtectedRoute>
+            <SystemWarningListPage />
           </ProtectedRoute>
         }
       />

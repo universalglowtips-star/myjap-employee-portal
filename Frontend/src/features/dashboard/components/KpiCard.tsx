@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../../../components/ui/Card'
 import { Label } from '../../../components/ui/Label'
 
@@ -8,6 +9,20 @@ interface KpiCardProps {
   isError: boolean
   errorMessage?: string
   children: ReactNode
+  /**
+   * OPSIONAL (System Warnings, 2026-09-28) - kalau diisi, seluruh card
+   * jadi <Link> yang navigasi ke path ini, BUKAN <div> polos. Default
+   * undefined = perilaku PERSIS sebelum prop ini ada (card lain -
+   * Karyawan Aktif/Cuti Pending/Payroll Bulan Ini - TIDAK ikut berubah
+   * sama sekali, cuma card yang eksplisit dikasih `to` yang clickable).
+   *
+   * Pakai <Link> (react-router), BUKAN <div onClick>+role="button" -
+   * dapat keyboard focus/aktivasi Enter/kanan-klik "buka tab baru" GRATIS
+   * dari semantik anchor native, tanpa perlu tabIndex/onKeyDown manual.
+   * Focus ring otomatis dari rule global `:focus-visible` di index.css,
+   * gak perlu class tambahan.
+   */
+  to?: string
 }
 
 /**
@@ -16,9 +31,9 @@ interface KpiCardProps {
  * masih loading/gagal TIDAK menghalangi card lain yang datanya udah
  * siap buat tetap tampil normal.
  */
-export function KpiCard({ title, isLoading, isError, errorMessage, children }: KpiCardProps) {
-  return (
-    <Card>
+export function KpiCard({ title, isLoading, isError, errorMessage, children, to }: KpiCardProps) {
+  const content = (
+    <>
       <Label as="p">{title}</Label>
       <div className="mt-2">
         {isLoading ? (
@@ -29,6 +44,16 @@ export function KpiCard({ title, isLoading, isError, errorMessage, children }: K
           children
         )}
       </div>
-    </Card>
+    </>
   )
+
+  if (to) {
+    return (
+      <Link to={to} className="block rounded-md bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+        {content}
+      </Link>
+    )
+  }
+
+  return <Card>{content}</Card>
 }

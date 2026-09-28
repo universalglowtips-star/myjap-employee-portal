@@ -24,6 +24,7 @@ import { AttendanceTrendChart } from '../components/AttendanceTrendChart'
  */
 export function DashboardPage() {
   const canView = usePermission('dashboard.view')
+  const canViewSystemWarnings = usePermission('system-warning.view')
   const { data: summary, isLoading, isError } = useDashboardSummary(undefined, canView)
 
   return (
@@ -68,9 +69,17 @@ export function DashboardPage() {
             </div>
           </KpiCard>
 
-          {/* Peringatan Sistem - ANGKA SAJA, sengaja TIDAK ADA link/onClick/
-              navigasi apa pun (belum ada halaman detail buat ini). */}
-          <KpiCard title="Peringatan Sistem" isLoading={isLoading} isError={isError}>
+          {/* Peringatan Sistem - clickable ke /system-warnings (Fase 2,
+              2026-09-28) KALAU role ini punya system-warning.view -
+              kalau gak, `to` undefined, KpiCard fallback ke <Card> polos
+              non-clickable (angka tetap tampil SAMA seperti sebelumnya,
+              cuma gak ada navigasi ke halaman yang bakal 403). */}
+          <KpiCard
+            title="Peringatan Sistem"
+            isLoading={isLoading}
+            isError={isError}
+            to={canViewSystemWarnings ? '/system-warnings' : undefined}
+          >
             <p
               className={
                 summary && summary.system_warnings.unresolved_count > 0

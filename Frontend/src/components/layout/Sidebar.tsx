@@ -20,6 +20,7 @@ import {
   List,
   ChevronDown,
   KeyRound,
+  AlertTriangle,
 } from 'lucide-react'
 import { SidebarNavItem } from './SidebarNavItem'
 import { PermissionGate } from '../forms/PermissionGate'
@@ -183,6 +184,7 @@ function buildNavGroups(canViewDashboard: boolean): NavGroup[] {
         { to: '/roles', label: 'Role & Permission', icon: ShieldCheck, permission: 'role.view' },
         { to: '/notifications', label: 'Notifikasi', icon: Bell, permission: null },
         { to: '/audit-log', label: 'Audit Log', icon: List, permission: 'audit-log.view' },
+        { to: '/system-warnings', label: 'Peringatan Sistem', icon: AlertTriangle, permission: 'system-warning.view' },
         // Fitur 2FA (2026-09-21) - permission: null (tampil ke SEMUA role,
         // sama pola Notifikasi) SENGAJA, bukan permission code baru -
         // gating akses SEBENARNYA 100% di backend (403 kalau role gak

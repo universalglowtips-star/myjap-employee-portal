@@ -457,6 +457,30 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await runAxe(page, 'Dashboard - Tren Kehadiran (30 hari)', '/')
     })
 
+    // === Dashboard - KPI card "Peringatan Sistem" clickable (System
+    // Warnings Fase 2, 2026-09-28) ===
+    // KpiCard.tsx sekarang bisa jadi <Link> (prop `to`) - WAJIB dicek
+    // keyboard-operable, bukan cuma mouse click (axe scan biasa gak
+    // nangkep ini, itu murni cek pohon aksesibilitas statis, bukan
+    // perilaku interaktif nyata). .focus() langsung ke elemen (bukan
+    // Tab berulang dari body - lebih stabil, gak bergantung urutan tab
+    // elemen lain di halaman yang bisa berubah kapan saja) lalu Enter,
+    // build sinyal DOM nyata (URL berubah) sebagai bukti navigasi
+    // keyboard beneran jalan, bukan cuma optimis nunggu timeout.
+    await safeStep('Dashboard - KPI Card Peringatan Sistem (keyboard)', '/', async () => {
+      const kpiLink = page.getByRole('main').getByRole('link', { name: 'Peringatan Sistem' })
+      await kpiLink.focus()
+      await page.waitForFunction(
+        () => document.activeElement?.textContent?.includes('Peringatan Sistem') ?? false,
+        null,
+        { timeout: 5000 }
+      )
+      await page.keyboard.press('Enter')
+      await page.waitForURL('**/system-warnings', { timeout: 10000 })
+      await page.goBack()
+      await page.waitForURL((url) => url.pathname === '/', { timeout: 10000 })
+    })
+
     // === Notifikasi (Task 9) - Dropdown Topbar (terbuka) ===
     // Butuh data asli (bukan kosong) - employee QA_A11Y_SWEEP (id=25)
     // punya 5 notifikasi persisten yang sengaja di-seed permanen khusus
@@ -1406,6 +1430,33 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
       await dialog.waitFor({ state: 'visible', timeout: 15000 })
       await page.waitForTimeout(300)
       await runAxe(page, 'Audit Log - Detail Modal', '/audit-log', '[role="dialog"]')
+    })
+
+    // === /system-warnings (System Warnings Fase 2, 2026-09-28) - List
+    // Kosong ===
+    // CUMA state kosong yang masuk suite PERMANEN - beda dari fitur lain
+    // yang punya form/tombol UI buat seed-mutate-cleanup data uji
+    // (Approval Workflow, Komponen Gaji dst), SystemWarningController
+    // TIDAK PUNYA endpoint create sama sekali (dikonfirmasi Fase 1 - satu-
+    // satunya cara nulis baris baru adalah SystemWarning::raise(), murni
+    // internal, dipicu PayrollPeriodController pas approval role target
+    // kosong karyawan). Seed data lewat sweep otomatis STRUKTURAL gak
+    // memungkinkan tanpa memicu alur bisnis payroll asli (submit/approve
+    // periode) yang jauh lebih invasif buat sekadar butuh 1 baris warning.
+    // Sama alasan persis Periode Payroll Task 13 (submit->approve x3
+    // sengaja DILUAR suite permanen, PayrollPeriod gak pernah bisa
+    // dihapus lewat app) - List Terisi, Dialog Konfirmasi Resolve, dan
+    // halaman "akses ditolak" (role non-HRD/SUPER_ADMIN) SEMUANYA
+    // diverifikasi SEKALI lewat skrip Playwright standalone terpisah
+    // (bukan bagian suite ini): 0 axe violation di ketiganya, related-link
+    // (polymorphic, PayrollPeriod trashed MAUPUN aktif) render benar,
+    // toggle "tampilkan resolved" + tombol Resolve + ConfirmDialog semua
+    // fungsional end-to-end (termasuk resolve baris data nyata id=1, satu-
+    // satunya baris yang pernah ada, sekarang permanen resolved).
+    await safeStep('System Warnings - List Kosong', '/system-warnings', async () => {
+      await gotoAndSettle(page, '/system-warnings')
+      await page.getByText('Tidak ada peringatan sistem yang perlu ditindaklanjuti.').waitFor({ state: 'visible', timeout: 15000 })
+      await runAxe(page, 'System Warnings - List Kosong', '/system-warnings')
     })
 
     // === Employee Home (Task 9.5) - login sebagai EMPLOYEE ===
