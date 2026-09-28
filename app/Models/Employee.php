@@ -46,6 +46,52 @@ class Employee extends Authenticatable
             if ($employee->payslips()->withTrashed()->where('status', 'Published')->exists()) {
                 throw new RuntimeException('Karyawan ini masih memiliki slip gaji yang sudah dipublikasikan dan tidak dapat dihapus permanen.');
             }
+
+            // attendances.employee_id cascadeOnDelete() - pola risiko sama
+            // persis Payslip di atas. Attendance TIDAK punya status "final"/
+            // "published" kayak Payslip (attendance_status cuma kategori
+            // deskriptif Present/Late/dst, is_approved default true buat
+            // SEMUA baris - bukan penanda konsekuensial) - jadi beda dari
+            // Payslip yang cuma blokir 1 status, di sini blokir kalau ADA
+            // baris attendance SAMA SEKALI (keputusan Bagus 2026-09-28:
+            // riwayat absensi basis payroll, gak boleh hilang diam-diam).
+            if ($employee->attendances()->withTrashed()->exists()) {
+                throw new RuntimeException('Karyawan ini masih memiliki riwayat absensi dan tidak dapat dihapus permanen.');
+            }
+
+            // leaves.employee_id (pemohon) cascadeOnDelete() - approved_by/
+            // cancelled_by SENGAJA TIDAK ikut dicek di sini: keduanya
+            // nullOnDelete() (dikonfirmasi migration), jadi force-delete
+            // approver/canceller TIDAK memicu cascade ke baris cuti orang
+            // lain, gak perlu diblokir dari sisi itu. Kondisi block: status
+            // Approved ATAU Cancelled (dikonfirmasi live DB - enum
+            // sebenarnya Pending/Approved/Rejected/Cancelled, migration
+            // file lama gak nyebut Cancelled sama sekali, cek SHOW COLUMNS
+            // kalau ragu). Cancelled SELALU eks-Approved (LeaveController::
+            // cancel() nolak kalau status bukan Approved), jadi tetap
+            // merepresentasikan cuti yang PERNAH resmi disetujui (quota
+            // kepakai, approval_notes, audit log) - Pending/Rejected TIDAK
+            // PERNAH efektif, aman ikut kebuang, sama semangat Payslip yang
+            // cuma blokir Published (bukan Draft).
+            if ($employee->leaves()->withTrashed()->whereIn('status', ['Approved', 'Cancelled'])->exists()) {
+                throw new RuntimeException('Karyawan ini masih memiliki riwayat cuti yang pernah disetujui dan tidak dapat dihapus permanen.');
+            }
+
+            // notifications.employee_id cascadeOnDelete() - beda struktural
+            // dari 3 tabel di atas: tabel ini TIDAK pakai soft-delete sama
+            // sekali (App\Models\Notification gak pakai trait SoftDeletes,
+            // migration-nya juga gak ada softDeletes()) - baris notifikasi
+            // memang sudah disposable secara desain, gak ada status "final"
+            // buat dibedakan. Tetap diblokir kalau ADA baris sama sekali
+            // (keputusan eksplisit Bagus 2026-09-28: generalisasi ke SEMUA
+            // 3 tabel). Method notifications() di bawah SENGAJA override
+            // punya trait Notifiable (built-in Laravel, asumsi kolom
+            // notifiable_type/notifiable_id yang gak ada di tabel custom
+            // ini) - trait punya dikonfirmasi gak pernah dipanggil di
+            // manapun sebelumnya, jadi aman ditimpa ke App\Models\Notification.
+            if ($employee->notifications()->exists()) {
+                throw new RuntimeException('Karyawan ini masih memiliki riwayat notifikasi dan tidak dapat dihapus permanen.');
+            }
         });
     }
 
@@ -218,6 +264,18 @@ class Employee extends Authenticatable
     public function payslips(): HasMany
     {
         return $this->hasMany(Payslip::class);
+    }
+
+    /**
+     * Override method notifications() milik trait Notifiable (Laravel
+     * built-in, asumsi tabel polymorphic notifiable_type/notifiable_id) -
+     * tabel notifications app ini CUSTOM, employee_id langsung (lihat
+     * App\Models\Notification). Trait punya dikonfirmasi gak pernah
+     * dipanggil di manapun sebelum ini (dead code), aman ditimpa.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
     }
 
     /**
