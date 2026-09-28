@@ -532,8 +532,12 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     })
 
     // === /employees - Filter Cabang - hasil terisi (Task 16) ===
-    // Penajam Branch (id=3) - 1 karyawan aktif (UAT Kurir Motor), data
-    // existing PERMANEN dari investigasi Task 15b/16 - TIDAK perlu seed baru.
+    // Penajam Branch (id=3) - 1 karyawan aktif ("QA A11y Sweep - Kurir
+    // Motor", employee id=51), fixture QA PERMANEN - TIDAK perlu seed
+    // baru. Menggantikan data "UAT Kurir Motor" lama (employee id=39,
+    // data uji manual Bagus yang kebetulan dipakai ulang jadi fixture
+    // sweep tanpa disadari) - diswap 2026-09-28 karena data test tidak
+    // boleh menyamar jadi karyawan produksi asli secara permanen.
     //
     // Timeout 30000 (BUKAN 15000) - dikonfirmasi via reproduksi manual
     // langsung (bukan dugaan): ganti filter Cabang balik-balik nembak
@@ -546,7 +550,7 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // karena di sini cuma 1 request sekuensial per step, bukan N paralel).
     await safeStep('Karyawan - Filter Cabang (hasil terisi)', '/employees', async () => {
       await page.locator('#filter-office-location').selectOption({ label: 'Penajam Branch' })
-      await page.locator('td', { hasText: 'UAT Kurir Motor' }).waitFor({ state: 'visible', timeout: 30000 })
+      await page.locator('td', { hasText: 'QA A11y Sweep - Kurir Motor' }).waitFor({ state: 'visible', timeout: 30000 })
       await runAxe(page, 'Karyawan - Filter Cabang (hasil terisi)', '/employees?office_location_id=3')
     })
 
@@ -940,9 +944,9 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     // gak mempengaruhi perhitungan payroll siapapun.
     await safeStep('Komponen Gaji - Modal Edit (Nominal per Jabatan)', '/payroll/salary-components', async () => {
       // getByRole('row', {name: 'Bonus'}) SENGAJA dihindari - substring
-      // match-nya juga kena baris "UAT - Bonus DLV" (data UAT asli milik
-      // Bagus, permanen sejak investigasi Task 15b gap E). Cari langsung
-      // tombol Edit-nya by exact aria-label, gak ambigu.
+      // match-nya juga kena baris "QA - Bonus DLV" (fixture QA permanen
+      // "QA A11y Sweep - Kurir Motor", lihat step Filter Cabang di atas).
+      // Cari langsung tombol Edit-nya by exact aria-label, gak ambigu.
       await page.getByRole('button', { name: 'Edit Bonus', exact: true }).click()
       await page.getByText('Nominal per Jabatan', { exact: true }).waitFor({ state: 'visible', timeout: 10000 })
       await runAxe(page, 'Komponen Gaji - Modal Edit (Nominal per Jabatan kosong)', '/payroll/salary-components', '[role="dialog"]')
@@ -1000,12 +1004,15 @@ test.describe.serial('a11y sweep - seluruh halaman', () => {
     })
 
     // === Atur Tarif per Cabang - state terisi (Task 16) ===
-    // Penajam Branch (id=3) - UAT Kurir Motor, data existing PERMANEN
-    // (investigasi Task 16 Fase 1/2) - Gaji Pokok/Uang Harian/Bonus DLV
-    // sama-sama applicable, mencakup sel override (highlight biru) DAN
-    // default jabatan sekaligus dalam 1 scan.
+    // Penajam Branch (id=3) - "QA A11y Sweep - Kurir Motor" (employee
+    // id=51, posisi id=21), fixture QA permanen - Gaji Pokok/QA - Uang
+    // Harian/QA - Bonus DLV sama-sama applicable, mencakup sel override
+    // (highlight biru, Uang Harian: default jabatan 55000 vs override
+    // karyawan 60000) DAN default jabatan polos (Bonus DLV: 700, tanpa
+    // override) sekaligus dalam 1 scan - struktur data sengaja dibuat
+    // identik sama fixture "UAT Kurir Motor" lama yang digantikan.
     await safeStep('Atur Tarif per Cabang - Terisi', '/payroll/salary-rates-by-branch', async () => {
-      await page.getByText('UAT Kurir Motor').waitFor({ state: 'visible', timeout: 15000 })
+      await page.getByText('QA A11y Sweep - Kurir Motor').waitFor({ state: 'visible', timeout: 15000 })
       await runAxe(page, 'Atur Tarif per Cabang - Terisi', '/payroll/salary-rates-by-branch')
     })
 
