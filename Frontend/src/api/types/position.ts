@@ -9,9 +9,14 @@ import type { Department } from './department'
  * (index/store/update/show SEMUA eager-load department -
  * ->with('department')/->load('department')).
  *
- * `allowance` STRING (bukan number) - kolom decimal(15,2) TANPA $casts
- * eksplisit di model, PDO/Eloquent balikin decimal sebagai string kalau
- * gak di-cast - pola sama kayak Employee.basic_salary.
+ * `allowance` SENGAJA gak ada di sini (dihapus dari UI+type 2026-09-28,
+ * Kelompok A) - dead field sejak Task 15b, digantikan komponen gaji
+ * per-Jabatan/Karyawan (position_salary_components/
+ * employee_salary_components). Kolom DB positions.allowance TETAP ADA
+ * (backend freeze, no migration) dan API masih balikin nilainya mentah -
+ * TS interface ini sengaja lebih sempit dari response asli (properti
+ * ekstra yang gak dideklarasikan aman di TS structural typing), karena
+ * gak ada satupun kode yang perlu membacanya lagi.
  *
  * `department` OPSIONAL - meskipun PositionController SELALU eager-load
  * di endpoint /positions, Position type ini juga dipakai di
@@ -23,7 +28,6 @@ export interface Position {
   department_id: number
   position_code: string
   position_name: string
-  allowance: string
   description: string | null
   is_active: boolean
   created_at: string
@@ -37,13 +41,14 @@ export interface Position {
  * validate(). BEDA dari Department: `is_active` WAJIB (required|boolean),
  * BUKAN optional - backend Posisi gak punya default is_active kayak
  * Department (yang optional, default true di controller kalau gak
- * dikirim). `allowance` juga wajib (required|numeric|min:0).
+ * dikirim). `allowance` TIDAK dikirim lagi (dihapus dari form 2026-09-28) -
+ * backend validation-nya sudah diloncong ke nullable, kolom DB-nya
+ * pakai default 0.00 kalau gak dikirim sama sekali.
  */
 export interface PositionCreateRequest {
   department_id: number
   position_code: string
   position_name: string
-  allowance: number
   description?: string | null
   is_active: boolean
 }

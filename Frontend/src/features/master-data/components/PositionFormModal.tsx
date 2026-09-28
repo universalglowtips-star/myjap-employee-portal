@@ -13,20 +13,21 @@ import type { NormalizedApiError } from '../../../api/client'
 
 /**
  * Field native <select>/<input> lewat react-hook-form register() semua
- * balik STRING (department_id, allowance, is_active) - dikonversi ke
- * tipe asli (number/boolean) pas construct payload di handleFormSubmit,
- * BUKAN di schema. `allowance` divalidasi >=0 di sini (non-negative,
- * boleh 0) - cermin persis `numeric|min:0` di PositionController.
+ * balik STRING (department_id, is_active) - dikonversi ke tipe asli
+ * (number/boolean) pas construct payload di handleFormSubmit, BUKAN
+ * di schema.
+ *
+ * `allowance` SENGAJA gak ada di sini (dihapus dari UI 2026-09-28,
+ * Kelompok A) - dead field sejak Task 15b, digantikan komponen gaji
+ * per-Jabatan/Karyawan (position_salary_components/
+ * employee_salary_components). Kolom DB positions.allowance TETAP ADA
+ * (backend freeze, no migration) - backend validation-nya diloncong ke
+ * nullable, biar create/update tetap jalan tanpa field ini dikirim.
  */
 const positionSchema = z.object({
   position_code: z.string().min(1, 'Kode posisi wajib diisi'),
   position_name: z.string().min(1, 'Nama posisi wajib diisi'),
   department_id: z.string().min(1, 'Departemen wajib dipilih'),
-  allowance: z
-    .string()
-    .min(1, 'Tunjangan wajib diisi')
-    .refine((v) => !Number.isNaN(Number(v)), 'Tunjangan harus berupa angka')
-    .refine((v) => Number(v) >= 0, 'Tunjangan tidak boleh negatif'),
   description: z.string().optional(),
   is_active: z.string().min(1, 'Status wajib dipilih'),
 })
@@ -89,7 +90,6 @@ export function PositionFormModal({
         position_code: position?.position_code ?? '',
         position_name: position?.position_name ?? '',
         department_id: position ? String(position.department_id) : '',
-        allowance: position?.allowance ?? '',
         description: position?.description ?? '',
         is_active: position ? (position.is_active ? 'true' : 'false') : 'true',
       })
@@ -102,7 +102,6 @@ export function PositionFormModal({
         department_id: Number(values.department_id),
         position_code: values.position_code,
         position_name: values.position_name,
-        allowance: Number(values.allowance),
         description: values.description || null,
         is_active: values.is_active === 'true',
       })
@@ -114,7 +113,6 @@ export function PositionFormModal({
             field === 'department_id' ||
             field === 'position_code' ||
             field === 'position_name' ||
-            field === 'allowance' ||
             field === 'description' ||
             field === 'is_active'
           ) {
@@ -150,9 +148,11 @@ export function PositionFormModal({
     >
       {/* Grid 2 kolom (1 kolom di bawah sm - collapse otomatis, gap-y
           TETAP ketat di kedua breakpoint, bukan balik lega di mobile)
-          - field pendek berpasangan (Kode Posisi+Tunjangan, Departemen+
-          Status), field yang isinya bisa panjang (Nama Posisi, Deskripsi)
-          tetap col-span-2 penuh. Padding vertikal Input/Select di-override
+          - field pendek berpasangan (Departemen+Status), field yang
+          isinya bisa panjang (Kode Posisi, Nama Posisi, Deskripsi)
+          col-span-2 penuh (Kode Posisi ikut col-span-2 sejak Tunjangan
+          dihapus 2026-09-28 - dulu berpasangan sama field itu, sekarang
+          gak ada pasangan pendek lain). Padding vertikal Input/Select di-override
           py-2 (dari default py-2.5 di komponennya) VIA className di
           tiap pemakaian di sini - BUKAN ubah Input.tsx/Select.tsx
           langsung, biar Login & Modal Departemen (form sederhana, gak
@@ -169,27 +169,11 @@ export function PositionFormModal({
         noValidate
         className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
       >
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="position_code">
             Kode Posisi
           </Label>
           <Input id="position_code" className="py-2" error={errors.position_code?.message} {...register('position_code')} />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="allowance">
-            Tunjangan
-          </Label>
-          <Input
-            id="allowance"
-            type="number"
-            min={0}
-            step="0.01"
-            inputMode="decimal"
-            className="py-2"
-            error={errors.allowance?.message}
-            {...register('allowance')}
-          />
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">

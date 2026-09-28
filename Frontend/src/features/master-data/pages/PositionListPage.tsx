@@ -7,7 +7,6 @@ import { Table } from '../../../components/ui/Table'
 import { Button } from '../../../components/ui/Button'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { Toast } from '../../../components/ui/Toast'
-import { formatCurrency } from '../../../lib/formatCurrency'
 import { PositionFormModal } from '../components/PositionFormModal'
 import { usePositions } from '../hooks/usePositions'
 import { useCreatePosition, useUpdatePosition, useDeletePosition } from '../hooks/usePositionMutations'
@@ -19,9 +18,13 @@ import type { NormalizedApiError } from '../../../api/client'
  * Struktur & pola SAMA PERSIS DepartmentListPage.tsx (Tugas 1 reference
  * pattern) - beda cuma field/permission-code/endpoint. Dikonfirmasi
  * sebelum coding (bukan asumsi): field asli dari migration+model+
- * controller (position_code, position_name, department_id, allowance,
- * description, is_active), permission module 'position' di
- * PermissionSeeder.php -> position.view/create/update/delete persis.
+ * controller (position_code, position_name, department_id, description,
+ * is_active), permission module 'position' di PermissionSeeder.php ->
+ * position.view/create/update/delete persis.
+ *
+ * `allowance` SENGAJA gak ditampilkan (dihapus dari UI 2026-09-28,
+ * Kelompok A) - dead field sejak Task 15b, digantikan komponen gaji
+ * per-Jabatan/Karyawan. Kolom DB-nya tetap ada (backend freeze).
  */
 export function PositionListPage() {
   // Gate query BARENGAN permission - user tanpa position.view gak
@@ -141,13 +144,6 @@ export function PositionListPage() {
               // backend (PositionController ->with('department')) -
               // BUKAN lookup manual dari list /departments terpisah.
               { key: 'department', header: 'Departemen', render: (row) => row.department?.department_name ?? '—' },
-              {
-                key: 'allowance',
-                header: 'Tunjangan',
-                align: 'right',
-                mono: true,
-                render: (row) => formatCurrency(row.allowance),
-              },
               {
                 key: 'status',
                 header: 'Status',

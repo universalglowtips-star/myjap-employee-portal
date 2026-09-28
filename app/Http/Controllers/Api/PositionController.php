@@ -36,7 +36,12 @@ public function store(Request $request): JsonResponse
         'department_id' => 'required|exists:departments,id',
         'position_code' => 'required|string|max:20|unique:positions,position_code',
         'position_name' => 'required|string|max:100',
-        'allowance'     => 'required|numeric|min:0',
+        // allowance TIDAK LAGI dikirim dari UI (dihapus 2026-09-28,
+        // Kelompok A - dead field sejak Task 15b, digantikan komponen
+        // gaji per-Jabatan/Karyawan). nullable (bukan required lagi) -
+        // kolom DB-nya tetap punya default 0.00 sendiri, cukup gak
+        // disebut di $validated biar Eloquent create() pakai default itu.
+        'allowance'     => 'nullable|numeric|min:0',
         'description'   => 'nullable|string',
         'is_active'     => 'required|boolean',
     ]);
@@ -98,7 +103,12 @@ public function update(Request $request, string $id): JsonResponse
         'department_id' => 'required|exists:departments,id',
         'position_code' => 'required|string|max:20|unique:positions,position_code,' . $position->id,
         'position_name' => 'required|string|max:100',
-        'allowance'     => 'required|numeric|min:0',
+        // allowance TIDAK LAGI dikirim dari UI - lihat catatan di store()
+        // di atas. nullable, BUKAN required: kalau gak dikirim, $validated
+        // gak punya key ini, $position->update($validated) di bawah gak
+        // nyentuh kolomnya sama sekali - nilai lama TETAP UTUH, gak
+        // ketiban default/reset ke 0 secara gak sengaja.
+        'allowance'     => 'nullable|numeric|min:0',
         'description'   => 'nullable|string',
         'is_active'     => 'required|boolean',
     ]);
