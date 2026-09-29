@@ -1,31 +1,27 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Kolom `work_shift_id` sudah didefinisikan di create_attendances_table.php
+     * (commit 55f62ee, 2026-07-21). Migration ini awalnya mendefinisikan ulang
+     * kolom yang sama secara tidak sengaja, menyebabkan migrate:fresh gagal
+     * dengan "duplicate column name: work_shift_id" di server baru.
+     * up()/down() dikosongkan jadi no-op - file tetap ada supaya entry di
+     * tabel migrations (dev DB) yang sudah mencatatnya sebagai "Ran" tidak
+     * jadi class-not-found kalau ada yang rollback ke titik ini.
+     */
     public function up(): void
     {
-        Schema::table('attendances', function (Blueprint $table) {
-
-            $table->foreignId('work_shift_id')
-                  ->nullable()
-                  ->after('office_location_id')
-                  ->constrained()
-                  ->cascadeOnUpdate()
-                  ->restrictOnDelete();
-
-        });
+        // no-op - lihat komentar di atas
     }
 
     public function down(): void
     {
-        Schema::table('attendances', function (Blueprint $table) {
-
-            $table->dropConstrainedForeignId('work_shift_id');
-
-        });
+        // no-op - lihat komentar di atas (dropConstrainedForeignId di sini
+        // dulu akan salah drop kolom yang sebenarnya didefinisikan oleh
+        // create_attendances_table.php, bukan migration ini)
     }
 };
