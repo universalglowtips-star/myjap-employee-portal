@@ -172,9 +172,18 @@ class AuthController extends Controller
         /** @var Employee $employee */
         $employee = $accessToken->tokenable;
 
-        $verified = !empty($validated['code'])
-            ? $this->twoFactor->verifyCode($employee->two_factor_secret, $validated['code'])
-            : $this->twoFactor->verifyAndConsumeRecoveryCode($employee, $validated['recovery_code']);
+        $newTimestamp = null;
+
+        if (!empty($validated['code'])) {
+            $newTimestamp = $this->twoFactor->verifyCodeWithReplayGuard(
+                $employee->two_factor_secret,
+                $validated['code'],
+                $employee->two_factor_last_used_at
+            );
+            $verified = $newTimestamp !== false;
+        } else {
+            $verified = $this->twoFactor->verifyAndConsumeRecoveryCode($employee, $validated['recovery_code']);
+        }
 
         if (!$verified) {
 
@@ -188,10 +197,20 @@ class AuthController extends Controller
                 "Percobaan kode 2FA gagal untuk: {$employee->email}"
             );
 
+            $isReplay = !empty($validated['code']) && $newTimestamp === false
+                && (bool) $this->twoFactor->verifyCode($employee->two_factor_secret, $validated['code']);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Kode 2FA tidak valid.',
+                'message' => $isReplay
+                    ? 'Kode ini sudah pernah digunakan. Silakan gunakan kode baru dari aplikasi authenticator Anda.'
+                    : 'Kode 2FA tidak valid.',
             ], 401);
+        }
+
+        if ($newTimestamp !== null) {
+            $employee->two_factor_last_used_at = $newTimestamp;
+            $employee->save();
         }
 
         $employee->tokens()->delete();

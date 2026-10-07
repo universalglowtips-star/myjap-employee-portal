@@ -175,6 +175,13 @@ class Employee extends Authenticatable
 
         'two_factor_confirmed_at' => 'datetime:Y-m-d H:i:s',
 
+        // Fix anti-replay TOTP - Unix timestamp INTEGER mentah dari
+        // verifyKeyNewer() (bukan datetime kalender), wajib di-cast
+        // 'integer' biar nilai dari PDO (string) jadi int asli - method
+        // TwoFactorService::verifyCodeWithReplayGuard() pakai type-hint
+        // ?int ketat buat parameternya.
+        'two_factor_last_used_at' => 'integer',
+
     ];
 }
     /*

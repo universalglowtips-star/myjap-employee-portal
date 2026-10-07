@@ -101,6 +101,42 @@ class TwoFactorService
     }
 
     /**
+     * Verifikasi kode 6 digit DENGAN anti-replay (fix temuan S6 uji
+     * keamanan 2FA, 2026-10-07) - verifyKeyNewer() balikin timestamp
+     * time-slot (integer) kalau valid DAN lebih baru dari
+     * $lastUsedTimestamp, atau false kalau kode salah ATAU kode valid
+     * tapi sudah pernah dipakai (replay). Caller WAJIB simpan timestamp
+     * yang dikembalikan ke two_factor_last_used_at kalau hasilnya bukan
+     * false - method ini sengaja gak nulis DB sendiri (read-only,
+     * caller yang pegang $employee).
+     *
+     * HANYA dipakai di alur login (AuthController::verifyTwoFactor()).
+     * TIDAK dipakai di TwoFactorController::confirm() - endpoint itu
+     * sudah terlindung dari replay lewat mekanisme lain (token yang
+     * dipakai langsung di-revoke begitu confirm() sukses, lihat
+     * TwoFactorController::confirm()), jadi gak butuh pelacakan
+     * timestamp terpisah.
+     *
+     * @return int|false timestamp time-slot kalau valid+baru, false kalau tidak
+     */
+    public function verifyCodeWithReplayGuard(string $secret, string $code, ?int $lastUsedTimestamp): int|false
+    {
+        // PENTING: kirim 0 (bukan null mentah) kalau belum pernah ada
+        // pemakaian tercatat. findValidOTP() di package ini balikin
+        // BOOLEAN true (bukan integer timestamp) kalau $oldTimestamp
+        // yang diterima null - 0 secara praktik menghasilkan starting
+        // timestamp YANG SAMA (selisihnya dibanding timestamp Unix asli
+        // sekarang jauh lebih kecil dari window toleransi), tapi
+        // memaksa balikannya tetap integer asli, bukan `true` - kalau
+        // tidak, pemakaian PERTAMA kalinya kolom ini keisi malah
+        // nyimpen (int) true === 1, bikin replay guard gak efektif
+        // justru di percobaan verifikasi pertama setelah fix ini rilis.
+        $result = $this->engine->verifyKeyNewer($secret, $code, $lastUsedTimestamp ?? 0);
+
+        return $result === false ? false : (int) $result;
+    }
+
+    /**
      * 8 kode plaintext acak (format XXXX-XXXX) - Str::random() Laravel
      * pakai random_bytes() di baliknya (cryptographically secure),
      * BUKAN mt_rand()/rand() biasa.
